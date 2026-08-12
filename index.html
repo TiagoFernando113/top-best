@@ -10,6 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="[TOP] Best">
 <title>Portal TOP Best</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <style>
@@ -1205,6 +1206,7 @@
     heartbeat();
     paintMembros();
     paintEventos();
+    iniciarRealtime();
   }
 
   var SEM_REF = Date.UTC(2024,0,1); // uma segunda-feira de referência
@@ -1385,6 +1387,46 @@
   function onAdminErr(err){
     if(err && err.codigo){ toast("🔑 Confirme o código de oficial."); pedirCodigoOficial(); }
     else toast("❌ Não foi possível executar a ação.");
+  }
+
+  /* ------- Realtime (o servidor empurra as mudanças = interação instantânea) ------- */
+  var _rt = null, chatUnread = 0;
+  function badgeChat(){
+    var b = $("#nbChat"); if(!b) return;
+    if(chatUnread > 0){ b.textContent = chatUnread; b.style.display = ""; } else { b.style.display = "none"; }
+  }
+  function iniciarRealtime(){
+    if(_rt || !window.supabase || !window.supabase.createClient) return;
+    try{
+      _rt = window.supabase.createClient(SB_URL, SB_KEY);
+      var ch = _rt.channel("top-portal");
+      ch.on("postgres_changes", {event:"INSERT", schema:"public", table:"top_chat"}, function(p){
+        var novo = p && p.new;
+        if(cur === "chat"){ lastChatSig = ""; chatCarregar(); }
+        else if(!(ME && novo && novo.membro_id === ME.id)){ chatUnread++; badgeChat(); }
+        if(novo && novo.tipo === "aviso") avisoUltimo();
+      });
+      ch.on("postgres_changes", {event:"*", schema:"public", table:"top_submissoes"}, function(){
+        if(ME && ME.is_oficial && cur === "admin") paintAdmin();
+      });
+      ch.on("postgres_changes", {event:"*", schema:"public", table:"top_resgates"}, function(){
+        if(ME && ME.is_oficial && cur === "admin") paintResgates();
+      });
+      ch.on("postgres_changes", {event:"*", schema:"public", table:"top_membros"}, function(p){
+        var n = p && p.new;
+        if(n && ME && n.id === ME.id){
+          var eraOfi = ME.is_oficial;
+          ME = n; S.coins = ME.moedas || 0; paintCoins();
+          $("#euNome").innerHTML = '<span class="euav">'+avatarSVG(ME)+'</span>'+nomeComCargo();
+          setTopAvatar();
+          $("#r0banner").style.display = (ME.status === "pendente") ? "flex" : "none";
+          if(ME.is_oficial){ $("#navAdmin").classList.remove("hidden"); if(!eraOfi) toast("👑 Você foi promovido a "+(ME.cargo||"oficial")+"!"); }
+        }
+        if(cur === "membros") paintMembros();
+        if(cur === "ranking") paintRanking();
+      });
+      ch.subscribe();
+    }catch(e){}
   }
   function atualizarBotaoNotif(){
     var b = $("#notifBtn"); if(!b) return;
@@ -1857,7 +1899,7 @@
       b.classList.toggle('on', b.dataset.go === name);
     });
     if(name === 'admin'){ paintAdmin(); paintR0(); paintResgates(); paintAdminGestao(); }
-    if(name === 'chat') chatCarregar();
+    if(name === 'chat'){ chatCarregar(); chatUnread = 0; badgeChat(); }
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
     if(name === 'eventos') paintEventos();
@@ -2271,6 +2313,14 @@
     var t = $('#chatInput').value.trim();
     if(!t || !ME) return;
     $('#chatInput').value = '';
+    // otimista: mostra na hora
+    var box = $('#chatMsgs');
+    if(box){
+      if(box.querySelector('.empty')) box.innerHTML = '';
+      var d = document.createElement('div'); d.className = 'msg me'; d.style.opacity = '.55';
+      d.innerHTML = '<div class="who"><span class="chatav">'+avatarSVG(ME)+'</span>'+esc(ME.nome)+'</div><div class="tx">'+esc(t)+'</div>';
+      box.appendChild(d); box.scrollTop = box.scrollHeight;
+    }
     sbPost('top_chat', {membro_id:ME.id, nome:ME.nome, cargo:ME.cargo||'R1', tipo:'msg', texto:t})
       .then(function(){ lastChatSig=''; chatCarregar(); }).catch(function(){ toast('❌ Não enviou.'); });
   });
@@ -2452,8 +2502,8 @@
   }); })();
 
   setInterval(function(){ if(cur === 'missoes') paintMissions(); }, 60000);
-  setInterval(function(){ if(cur === 'chat' && ME) chatCarregar(); }, 4000);
-  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial){ paintAdmin(); paintR0(); paintResgates(); } }, 8000);
+  setInterval(function(){ if(cur === 'chat' && ME && !_rt) chatCarregar(); }, 12000);   // reserva se o realtime cair
+  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial && !_rt){ paintAdmin(); paintR0(); paintResgates(); } }, 15000);
   setInterval(function(){ if(ME){ heartbeat(); if(cur === 'membros') paintMembros(); } }, 45000);
 })();
 </script>
