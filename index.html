@@ -1276,18 +1276,25 @@
 
   var _eventosCache = {};
   function paintEventos(){
-    return sbGet("top_eventos?ativa=eq.true&select=*&order=ordem").then(function(rows){
+    return sbGet("top_eventos?ativa=eq.true&select=*&order=categoria,ordem").then(function(rows){
       rows = rows || []; var host = $("#eventosLista"); if(!host) return;
       _eventosCache = {}; rows.forEach(function(e){ _eventosCache[e.id] = e; });
       if(!rows.length){ host.innerHTML = '<div class="empty">Sem eventos ainda.</div>'; return; }
       var ofi = ehOficial(ME);
-      host.innerHTML = rows.map(function(ev){
+      function cardEv(ev){
         var tipo = (ev.tipo==="daily"||ev.tipo==="ally"||ev.tipo==="war") ? ev.tipo : "ally";
+        var periodo = (ev.categoria==="temporario" && (ev.inicio||ev.fim)) ? '<p style="font-size:.74rem;color:var(--ink-soft);font-weight:700">🗓️ '+esc(ev.inicio||"")+(ev.fim?" → "+esc(ev.fim):"")+'</p>' : '';
         return '<div class="ev '+tipo+'"><div class="when"><div class="day">'+esc(ev.dia||"")+'</div><div class="time">'+esc(ev.hora||"")+'</div></div>'+
-          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+
+          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+periodo+
           (ofi ? '<button class="gadd" style="margin-top:8px" data-lancar="'+ev.id+'">🏆 Lançar pontos</button>' : '')+
           '</div></div>';
-      }).join("");
+      }
+      var sem = rows.filter(function(r){ return r.categoria !== "temporario"; });
+      var tmp = rows.filter(function(r){ return r.categoria === "temporario"; });
+      var html = "";
+      if(sem.length) html += '<div class="stitle" style="margin:2px 0 10px"><h2 style="font-size:1.02rem">🔁 Eventos semanais</h2><div class="rule"></div></div>' + sem.map(cardEv).join("");
+      if(tmp.length) html += '<div class="stitle" style="margin:16px 0 10px"><h2 style="font-size:1.02rem">⏳ Eventos temporários</h2><div class="rule"></div></div>' + tmp.map(cardEv).join("");
+      host.innerHTML = html;
     }).catch(function(){});
   }
 
@@ -1344,7 +1351,7 @@
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"dia",l:"Dia (ex.: SEX / DIÁRIO)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"tipo",l:"Tipo",t:"tipo"}] }
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"}] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
@@ -1361,6 +1368,8 @@
       var lbl = '<p class="rlab" style="margin-top:8px">'+c.l+'</p>';
       if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
       if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
+      if(c.t==="cat")   return lbl + campoSelect(c.k, v||"semanal", [["semanal","Semanal (recorrente)"],["temporario","Temporário"]]);
+      if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
       return lbl + '<input class="rin" data-k="'+c.k+'" type="'+(c.t==="number"?"number":"text")+'" value="'+esc(String(v))+'">';
     }).join("");
     $("#editOverlay").classList.add("on");
@@ -1371,7 +1380,9 @@
     def.campos.forEach(function(c){
       var el = document.querySelector('#editCampos [data-k="'+c.k+'"]');
       var v = el ? el.value : "";
-      body[c.k] = (c.t==="number") ? (parseInt(v,10)||0) : v;
+      if(c.t==="number") body[c.k] = parseInt(v,10)||0;
+      else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
+      else body[c.k] = v;
     });
     admin("gestao", {tabela:def.tabela, op: editCtx.id ? "update" : "insert", id: editCtx.id, dados: body})
       .then(function(res){ if(res && res.ok){ $("#editOverlay").classList.remove("on"); toast("✅ Salvo!"); def.recarrega(); paintAdminGestao(); } else toast("❌ Erro ao salvar."); })
