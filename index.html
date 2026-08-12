@@ -608,6 +608,7 @@
         <span class="amt"><span id="coinAmt">0</span></span>
       </div>
       <div class="stitle"><h2>Missões da Semana</h2><div class="rule"></div></div>
+      <div class="hint" style="margin-bottom:12px">🔄 As missões renovam toda semana — dá pra concluir de novo a cada semana.</div>
       <div class="mlist" id="missionList"></div>
       <div class="hint">✋ Segure e arraste uma missão para reordenar sua lista.</div>
     </div>
@@ -1229,6 +1230,8 @@
     paintEventos();
   }
 
+  var SEM_REF = Date.UTC(2024,0,1); // uma segunda-feira de referência
+  function semanaAtual(){ return Math.floor((Date.now() - SEM_REF) / (7*86400000)); }
   function reconciliarMissoes(){
     return sbGet("top_missoes?ativa=eq.true&select=*&order=ordem").then(function(ms){
       ms = ms || [];
@@ -1236,7 +1239,10 @@
       ms.forEach(function(r){ MISSIONS.push({id:r.id, dbId:r.id, icon:r.icone||"i-flag", t:r.titulo, d:r.descricao||"", coins:r.moedas||0, days:r.prazo_dias||7}); });
       var byDb = {};
       MISSIONS.forEach(function(m){ byDb[m.dbId] = m; });
-      return sbGet("top_submissoes?membro_id=eq."+ME.id+"&select=missao_id,status&order=criado_em.desc").then(function(subs){
+      // reset semanal: virou a semana -> zera o progresso local das missões
+      var semNow = semanaAtual();
+      if(S.week !== semNow){ S.m = {}; S.week = semNow; save(); }
+      return sbGet("top_submissoes?membro_id=eq."+ME.id+"&semana=eq."+semNow+"&select=missao_id,status&order=criado_em.desc").then(function(subs){
         var seen = {};
         (subs||[]).forEach(function(s){
           var m = byDb[s.missao_id]; if(!m || seen[m.id]) return; seen[m.id] = 1;
@@ -1685,6 +1691,9 @@
     if(!ME) return;
     $("#perfilAtual").innerHTML = avatarSVG(ME);
     $("#perfilInfo").innerHTML = "<b>"+esc(ME.nome)+"</b> · "+(ME.is_oficial?"Oficial · ":"")+(ME.cargo||"R1")+" · 🪙 "+fmt(ME.moedas||0);
+    sbGet("top_submissoes?membro_id=eq."+ME.id+"&status=eq.aprovada&select=id").then(function(r){
+      var el = $("#perfilInfo"); if(el) el.innerHTML += " · 🏅 "+((r&&r.length)||0)+" missões concluídas";
+    }).catch(function(){});
     perfilAvatarSel = ME.avatar || avIdFor(ME.nome);
     perfilFotoFile = null;
     $("#perfilSenha").value = "";
@@ -2086,7 +2095,7 @@
     var path = ME.id + '/' + Date.now() + '_' + m.dbId + '.' + ext;
     return sbUpload(path, file).then(function(){
       var url = SB_URL + '/storage/v1/object/public/top-provas/' + path;
-      return sbPost('top_submissoes', {missao_id:m.dbId, membro_id:ME.id, prova_url:url, nota:nota||null})
+      return sbPost('top_submissoes', {missao_id:m.dbId, membro_id:ME.id, prova_url:url, nota:nota||null, semana:semanaAtual()})
         .then(function(res){ if(!Array.isArray(res) || !res.length) throw {dup:true}; return res; });
     });
   }
