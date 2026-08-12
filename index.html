@@ -644,23 +644,8 @@
   <div class="screen" id="s-eventos">
     <div class="panel">
       <div class="stitle"><h2>Agenda da Aliança</h2><div class="rule"></div></div>
-      <div class="ev daily">
-        <div class="when"><div class="day">DIÁRIO</div><div class="time">reset</div></div>
-        <div><h3>Doação de Tecnologia</h3><p>Doe todo dia e colete os baús de ajuda. É a base de tudo.</p></div>
-      </div>
-      <div class="ev ally">
-        <div class="when"><div class="day">QUA</div><div class="time">20:00</div></div>
-        <div><h3>Mobilização da Aliança</h3><p>Fazemos as missões juntos pra estourar o baú de recompensas.</p></div>
-      </div>
-      <div class="ev war">
-        <div class="when"><div class="day">SEX</div><div class="time">21:00</div></div>
-        <div><h3>Território &amp; Fortalezas</h3><p>Rally coordenado. Tropas prontas 10 minutos antes.</p></div>
-      </div>
-      <div class="ev war">
-        <div class="when"><div class="day">SÁB</div><div class="time">a definir</div></div>
-        <div><h3>Sworland Showdown</h3><p>Teleporte grátis a cada 12 min pra controlar o mapa. Convocação total.</p></div>
-      </div>
-      <div class="hint">🕐 Horários no fuso de Brasília — me diga os reais que eu ajusto.</div>
+      <div id="eventosLista"><p class="empty">Carregando…</p></div>
+      <div class="hint">🕐 Os oficiais editam a agenda no painel Admin.</div>
     </div>
   </div>
 
@@ -725,6 +710,20 @@
 
       <div class="stitle"><h2>Provas pendentes</h2><div class="rule"></div></div>
       <div id="adminFila"><p class="empty">Carregando…</p></div>
+
+      <div class="stitle"><h2>⚙️ Gerenciar conteúdo</h2><div class="rule"></div></div>
+      <div class="gestbloco">
+        <div class="gesthd">🎯 Missões <button class="gadd" data-add="missao">+ Nova</button></div>
+        <div id="gestMissoes"></div>
+      </div>
+      <div class="gestbloco">
+        <div class="gesthd">🎁 Loja <button class="gadd" data-add="loja">+ Novo</button></div>
+        <div id="gestLoja"></div>
+      </div>
+      <div class="gestbloco">
+        <div class="gesthd">📅 Eventos <button class="gadd" data-add="evento">+ Novo</button></div>
+        <div id="gestEventos"></div>
+      </div>
     </div>
   </div>
 
@@ -870,6 +869,18 @@
   </div>
 </div>
 
+<!-- ============ EDITAR CONTEÚDO (oficial) ============ -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h2 id="editTitulo">Editar</h2>
+    <div id="editCampos"></div>
+    <div class="mrow">
+      <button class="bcancel" id="editFechar">Cancelar</button>
+      <button class="bsend" id="editSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <style>
   /* ---- identidade / oficial ---- */
   .eurow{display:flex;align-items:center;gap:10px;margin-top:12px;background:rgba(255,255,255,.4);
@@ -987,6 +998,14 @@
   .rlab{display:block;font-size:.75rem;color:var(--ink-soft);margin-bottom:4px}
   .rin{width:100%;border:2.5px solid var(--pill-dk);border-radius:9px;background:#fff;padding:9px;
     font-family:inherit;font-weight:700;font-size:.86rem;color:var(--ink);outline:none}
+  .gestbloco{background:var(--panel-3);border-radius:12px;padding:10px;margin-bottom:12px}
+  .gesthd{display:flex;align-items:center;font-size:.92rem;color:var(--ink);font-weight:800;margin-bottom:8px}
+  .gadd{margin-left:auto;cursor:pointer;font-family:inherit;font-weight:800;font-size:.78rem;
+    background:linear-gradient(180deg,var(--green-lt),var(--green));border:2.5px solid #33702F;color:#fff;
+    -webkit-text-stroke:1.6px #2A5C26;paint-order:stroke fill;border-radius:9px;padding:5px 10px;box-shadow:0 2px 0 #33702F}
+  .gestrow{display:flex;align-items:center;gap:8px;background:#fff;border-radius:9px;padding:7px 10px;margin-bottom:6px}
+  .gnome{flex:1;min-width:0;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
   .r0banner{display:none;align-items:center;gap:8px;margin-bottom:12px;
     background:linear-gradient(180deg,var(--gold-lt),var(--gold));border:3px solid var(--gold-dk);
     border-radius:12px;padding:10px 12px;font-size:.82rem;color:var(--ink);font-weight:700;box-shadow:0 3px 0 var(--gold-dk)}
@@ -1204,13 +1223,16 @@
     avisoUltimo();
     heartbeat();
     paintMembros();
+    paintEventos();
   }
 
   function reconciliarMissoes(){
-    return sbGet("top_missoes?select=id,titulo").then(function(ms){
-      var map = {}; (ms||[]).forEach(function(x){ map[x.titulo] = x.id; });
+    return sbGet("top_missoes?ativa=eq.true&select=*&order=ordem").then(function(ms){
+      ms = ms || [];
+      MISSIONS.length = 0;
+      ms.forEach(function(r){ MISSIONS.push({id:r.id, dbId:r.id, icon:r.icone||"i-flag", t:r.titulo, d:r.descricao||"", coins:r.moedas||0, days:r.prazo_dias||7}); });
       var byDb = {};
-      MISSIONS.forEach(function(m){ m.dbId = map[m.t] || null; if(m.dbId) byDb[m.dbId] = m; });
+      MISSIONS.forEach(function(m){ byDb[m.dbId] = m; });
       return sbGet("top_submissoes?membro_id=eq."+ME.id+"&select=missao_id,status&order=criado_em.desc").then(function(subs){
         var seen = {};
         (subs||[]).forEach(function(s){
@@ -1237,6 +1259,85 @@
   }
   function refreshMoedas(){
     return getMembro().then(function(m){ if(m){ ME = m; S.coins = m.moedas||0; paintCoins(); } });
+  }
+
+  function paintEventos(){
+    return sbGet("top_eventos?ativa=eq.true&select=*&order=ordem").then(function(rows){
+      rows = rows || []; var host = $("#eventosLista"); if(!host) return;
+      if(!rows.length){ host.innerHTML = '<div class="empty">Sem eventos ainda.</div>'; return; }
+      host.innerHTML = rows.map(function(ev){
+        var tipo = (ev.tipo==="daily"||ev.tipo==="ally"||ev.tipo==="war") ? ev.tipo : "ally";
+        return '<div class="ev '+tipo+'"><div class="when"><div class="day">'+esc(ev.dia||"")+'</div><div class="time">'+esc(ev.hora||"")+'</div></div>'+
+          '<div><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p></div></div>';
+      }).join("");
+    }).catch(function(){});
+  }
+
+  /* ------- gestão de conteúdo (oficial) ------- */
+  var ICONES = ["i-rally","i-power","i-hero","i-shield","i-build","i-flag","i-crown","i-sword","i-star","i-chest","i-gift","i-scroll","i-shop"];
+  var _gestCache = {}, editCtx = null;
+  var EDIT_DEFS = {
+    missao: { tabela:"top_missoes", titulo:"Missão", recarrega:function(){ reconciliarMissoes(); },
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"moedas",l:"Moedas",t:"number"},{k:"prazo_dias",l:"Prazo (dias)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
+    loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
+    evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
+      campos:[{k:"dia",l:"Dia (ex.: SEX / DIÁRIO)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"tipo",l:"Tipo",t:"tipo"}] }
+  };
+  function campoSelect(k, val, opts){
+    return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
+      var v = (o instanceof Array)?o[0]:o, lab = (o instanceof Array)?o[1]:o;
+      return '<option value="'+esc(v)+'"'+(String(val)===String(v)?" selected":"")+'>'+esc(lab)+'</option>';
+    }).join("")+'</select>';
+  }
+  function abrirEdit(tipoKey, item){
+    var def = EDIT_DEFS[tipoKey]; if(!def) return;
+    editCtx = { tipoKey:tipoKey, def:def, id: item ? item.id : null };
+    $("#editTitulo").textContent = (item ? "Editar " : "Novo ") + def.titulo;
+    $("#editCampos").innerHTML = def.campos.map(function(c){
+      var v = item ? (item[c.k]==null?"":item[c.k]) : "";
+      var lbl = '<p class="rlab" style="margin-top:8px">'+c.l+'</p>';
+      if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
+      if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
+      return lbl + '<input class="rin" data-k="'+c.k+'" type="'+(c.t==="number"?"number":"text")+'" value="'+esc(String(v))+'">';
+    }).join("");
+    $("#editOverlay").classList.add("on");
+  }
+  function salvarEdit(){
+    if(!editCtx) return;
+    var def = editCtx.def, body = {};
+    def.campos.forEach(function(c){
+      var el = document.querySelector('#editCampos [data-k="'+c.k+'"]');
+      var v = el ? el.value : "";
+      body[c.k] = (c.t==="number") ? (parseInt(v,10)||0) : v;
+    });
+    var p = editCtx.id ? sbPatch(def.tabela+"?id=eq."+editCtx.id, body) : sbPost(def.tabela, body);
+    p.then(function(){ $("#editOverlay").classList.remove("on"); toast("✅ Salvo!"); def.recarrega(); paintAdminGestao(); })
+      .catch(function(){ toast("❌ Erro ao salvar."); });
+  }
+  function excluirItem(tipoKey, id){
+    var def = EDIT_DEFS[tipoKey]; if(!def) return;
+    if(!confirm("Excluir este item?")) return;
+    fetch(SB_URL+"/rest/v1/"+def.tabela+"?id=eq."+id, {method:"DELETE", headers:sbHead()})
+      .then(function(){ toast("Excluído."); def.recarrega(); paintAdminGestao(); })
+      .catch(function(){ toast("❌ Erro."); });
+  }
+  function gestaoLista(query, hostId, tipoKey){
+    return sbGet(query).then(function(rows){
+      rows = rows || []; var host = $("#"+hostId); if(!host) return;
+      _gestCache[tipoKey] = {}; rows.forEach(function(r){ _gestCache[tipoKey][r.id] = r; });
+      host.innerHTML = rows.map(function(r){
+        return '<div class="gestrow"><span class="gnome">'+esc(r.titulo)+'</span>'+
+          '<button class="gedit" data-edit="'+tipoKey+'" data-id="'+r.id+'">✏️</button>'+
+          '<button class="gdel" data-del="'+tipoKey+'" data-id="'+r.id+'">🗑️</button></div>';
+      }).join("") || '<p class="empty" style="padding:10px">Vazio.</p>';
+    }).catch(function(){});
+  }
+  function paintAdminGestao(){
+    if(!ME || !ME.is_oficial) return;
+    gestaoLista("top_missoes?select=*&order=ordem", "gestMissoes", "missao");
+    gestaoLista("top_loja?select=*&order=ordem", "gestLoja", "loja");
+    gestaoLista("top_eventos?select=*&order=ordem", "gestEventos", "evento");
   }
 
   /* ------- notificações push ------- */
@@ -1733,10 +1834,11 @@
     Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function(b){
       b.classList.toggle('on', b.dataset.go === name);
     });
-    if(name === 'admin'){ paintAdmin(); paintR0(); }
+    if(name === 'admin'){ paintAdmin(); paintR0(); paintAdminGestao(); }
     if(name === 'chat') chatCarregar();
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
+    if(name === 'eventos') paintEventos();
     window.scrollTo({top:0, behavior:'instant'});
   }
   document.addEventListener('click', function(e){
@@ -2280,6 +2382,16 @@
   $("#promoFechar").addEventListener("click", function(){ $("#promoOverlay").classList.remove("on"); });
   $("#promoRemover").addEventListener("click", removerMembro);
   $("#promoGrid").addEventListener("click", function(e){ var b = e.target.closest("[data-rank]"); if(b) promover(b.dataset.rank); });
+
+  /* ---- gestão de conteúdo ---- */
+  $("#editFechar").addEventListener("click", function(){ $("#editOverlay").classList.remove("on"); });
+  $("#editSalvar").addEventListener("click", salvarEdit);
+  document.addEventListener("click", function(e){
+    var add = e.target.closest("[data-add]"), ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
+    if(add){ abrirEdit(add.dataset.add, null); return; }
+    if(ed){ var m = (_gestCache[ed.dataset.edit]||{})[ed.dataset.id]; if(m) abrirEdit(ed.dataset.edit, m); return; }
+    if(del){ excluirItem(del.dataset.del, del.dataset.id); return; }
+  });
 
   /* ---------------- boot ---------------- */
   paintCoins();
