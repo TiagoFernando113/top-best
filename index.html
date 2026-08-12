@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="[TOP] Best">
 <title>Portal TOP Best</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 <style>
@@ -895,7 +896,11 @@
   <div class="modal">
     <h2 id="resultTitulo">Lançar pontos</h2>
     <p class="sub">Coloque os pontos de quem participou (deixe vazio = não pontuou).</p>
-    <div class="search" style="margin-bottom:10px"><input id="resultBusca" type="search" placeholder="Buscar membro"><span>🔍</span></div>
+    <label class="bigbtn" id="ocrBtn" style="cursor:pointer">📷 Ler print (preenche sozinho)
+      <input type="file" accept="image/*" id="ocrFile" style="display:none">
+    </label>
+    <p class="note" id="ocrStatus" style="display:none;margin:6px 0 0"></p>
+    <div class="search" style="margin:10px 0"><input id="resultBusca" type="search" placeholder="Buscar membro"><span>🔍</span></div>
     <div id="resultLista" style="max-height:48vh;overflow-y:auto"></div>
     <div class="mrow">
       <button class="bcancel" id="resultFechar">Cancelar</button>
@@ -1299,7 +1304,56 @@
   }
 
   /* ------- lançar pontos de evento (oficial) ------- */
-  var resultEventoId = null, resultDia = null;
+  var resultEventoId = null, resultDia = null, _resultMembros = [];
+  function normNome(s){ return String(s||"").toLowerCase().replace(/\[top\]/g,"").replace(/top$/,"").replace(/[^a-z0-9À-￿]/g,""); }
+  function simRatio(a,b){
+    if(!a.length||!b.length) return 0;
+    var la=a.length, lb=b.length, d=[]; for(var i=0;i<=la;i++) d[i]=[i];
+    for(var j=0;j<=lb;j++) d[0][j]=j;
+    for(i=1;i<=la;i++) for(j=1;j<=lb;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    return Math.round((1 - d[la][lb]/Math.max(la,lb))*100);
+  }
+  function melhorMembro(nomeOcr){
+    var alvo = normNome(nomeOcr); if(alvo.length<2) return null;
+    var best=null, bestScore=0;
+    (_resultMembros||[]).forEach(function(m){
+      var n = normNome(m.nome), score;
+      if(n===alvo) score=100;
+      else if(n.length>2 && (n.indexOf(alvo)>-1 || alvo.indexOf(n)>-1)) score=82;
+      else score = simRatio(n, alvo);
+      if(score>bestScore){ bestScore=score; best=m; }
+    });
+    return bestScore>=62 ? best : null;
+  }
+  function aplicarOCR(texto){
+    var linhas = texto.split("\n"), pares = [], ultimoNome = null;
+    linhas.forEach(function(ln){
+      var l = ln.trim(); if(!l) return;
+      var nums = l.replace(/\s/g,"").match(/\d[\d.]{5,}\d/g); // números grandes (com pontos de milhar)
+      if(/dano/i.test(l) && nums){
+        var pts = parseInt(nums[nums.length-1].replace(/\D/g,""),10);
+        if(pts && ultimoNome){ pares.push([ultimoNome, pts]); ultimoNome=null; }
+      } else if(/[A-Za-zÀ-￿]{2,}/.test(l) && !/classifica|pontos de dano|recompensa|dano da/i.test(l)){
+        ultimoNome = l;
+      }
+    });
+    var casados = 0;
+    pares.forEach(function(p){
+      var m = melhorMembro(p[0]);
+      if(m){ var inp = document.querySelector('#resultLista .resin[data-mid="'+m.id+'"]'); if(inp){ inp.value = p[1]; casados++; } }
+    });
+    return {lidos:pares.length, casados:casados};
+  }
+  function lerPrint(file){
+    if(!file || !window.Tesseract){ toast("Leitor indisponível."); return; }
+    var st = $("#ocrStatus"); if(st){ st.style.display="block"; st.style.color="var(--ink-soft)"; st.textContent="Lendo o print… 0%"; }
+    Tesseract.recognize(file, "por+eng", { logger:function(m){ if(m.status==="recognizing text" && st) st.textContent="Lendo o print… "+Math.round((m.progress||0)*100)+"%"; } })
+      .then(function(res){
+        var r = aplicarOCR((res.data && res.data.text) || "");
+        if(st){ st.style.color = r.casados ? "var(--green)" : "var(--red)"; st.textContent = "✅ "+r.casados+" de "+r.lidos+" preenchidos — confira e ajuste antes de salvar."; }
+        toast("📷 "+r.casados+" jogadores preenchidos do print.");
+      }).catch(function(){ if(st){ st.style.color="var(--red)"; st.textContent="❌ Não consegui ler. Tente um print mais nítido."; } });
+  }
   function abrirResultado(ev){
     if(!ev) return;
     resultEventoId = ev.id;
@@ -1312,6 +1366,7 @@
       sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,dia")
     ]).then(function(res){
       var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {};
+      _resultMembros = membros;
       resultados.forEach(function(r){
         acum[r.membro_id] = (acum[r.membro_id]||0) + (r.pontos||0);
         if(r.dia === resultDia) hoje[r.membro_id] = r.pontos;
@@ -2560,6 +2615,7 @@
   });
   $("#resultFechar").addEventListener("click", function(){ $("#resultOverlay").classList.remove("on"); });
   $("#resultSalvar").addEventListener("click", salvarResultado);
+  $("#ocrFile").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) lerPrint(f); e.target.value = ""; });
   $("#resultBusca").addEventListener("input", function(e){
     var q = e.target.value.trim().toLowerCase();
     Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){
