@@ -1133,18 +1133,9 @@
         {usado:true, usado_em:new Date().toISOString()}).then(function(rows){
       if(!Array.isArray(rows) || !rows.length) return {ok:false, msg:"Este convite já foi usado. Peça outro a um oficial."};
       return hashSenha(nome, senha).then(function(hash){
-        // já existe pré-cadastro do admin com esse nome (ainda sem senha)?
-        return sbGet("top_membros?senha_hash=is.null&nome=ilike."+enc(nome)+"&select=*").then(function(pre){
-          var achou = (pre||[])[0], agora = new Date().toISOString();
-          if(achou){
-            return sbPatch("top_membros?id=eq."+achou.id,
-              {senha_hash:hash, device_id:deviceId(), avatar:avatar, autorizado:true, status:"ativo", visto_em:agora})
-              .then(function(x){ ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:false}; }); });
-          }
-          return sbPost("top_membros",
-            {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar, autorizado:true, status:"pendente", cargo:"R0", visto_em:agora})
-            .then(function(x){ ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
-        });
+        // novo membro entra como R0 pendente (defaults do servidor); só colunas seguras
+        return sbPost("top_membros", {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
+          .then(function(x){ if(!Array.isArray(x)||!x.length) throw {reg:true}; ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
       });
     });
   }
@@ -1161,25 +1152,11 @@
 
   function ehOficial(m){ return !!(m && (m.is_oficial || m.cargo === "R4" || m.cargo === "R5")); }
   function virarOficial(codigo, nome){
-    return sbGet("top_config?chave=eq.codigo_oficial&select=valor").then(function(r){
-      var code = (r&&r[0]) ? r[0].valor : null;
-      if(String(codigo).trim() !== String(code)) return false;
-      return getMembro().then(function(m){
-        var extra = {is_oficial:true, cargo:(m&&m.cargo&&m.cargo!=="R1")?m.cargo:"R4"};
-        if(!m && nome) extra.nome = nome;
-        // sem membro no aparelho, mas existe pré-cadastro com esse nome? reivindica
-        if(!m && nome){
-          return sbGet("top_membros?senha_hash=is.null&nome=ilike."+enc(nome)+"&select=*").then(function(pre){
-            var achou = (pre||[])[0];
-            if(achou){
-              return sbPatch("top_membros?id=eq."+achou.id, {device_id:deviceId(), autorizado:true, is_oficial:true, status:"ativo"}).then(function(x){ ME = x[0]; return true; });
-            }
-            return garantirMembro(m, true, extra).then(function(x){ ME = x; return true; });
-          });
-        }
-        return garantirMembro(m, true, extra).then(function(x){ ME = x; return true; });
-      });
-    });
+    localStorage.setItem("top.ocode", String(codigo).trim());
+    return admin("virar", {device_id:deviceId(), nome:nome}).then(function(res){
+      if(res && res.ok && res.membro){ ME = res.membro; return true; }
+      return false;
+    }).catch(function(err){ if(err && err.codigo) localStorage.removeItem("top.ocode"); return false; });
   }
 
   var regAvatarSel = "av1";
@@ -1214,7 +1191,7 @@
     try{ if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } }catch(e){}
     S.coins = ME.moedas || 0;
     // R4/R5 viram oficiais automaticamente (sem precisar de código)
-    if(ehOficial(ME) && !ME.is_oficial){ ME.is_oficial = true; sbPatch("top_membros?id=eq."+ME.id, {is_oficial:true}).catch(function(){}); }
+    // is_oficial é definido no servidor (promoção); aqui só reflete
     var cargoTxt = ME.is_oficial ? " • Oficial" : (ME.cargo && ME.cargo!=="R1" ? " • "+ME.cargo : "");
     $("#euNome").innerHTML = '<span class="euav">'+avatarSVG(ME)+'</span>'+esc(ME.nome)+cargoTxt;
     setTopAvatar();
@@ -1320,16 +1297,16 @@
       var v = el ? el.value : "";
       body[c.k] = (c.t==="number") ? (parseInt(v,10)||0) : v;
     });
-    var p = editCtx.id ? sbPatch(def.tabela+"?id=eq."+editCtx.id, body) : sbPost(def.tabela, body);
-    p.then(function(){ $("#editOverlay").classList.remove("on"); toast("✅ Salvo!"); def.recarrega(); paintAdminGestao(); })
-      .catch(function(){ toast("❌ Erro ao salvar."); });
+    admin("gestao", {tabela:def.tabela, op: editCtx.id ? "update" : "insert", id: editCtx.id, dados: body})
+      .then(function(res){ if(res && res.ok){ $("#editOverlay").classList.remove("on"); toast("✅ Salvo!"); def.recarrega(); paintAdminGestao(); } else toast("❌ Erro ao salvar."); })
+      .catch(onAdminErr);
   }
   function excluirItem(tipoKey, id){
     var def = EDIT_DEFS[tipoKey]; if(!def) return;
     if(!confirm("Excluir este item?")) return;
-    fetch(SB_URL+"/rest/v1/"+def.tabela+"?id=eq."+id, {method:"DELETE", headers:sbHead()})
-      .then(function(){ toast("Excluído."); def.recarrega(); paintAdminGestao(); })
-      .catch(function(){ toast("❌ Erro."); });
+    admin("gestao", {tabela:def.tabela, op:"delete", id:id})
+      .then(function(res){ if(res && res.ok){ toast("Excluído."); def.recarrega(); paintAdminGestao(); } else toast("❌ Erro."); })
+      .catch(onAdminErr);
   }
   function gestaoLista(query, hostId, tipoKey){
     return sbGet(query).then(function(rows){
@@ -1392,6 +1369,22 @@
       headers:sbHead({"Content-Type":"application/json"}),
       body:JSON.stringify({alvo:alvo, titulo:titulo, corpo:corpo, url:location.origin+location.pathname, exceto:exceto||null})
     }).catch(function(){});
+  }
+
+  /* ------- ações de oficial (servidor, protegidas por código) ------- */
+  function admin(acao, dados){
+    return fetch(SB_URL+"/functions/v1/top-admin", {method:"POST",
+      headers:sbHead({"Content-Type":"application/json"}),
+      body:JSON.stringify(Object.assign({acao:acao, codigo:localStorage.getItem("top.ocode")||""}, dados||{}))})
+      .then(function(r){ return r.json().then(function(j){ return {status:r.status, j:j}; }); })
+      .then(function(res){
+        if(res.status === 403 || (res.j && res.j.erro === "codigo")){ localStorage.removeItem("top.ocode"); throw {codigo:true}; }
+        return res.j;
+      });
+  }
+  function onAdminErr(err){
+    if(err && err.codigo){ toast("🔑 Confirme o código de oficial."); pedirCodigoOficial(); }
+    else toast("❌ Não foi possível executar a ação.");
   }
   function atualizarBotaoNotif(){
     var b = $("#notifBtn"); if(!b) return;
@@ -1475,17 +1468,19 @@
   }
   function promover(rank){
     if(!promoAlvo) return;
-    sbPatch("top_membros?id=eq."+promoAlvo.id, {cargo:rank, status:"ativo", is_oficial:(rank==="R4"||rank==="R5")}).then(function(){
-      toast("✅ "+promoAlvo.nome+" agora é "+rank+" "+RANK_NOME[rank]);
-      $("#promoOverlay").classList.remove("on"); paintMembros();
-    }).catch(function(){ toast("❌ Erro ao promover."); });
+    var nome = promoAlvo.nome;
+    admin("promover", {membro_id:promoAlvo.id, cargo:rank}).then(function(res){
+      if(res && res.ok){ toast("✅ "+nome+" agora é "+rank+" "+RANK_NOME[rank]); $("#promoOverlay").classList.remove("on"); paintMembros(); }
+      else toast("❌ Erro ao promover.");
+    }).catch(onAdminErr);
   }
   function removerMembro(){
     if(!promoAlvo) return;
     if(!confirm("Remover "+promoAlvo.nome+" da aliança? Ele vai precisar de um novo convite para voltar.")) return;
-    fetch(SB_URL+"/rest/v1/top_membros?id=eq."+promoAlvo.id, {method:"DELETE", headers:sbHead()})
-      .then(function(){ toast("Removido."); $("#promoOverlay").classList.remove("on"); paintMembros(); })
-      .catch(function(){ toast("❌ Erro ao remover."); });
+    admin("remover", {membro_id:promoAlvo.id}).then(function(res){
+      if(res && res.ok){ toast("Removido."); $("#promoOverlay").classList.remove("on"); paintMembros(); }
+      else toast("❌ Erro ao remover.");
+    }).catch(onAdminErr);
   }
 
   /* ------- chat / avisos ------- */
@@ -1628,14 +1623,17 @@
       });
     });
   }
+  var _provasPendentes = [];
   function paintAdmin(){
     if(!ME || !ME.is_oficial) return;
     pendentes().then(function(subs){
       var host = $("#adminFila");
       $("#nbAdmin").textContent = subs.length;
       $("#nbAdmin").style.display = subs.length ? "" : "none";
-      if(!subs.length){ host.innerHTML = '<div class="empty"><div>✅</div>Nenhuma prova pendente.</div>'; return; }
-      host.innerHTML = subs.map(function(s){
+      if(!subs.length){ _provasPendentes = []; host.innerHTML = '<div class="empty"><div>✅</div>Nenhuma prova pendente.</div>'; return; }
+      _provasPendentes = subs.map(function(s){ return s.id; });
+      host.innerHTML = (subs.length > 1 ? '<button class="bigbtn green" id="aprovarTodas" style="margin-bottom:10px">✔ Aprovar todas ('+subs.length+')</button>' : '') +
+      subs.map(function(s){
         var mi = s.top_missoes || {};
         return '<div class="subm" data-sub="'+s.id+'">'+
           '<div class="sh"><h3>'+esc(s._nome)+' — '+esc(mi.titulo||"Missão")+'</h3>'+
@@ -1649,8 +1647,7 @@
     }).catch(function(){ $("#adminFila").innerHTML = '<p class="empty">Erro ao carregar.</p>'; });
   }
   function avaliar(id, ok){
-    return sbPatch("top_submissoes?id=eq."+id, {status: ok?"aprovada":"recusada", avaliado_por: ME.id})
-      .then(function(r){ return (Array.isArray(r) && r.length) ? r[0] : null; });
+    return admin("aprovar", {submissao_id:id, aprovar:ok}).then(function(res){ return (res && res.ok) ? res.row : null; });
   }
   function gerarConvite(){
     var tk = "c"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
@@ -1960,15 +1957,11 @@
   }
 
   function resgatar(it){
-    return sbPost('top_resgates', {item_id:it.dbId, item_titulo:it.t, membro_id:ME.id, custo:it.p}).then(function(res){
+    // o custo e o desbloqueio de avatar são resolvidos por trigger no servidor (seguro)
+    return sbPost('top_resgates', {item_id:it.dbId, membro_id:ME.id}).then(function(res){
       if(Array.isArray(res) && res.length){ return refreshMoedas().then(function(){
         notificar("oficiais", "🎁 Novo resgate", ME.nome+" resgatou: "+it.t, deviceId());
-        if(/Avatar Pr/i.test(it.t)){
-          return sbPatch('top_membros?id=eq.'+ME.id, {pode_avatar:true}).then(function(x){
-            ME = x[0]; toast('🖼️ Avatar próprio desbloqueado! Abra seu perfil pra enviar sua foto.');
-            return {ok:true};
-          });
-        }
+        if(ME.pode_avatar && /Avatar Pr/i.test(it.t)){ toast('🖼️ Avatar próprio desbloqueado! Abra seu perfil pra enviar sua foto.'); }
         return {ok:true};
       }); }
       return {ok:false, msg:'Saldo insuficiente'};
@@ -2316,7 +2309,7 @@
         if(ok && row.membro_id){ notificar(row.membro_id, '✅ Prova aprovada!', 'Você ganhou '+(row.moedas_creditadas||0)+' moedas na aliança!'); }
         paintAdmin();
       } else { el.disabled = false; toast('❌ Não foi possível.'); }
-    }).catch(function(){ el.disabled = false; toast('❌ Erro.'); });
+    }).catch(function(err){ el.disabled = false; onAdminErr(err); });
   });
 
   /* ---------------- wiring: registro / login / perfil / R0 ---------------- */
@@ -2369,12 +2362,11 @@
     var pf = card.querySelector("[data-f=print]").files[0];
     b.disabled = true;
     (pf ? subirArquivo("top-provas", pf, "perfil_"+id) : Promise.resolve(null)).then(function(printUrl){
-      var patch = {cargo:cargo, castelo:castelo, poder:poder, status:"ativo"};
-      if(cargo === "R4" || cargo === "R5") patch.is_oficial = true;
-      if(printUrl) patch.perfil_print_url = printUrl;
-      return sbPatch("top_membros?id=eq."+id, patch);
-    }).then(function(){ toast("✔ Jogador inserido na aliança!"); paintR0(); paintMembros(); })
-      .catch(function(){ b.disabled = false; toast("❌ Erro ao inserir."); });
+      return admin("aprovarR0", {membro_id:id, cargo:cargo, castelo:castelo, poder:poder, perfil_print_url:printUrl||null});
+    }).then(function(res){
+      if(res && res.ok){ toast("✔ Jogador inserido na aliança!"); paintR0(); paintMembros(); }
+      else { b.disabled = false; toast("❌ Erro ao inserir."); }
+    }).catch(function(err){ b.disabled = false; onAdminErr(err); });
   });
 
   /* ---------------- wiring: tradução ---------------- */
@@ -2423,9 +2415,22 @@
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-entregue]"); if(!b) return;
     b.disabled = true;
-    sbPatch("top_resgates?id=eq."+b.dataset.entregue, {status:"entregue"})
-      .then(function(){ toast("✅ Entregue!"); paintResgates(); })
-      .catch(function(){ b.disabled = false; toast("❌ Erro."); });
+    admin("entregar", {resgate_id:b.dataset.entregue})
+      .then(function(res){ if(res && res.ok){ toast("✅ Entregue!"); paintResgates(); } else { b.disabled=false; toast("❌ Erro."); } })
+      .catch(function(err){ b.disabled = false; onAdminErr(err); });
+  });
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest("#aprovarTodas"); if(!btn) return;
+    var ids = _provasPendentes.slice(); if(!ids.length) return;
+    btn.disabled = true;
+    admin("aprovar_lote", {ids:ids}).then(function(res){
+      if(res && res.ok){
+        toast("✔ "+((res.rows && res.rows.length)||0)+" provas aprovadas!");
+        (res.rows||[]).forEach(function(row){ if(row.membro_id) notificar(row.membro_id, "✅ Prova aprovada!", "Você ganhou "+(row.moedas_creditadas||0)+" moedas na aliança!"); });
+        paintAdmin();
+      } else { btn.disabled = false; toast("❌ Erro."); }
+    }).catch(function(err){ btn.disabled = false; onAdminErr(err); });
   });
 
   /* ---------------- boot ---------------- */
