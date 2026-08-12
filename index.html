@@ -890,6 +890,20 @@
   </div>
 </div>
 
+<!-- ============ LANÇAR PONTOS DO EVENTO (oficial) ============ -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal">
+    <h2 id="resultTitulo">Lançar pontos</h2>
+    <p class="sub">Coloque os pontos de quem participou (deixe vazio = não pontuou).</p>
+    <div class="search" style="margin-bottom:10px"><input id="resultBusca" type="search" placeholder="Buscar membro"><span>🔍</span></div>
+    <div id="resultLista" style="max-height:48vh;overflow-y:auto"></div>
+    <div class="mrow">
+      <button class="bcancel" id="resultFechar">Cancelar</button>
+      <button class="bsend" id="resultSalvar">Salvar pontos</button>
+    </div>
+  </div>
+</div>
+
 <style>
   /* ---- identidade / oficial ---- */
   .eurow{display:flex;align-items:center;gap:10px;margin-top:12px;background:rgba(255,255,255,.4);
@@ -1015,6 +1029,12 @@
   .gestrow{display:flex;align-items:center;gap:8px;background:#fff;border-radius:9px;padding:7px 10px;margin-bottom:6px}
   .gnome{flex:1;min-width:0;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
   .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
+  .resrow{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid rgba(0,0,0,.06)}
+  .resnome{flex:1;min-width:0;font-size:.9rem;font-weight:700;display:flex;flex-direction:column;overflow:hidden}
+  .resnome{white-space:nowrap;text-overflow:ellipsis}
+  .resacum{font-size:.68rem;font-weight:600;color:var(--ink-soft)}
+  .resin{flex:none;width:72px;border:2.5px solid var(--pill-dk);border-radius:9px;background:#fff;padding:7px;
+    font-family:inherit;font-weight:700;font-size:.86rem;color:var(--ink);outline:none;text-align:center}
   .r0banner{display:none;align-items:center;gap:8px;margin-bottom:12px;
     background:linear-gradient(180deg,var(--gold-lt),var(--gold));border:3px solid var(--gold-dk);
     border-radius:12px;padding:10px 12px;font-size:.82rem;color:var(--ink);font-weight:700;box-shadow:0 3px 0 var(--gold-dk)}
@@ -1254,16 +1274,65 @@
     return getMembro().then(function(m){ if(m){ ME = m; S.coins = m.moedas||0; paintCoins(); } });
   }
 
+  var _eventosCache = {};
   function paintEventos(){
     return sbGet("top_eventos?ativa=eq.true&select=*&order=ordem").then(function(rows){
       rows = rows || []; var host = $("#eventosLista"); if(!host) return;
+      _eventosCache = {}; rows.forEach(function(e){ _eventosCache[e.id] = e; });
       if(!rows.length){ host.innerHTML = '<div class="empty">Sem eventos ainda.</div>'; return; }
+      var ofi = ehOficial(ME);
       host.innerHTML = rows.map(function(ev){
         var tipo = (ev.tipo==="daily"||ev.tipo==="ally"||ev.tipo==="war") ? ev.tipo : "ally";
         return '<div class="ev '+tipo+'"><div class="when"><div class="day">'+esc(ev.dia||"")+'</div><div class="time">'+esc(ev.hora||"")+'</div></div>'+
-          '<div><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p></div></div>';
+          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+
+          (ofi ? '<button class="gadd" style="margin-top:8px" data-lancar="'+ev.id+'">🏆 Lançar pontos</button>' : '')+
+          '</div></div>';
       }).join("");
     }).catch(function(){});
+  }
+
+  /* ------- lançar pontos de evento (oficial) ------- */
+  var resultEventoId = null, resultDia = null;
+  function abrirResultado(ev){
+    if(!ev) return;
+    resultEventoId = ev.id;
+    resultDia = new Date().toISOString().slice(0,10);
+    $("#resultTitulo").textContent = "Pontos de hoje — " + ev.titulo;
+    var host = $("#resultLista"); host.innerHTML = '<p class="empty">Carregando…</p>';
+    $("#resultBusca").value = "";
+    Promise.all([
+      sbGet("top_membros?status=eq.ativo&select=id,nome,cargo,avatar,foto_url&order=nome"),
+      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,dia")
+    ]).then(function(res){
+      var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {};
+      resultados.forEach(function(r){
+        acum[r.membro_id] = (acum[r.membro_id]||0) + (r.pontos||0);
+        if(r.dia === resultDia) hoje[r.membro_id] = r.pontos;
+      });
+      host.innerHTML = membros.map(function(m){
+        var v = (hoje[m.id] != null) ? hoje[m.id] : "";
+        return '<div class="resrow" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
+          '<span class="mav" style="width:32px;height:32px">'+avatarSVG(m)+'</span>'+
+          '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts</span></span>'+
+          '<input class="resin" data-mid="'+m.id+'" type="number" inputmode="numeric" placeholder="hoje" value="'+v+'">'+
+        '</div>';
+      }).join("") || '<p class="empty">Nenhum membro ativo ainda.</p>';
+      $("#resultOverlay").classList.add("on");
+    }).catch(function(){ toast("❌ Erro ao carregar."); });
+  }
+  function salvarResultado(){
+    if(!resultEventoId) return;
+    var itens = [];
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
+      var v = inp.value.trim();
+      itens.push({membro_id: inp.dataset.mid, pontos: (v === "" ? null : (parseInt(v,10)||0))});
+    });
+    var btn = $("#resultSalvar"); btn.disabled = true;
+    admin("resultado", {evento_id:resultEventoId, dia:resultDia, itens:itens}).then(function(res){
+      btn.disabled = false;
+      if(res && res.ok){ toast("✅ Pontos do dia lançados! O ranking acumula."); $("#resultOverlay").classList.remove("on"); paintRanking(); paintMembros(); }
+      else toast("❌ Erro ao salvar.");
+    }).catch(function(err){ btn.disabled = false; onAdminErr(err); });
   }
 
   /* ------- gestão de conteúdo (oficial) ------- */
@@ -2473,6 +2542,18 @@
     if(add){ abrirEdit(add.dataset.add, null); return; }
     if(ed){ var m = (_gestCache[ed.dataset.edit]||{})[ed.dataset.id]; if(m) abrirEdit(ed.dataset.edit, m); return; }
     if(del){ excluirItem(del.dataset.del, del.dataset.id); return; }
+  });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-lancar]"); if(!b) return;
+    abrirResultado(_eventosCache[b.dataset.lancar]);
+  });
+  $("#resultFechar").addEventListener("click", function(){ $("#resultOverlay").classList.remove("on"); });
+  $("#resultSalvar").addEventListener("click", salvarResultado);
+  $("#resultBusca").addEventListener("input", function(e){
+    var q = e.target.value.trim().toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){
+      r.style.display = (!q || (r.dataset.name||"").indexOf(q) > -1) ? "" : "none";
+    });
   });
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-entregue]"); if(!b) return;
