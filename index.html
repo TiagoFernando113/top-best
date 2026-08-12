@@ -711,6 +711,9 @@
       <div class="stitle"><h2>Provas pendentes</h2><div class="rule"></div></div>
       <div id="adminFila"><p class="empty">Carregando…</p></div>
 
+      <div class="stitle"><h2>Resgates a entregar</h2><div class="rule"></div></div>
+      <div id="adminResgates"><p class="empty">Carregando…</p></div>
+
       <div class="stitle"><h2>⚙️ Gerenciar conteúdo</h2><div class="rule"></div></div>
       <div class="gestbloco">
         <div class="gesthd">🎯 Missões <button class="gadd" data-add="missao">+ Nova</button></div>
@@ -1339,6 +1342,19 @@
     gestaoLista("top_loja?select=*&order=ordem", "gestLoja", "loja");
     gestaoLista("top_eventos?select=*&order=ordem", "gestEventos", "evento");
   }
+  function paintResgates(){
+    if(!ME || !ME.is_oficial) return;
+    sbGet("top_resgates?status=eq.pendente&select=id,item_titulo,custo,criado_em,top_membros(nome)&order=criado_em").then(function(rows){
+      rows = rows || []; var host = $("#adminResgates"); if(!host) return;
+      if(!rows.length){ host.innerHTML = '<div class="empty"><div>📦</div>Nenhum resgate pra entregar.</div>'; return; }
+      host.innerHTML = rows.map(function(r){
+        var nome = (r.top_membros && r.top_membros.nome) || "Membro";
+        return '<div class="subm"><div class="sh"><h3>'+esc(nome)+' — '+esc(r.item_titulo||"Prêmio")+'</h3>'+
+          '<span class="coins"><svg><use href="#i-coin"/></svg>'+fmt(r.custo||0)+'</span></div>'+
+          '<div class="acts"><button class="bok" data-entregue="'+r.id+'">✅ Entregue</button></div></div>';
+      }).join("");
+    }).catch(function(){});
+  }
 
   /* ------- notificações push ------- */
   var VAPID_PUB = "BCpTVejUow9jkWIMtTEbzcdFKNR-7ryk7OHIsNefFjYnMzszlkf2kGCrPlod_kOBR-AWBFRXC4bdhh53WxMgJjc";
@@ -1834,7 +1850,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function(b){
       b.classList.toggle('on', b.dataset.go === name);
     });
-    if(name === 'admin'){ paintAdmin(); paintR0(); paintAdminGestao(); }
+    if(name === 'admin'){ paintAdmin(); paintR0(); paintResgates(); paintAdminGestao(); }
     if(name === 'chat') chatCarregar();
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
@@ -1937,6 +1953,7 @@
   function resgatar(it){
     return sbPost('top_resgates', {item_id:it.dbId, item_titulo:it.t, membro_id:ME.id, custo:it.p}).then(function(res){
       if(Array.isArray(res) && res.length){ return refreshMoedas().then(function(){
+        notificar("oficiais", "🎁 Novo resgate", ME.nome+" resgatou: "+it.t, deviceId());
         if(/Avatar Pr/i.test(it.t)){
           return sbPatch('top_membros?id=eq.'+ME.id, {pode_avatar:true}).then(function(x){
             ME = x[0]; toast('🖼️ Avatar próprio desbloqueado! Abra seu perfil pra enviar sua foto.');
@@ -2069,7 +2086,8 @@
     var path = ME.id + '/' + Date.now() + '_' + m.dbId + '.' + ext;
     return sbUpload(path, file).then(function(){
       var url = SB_URL + '/storage/v1/object/public/top-provas/' + path;
-      return sbPost('top_submissoes', {missao_id:m.dbId, membro_id:ME.id, prova_url:url, nota:nota||null});
+      return sbPost('top_submissoes', {missao_id:m.dbId, membro_id:ME.id, prova_url:url, nota:nota||null})
+        .then(function(res){ if(!Array.isArray(res) || !res.length) throw {dup:true}; return res; });
     });
   }
 
@@ -2085,7 +2103,8 @@
       S.m[mid] = {s:'pendente', at:Date.now()};
       save(); paintMissions(); paintCoins();
       closeProof(); toast('📤 Prova enviada! Um oficial vai conferir.');
-    }).catch(function(){ toast('❌ Falha ao enviar o print. Tente de novo.'); })
+      notificar('oficiais', '📸 Nova prova', ME.nome+' enviou prova de: '+m.t, deviceId());
+    }).catch(function(err){ toast(err && err.dup ? '⚠️ Você já enviou/concluiu essa missão.' : '❌ Falha ao enviar o print. Tente de novo.'); })
       .then(function(){ btn.disabled = false; });
   });
 
@@ -2300,7 +2319,7 @@
     if(senha.length < 4){ regErro("Senha muito curta (mínimo 4)."); return; }
     var btn = this; btn.disabled = true; $("#regMsg").style.display = "none";
     registrar(nome, senha, regAvatarSel).then(function(res){
-      if(res.ok){ entrar(); if(res.novo) mostrarR0(); }
+      if(res.ok){ entrar(); if(res.novo){ mostrarR0(); notificar('oficiais', '🙋 Novo pedido de entrada', nome+' quer entrar na aliança', deviceId()); } }
       else { regErro(res.msg); btn.disabled = false; }
     }).catch(function(){ regErro("Erro de conexão. Tente de novo."); btn.disabled = false; });
   });
@@ -2392,6 +2411,13 @@
     if(ed){ var m = (_gestCache[ed.dataset.edit]||{})[ed.dataset.id]; if(m) abrirEdit(ed.dataset.edit, m); return; }
     if(del){ excluirItem(del.dataset.del, del.dataset.id); return; }
   });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-entregue]"); if(!b) return;
+    b.disabled = true;
+    sbPatch("top_resgates?id=eq."+b.dataset.entregue, {status:"entregue"})
+      .then(function(){ toast("✅ Entregue!"); paintResgates(); })
+      .catch(function(){ b.disabled = false; toast("❌ Erro."); });
+  });
 
   /* ---------------- boot ---------------- */
   paintCoins();
@@ -2413,7 +2439,7 @@
 
   setInterval(function(){ if(cur === 'missoes') paintMissions(); }, 60000);
   setInterval(function(){ if(cur === 'chat' && ME) chatCarregar(); }, 4000);
-  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial){ paintAdmin(); paintR0(); } }, 8000);
+  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial){ paintAdmin(); paintR0(); paintResgates(); } }, 8000);
   setInterval(function(){ if(ME){ heartbeat(); if(cur === 'membros') paintMembros(); } }, 45000);
 })();
 </script>
