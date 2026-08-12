@@ -1,6 +1,6 @@
 // Service worker do Portal [TOP] Best — só para instalabilidade/PWA.
 // Network-first (o portal precisa da internet pro Supabase); cache é fallback do shell.
-const CACHE = "top-portal-v2";
+const CACHE = "top-portal-v3";
 const SHELL = ["./", "index.html", "alianca-manifest.json", "alianca-icon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -35,7 +35,7 @@ self.addEventListener("notificationclick", (e) => {
   const url = (e.notification.data && e.notification.data.url) || "./";
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      for (const c of list) { if (c.url.indexOf("alianca") > -1 && "focus" in c) return c.focus(); }
+      for (const c of list) { if (c.url.indexOf("top-best") > -1 && "focus" in c) return c.focus(); }
       return clients.openWindow ? clients.openWindow(url) : null;
     })
   );
@@ -43,8 +43,9 @@ self.addEventListener("notificationclick", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  // sempre revalida com o servidor (não serve HTML velho do cache do navegador)
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then((r) => {
         if (r && r.ok && e.request.url.indexOf("supabase.co") === -1) {
           const copy = r.clone();
