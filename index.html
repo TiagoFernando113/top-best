@@ -784,6 +784,7 @@
     <h2 id="regTitle">Criar seu acesso</h2>
     <p class="sub">Bem-vindo à <b>[TOP] Best</b>! Escolha seu avatar e crie sua senha.</p>
     <input class="reginput" id="regNome" type="text" placeholder="Seu nome no jogo" maxlength="40" autocomplete="off">
+    <input class="reginput" id="regPlayerId" type="text" inputmode="numeric" placeholder="ID do jogo (opcional)" autocomplete="off">
     <input class="reginput" id="regSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60">
     <p class="rlab" style="margin-top:12px">Escolha seu avatar</p>
     <div class="avgrid" id="regAvatares"></div>
@@ -822,6 +823,9 @@
     <div id="perfilFotoWrap" style="display:none;margin-top:12px">
       <label class="drop" style="padding:14px 12px"><div style="font-size:1.6rem">📷</div><span>Enviar minha própria foto</span><input type="file" accept="image/*" id="perfilFoto"></label>
     </div>
+    <p class="rlab" style="margin-top:12px">ID do jogo</p>
+    <input class="reginput" id="perfilPlayerId" type="text" inputmode="numeric" placeholder="Seu ID no Kingshot" style="margin-top:0" autocomplete="off">
+    <button class="oficialbtn" id="perfilConferir" style="margin:8px auto 0;display:block;margin-left:auto">🔎 Conferir meu perfil no jogo</button>
     <p class="rlab" style="margin-top:12px">Trocar senha (opcional)</p>
     <input class="reginput" id="perfilSenha" type="password" placeholder="Nova senha — deixe vazio pra manter" style="margin-top:0" autocomplete="new-password">
     <button class="bigbtn" id="notifBtn" style="margin-top:12px">🔔 Ativar notificações</button>
@@ -1135,7 +1139,8 @@
       if(!Array.isArray(rows) || !rows.length) return {ok:false, msg:"Este convite já foi usado. Peça outro a um oficial."};
       return hashSenha(nome, senha).then(function(hash){
         // novo membro entra como R0 pendente (defaults do servidor); só colunas seguras
-        return sbPost("top_membros", {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
+        var pid = ($("#regPlayerId") && $("#regPlayerId").value.trim()) || null;
+        return sbPost("top_membros", {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar, player_id:pid})
           .then(function(x){ if(!Array.isArray(x)||!x.length) throw {reg:true}; ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
       });
     });
@@ -1388,6 +1393,12 @@
     if(err && err.codigo){ toast("🔑 Confirme o código de oficial."); pedirCodigoOficial(); }
     else toast("❌ Não foi possível executar a ação.");
   }
+  function conferirPerfil(pid){
+    if(!pid){ toast("Sem ID cadastrado."); return; }
+    try{ if(navigator.clipboard) navigator.clipboard.writeText(String(pid)); }catch(e){}
+    toast("ID "+pid+" copiado — cole no site pra ver o perfil.");
+    try{ window.open("https://ks-giftcode.centurygame.com/", "_blank"); }catch(e){}
+  }
 
   /* ------- Realtime (o servidor empurra as mudanças = interação instantânea) ------- */
   var _rt = null, chatUnread = 0;
@@ -1462,7 +1473,7 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?select=id,nome,cargo,pontos,foto_url,avatar,visto_em,status,is_oficial&order=pontos.desc&limit=300").then(function(rows){
+    return sbGet("top_membros?select=id,nome,cargo,pontos,foto_url,avatar,visto_em,status,is_oficial,player_id&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
@@ -1498,7 +1509,8 @@
     promoAlvo = m;
     $("#promoAvatar").innerHTML = avatarSVG(m);
     $("#promoNome").textContent = m.nome;
-    $("#promoInfo").textContent = "🎯 "+fmt(m.pontos||0)+" pts · "+(m.status==="pendente"?"R0 (novo)":m.cargo);
+    $("#promoInfo").innerHTML = "🎯 "+fmt(m.pontos||0)+" pts · "+(m.status==="pendente"?"R0 (novo)":m.cargo)+
+      (m.player_id ? ' · <a href="#" class="trorig" data-conferir="'+esc(m.player_id)+'">🔎 conferir ID '+esc(m.player_id)+'</a>' : ' · sem ID');
     var maxRank = (ME.cargo === "R5") ? 4 : 3;   // R4 promove até R3; R5 até R4
     var html = "";
     for(var i=1;i<=maxRank;i++){
@@ -1707,12 +1719,13 @@
   }
   function paintR0(){
     if(!ME || !ME.is_oficial) return;
-    sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
+    sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar,player_id&order=visto_em.desc").then(function(rows){
       rows = rows||[]; var host = $("#adminR0"); if(!host) return;
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>👌</div>Nenhuma solicitação pendente.</div>'; return; }
       host.innerHTML = rows.map(function(m){
         return '<div class="subm" data-r0="'+m.id+'">'+
           '<div class="sh"><span class="r0av">'+avatarSVG(m)+'</span><h3>'+esc(m.nome)+'</h3></div>'+
+          (m.player_id ? '<p class="note">🔎 <a href="#" class="trorig" data-conferir="'+esc(m.player_id)+'">Conferir perfil (ID '+esc(m.player_id)+')</a></p>' : '<p class="note">Sem ID informado</p>')+
           '<label class="rlab" style="margin-top:10px">Entrar como</label>'+
           '<select class="rin" data-f="cargo"><option>R4</option><option>R3</option><option selected>R2</option><option>R1</option></select>'+
           '<div class="acts"><button class="bok" data-r0ok="'+m.id+'">✔ Aprovar entrada</button></div>'+
@@ -1734,6 +1747,7 @@
     $("#perfilSenha").value = "";
     renderAvatarGrid("#perfilAvatares", perfilAvatarSel, function(id){ perfilAvatarSel = id; $("#perfilAtual").innerHTML = avMarkup(id); });
     $("#perfilIdioma").value = meuIdioma();
+    $("#perfilPlayerId").value = ME.player_id || "";
     $("#perfilFotoWrap").style.display = ME.pode_avatar ? "block" : "none";
     atualizarBotaoNotif();
     $("#perfilOverlay").classList.add("on");
@@ -1751,7 +1765,7 @@
     localStorage.setItem("top.lang", $("#perfilIdioma").value);
     lastChatSig = "";
     iniciarTraducaoUI();
-    var patch = {avatar: perfilAvatarSel};
+    var patch = {avatar: perfilAvatarSel, player_id: ($("#perfilPlayerId").value.trim() || null)};
     var upFoto = perfilFotoFile ? subirArquivo("top-avatars", perfilFotoFile, "av_"+ME.id) : Promise.resolve(null);
     var upSenha = novaS ? hashSenha(ME.nome, novaS) : Promise.resolve(null);
     return Promise.all([upFoto, upSenha]).then(function(res){
@@ -2398,6 +2412,11 @@
   $("#perfilFechar").addEventListener("click", function(){ $("#perfilOverlay").classList.remove("on"); });
   $("#perfilSalvar").addEventListener("click", salvarPerfil);
   $("#perfilFoto").addEventListener("change", function(e){ perfilFotoFile = (e.target.files && e.target.files[0]) || null; });
+  $("#perfilConferir").addEventListener("click", function(){ conferirPerfil($("#perfilPlayerId").value.trim()); });
+  document.addEventListener("click", function(e){
+    var a = e.target.closest("[data-conferir]"); if(!a) return; e.preventDefault();
+    conferirPerfil(a.dataset.conferir);
+  });
 
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-r0ok]"); if(!b) return;
