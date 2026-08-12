@@ -666,9 +666,9 @@
   <!-- ============ RANKING ============ -->
   <div class="screen" id="s-ranking">
     <div class="panel">
-      <div class="stitle"><h2>Ranking de Poder</h2><div class="rule"></div></div>
+      <div class="stitle"><h2>Ranking de Pontos</h2><div class="rule"></div></div>
       <div id="rankTop"></div>
-      <div class="hint">📸 Ranking montado a partir do print da tela de Membros do jogo.</div>
+      <div class="hint">🎯 Pontos são ganhos cumprindo missões — quanto mais missões, mais alto no ranking.</div>
     </div>
   </div>
 
@@ -1462,7 +1462,7 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?select=id,nome,cargo,poder,castelo,foto_url,avatar,visto_em,status,is_oficial&order=poder.desc.nullslast&limit=300").then(function(rows){
+    return sbGet("top_membros?select=id,nome,cargo,pontos,foto_url,avatar,visto_em,status,is_oficial&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
@@ -1486,7 +1486,7 @@
           return '<button class="'+cls+'" data-mid="'+m.id+'" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
             '<span class="mav">'+avatarSVG(m)+'</span>'+
             '<span class="info"><span class="nm">'+esc(m.nome)+'</span>'+
-              '<span class="row">✊ '+fmtPoder(m.poder)+' · 🏰 '+(m.castelo||"?")+'</span>'+
+              '<span class="row">🎯 '+fmt(m.pontos||0)+' pts</span>'+
               '<span class="row"><span class="dot'+(on?" on":"")+'"></span>'+(on?"On-line":(tempoDesde(m.visto_em)||"nunca entrou"))+'</span>'+
             '</span></button>';
         }).join("") + '</div>';
@@ -1498,7 +1498,7 @@
     promoAlvo = m;
     $("#promoAvatar").innerHTML = avatarSVG(m);
     $("#promoNome").textContent = m.nome;
-    $("#promoInfo").textContent = "✊ "+fmtPoder(m.poder)+" · 🏰 Nv. "+(m.castelo||"?")+" · "+(m.status==="pendente"?"R0 (novo)":m.cargo);
+    $("#promoInfo").textContent = "🎯 "+fmt(m.pontos||0)+" pts · "+(m.status==="pendente"?"R0 (novo)":m.cargo);
     var maxRank = (ME.cargo === "R5") ? 4 : 3;   // R4 promove até R3; R5 até R4
     var html = "";
     for(var i=1;i<=maxRank;i++){
@@ -1707,19 +1707,15 @@
   }
   function paintR0(){
     if(!ME || !ME.is_oficial) return;
-    sbGet("top_membros?status=eq.pendente&select=id,nome,castelo,foto_url,avatar&order=visto_em.desc").then(function(rows){
+    sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
       rows = rows||[]; var host = $("#adminR0"); if(!host) return;
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>👌</div>Nenhuma solicitação pendente.</div>'; return; }
       host.innerHTML = rows.map(function(m){
         return '<div class="subm" data-r0="'+m.id+'">'+
           '<div class="sh"><span class="r0av">'+avatarSVG(m)+'</span><h3>'+esc(m.nome)+'</h3></div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'+
-            '<div><label class="rlab">Cargo</label><select class="rin" data-f="cargo"><option>R4</option><option selected>R3</option><option>R2</option><option>R1</option></select></div>'+
-            '<div><label class="rlab">Castelo (Nv.)</label><input class="rin" data-f="castelo" type="number" inputmode="numeric" placeholder="26" value="'+(m.castelo||"")+'"></div>'+
-          '</div>'+
-          '<label class="rlab" style="margin-top:8px">Poder (ex.: 16,7M)</label><input class="rin" data-f="poder" type="text" placeholder="16,7M">'+
-          '<label class="rlab" style="margin-top:8px">Print do perfil (opcional)</label><input class="rin" data-f="print" type="file" accept="image/*">'+
-          '<div class="acts"><button class="bok" data-r0ok="'+m.id+'">✔ Aprovar e inserir</button></div>'+
+          '<label class="rlab" style="margin-top:10px">Entrar como</label>'+
+          '<select class="rin" data-f="cargo"><option>R4</option><option>R3</option><option selected>R2</option><option>R1</option></select>'+
+          '<div class="acts"><button class="bok" data-r0ok="'+m.id+'">✔ Aprovar entrada</button></div>'+
         '</div>';
       }).join("");
     }).catch(function(){});
@@ -1729,7 +1725,7 @@
   function abrirPerfil(){
     if(!ME) return;
     $("#perfilAtual").innerHTML = avatarSVG(ME);
-    $("#perfilInfo").innerHTML = "<b>"+esc(ME.nome)+"</b> · "+(ME.is_oficial?"Oficial · ":"")+(ME.cargo||"R1")+" · 🪙 "+fmt(ME.moedas||0);
+    $("#perfilInfo").innerHTML = "<b>"+esc(ME.nome)+"</b> · "+(ME.is_oficial?"Oficial · ":"")+(ME.cargo||"R1")+" · 🎯 "+fmt(ME.pontos||0)+" pts · 🪙 "+fmt(ME.moedas||0);
     sbGet("top_submissoes?membro_id=eq."+ME.id+"&status=eq.aprovada&select=id").then(function(r){
       var el = $("#perfilInfo"); if(el) el.innerHTML += " · 🏅 "+((r&&r.length)||0)+" missões concluídas";
     }).catch(function(){});
@@ -2082,16 +2078,16 @@
 
   /* ---------------- ranking ---------------- */
   function paintRanking(){
-    return sbGet("top_membros?status=eq.ativo&poder=gt.0&select=nome,poder,foto_url,avatar&order=poder.desc&limit=15").then(function(rows){
+    return sbGet("top_membros?pontos=gt.0&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=15").then(function(rows){
       rows = rows || [];
       var host = $('#rankTop'); if(!host) return;
-      if(!rows.length){ host.innerHTML = '<div class="empty">O ranking aparece quando os oficiais preencherem o poder dos membros.</div>'; return; }
+      if(!rows.length){ host.innerHTML = '<div class="empty">O ranking aparece quando os membros começarem a concluir missões.</div>'; return; }
       host.innerHTML = rows.map(function(m,i){
         return '<div style="display:flex;align-items:center;gap:10px;background:var(--panel-3);border-radius:11px;padding:8px 12px;margin-bottom:8px">'+
           '<span style="width:30px;text-align:center;font-size:'+(i<3?'1.2rem':'.95rem')+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º')+'</span>'+
           '<span class="mav" style="width:34px;height:34px">'+avatarSVG(m)+'</span>'+
           '<span style="flex:1;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.nome)+'</span>'+
-          '<span style="font-variant-numeric:tabular-nums;font-size:.92rem">✊ '+fmtPoder(m.poder)+'</span>'+
+          '<span style="font-variant-numeric:tabular-nums;font-size:.92rem">🎯 '+fmt(m.pontos||0)+'</span>'+
         '</div>';
       }).join('');
     }).catch(function(){});
@@ -2407,13 +2403,8 @@
     var b = e.target.closest("[data-r0ok]"); if(!b) return;
     var card = b.closest("[data-r0]"), id = b.dataset.r0ok;
     var cargo = card.querySelector("[data-f=cargo]").value;
-    var castelo = parseInt(card.querySelector("[data-f=castelo]").value, 10) || 0;
-    var poder = parsePoder(card.querySelector("[data-f=poder]").value);
-    var pf = card.querySelector("[data-f=print]").files[0];
     b.disabled = true;
-    (pf ? subirArquivo("top-provas", pf, "perfil_"+id) : Promise.resolve(null)).then(function(printUrl){
-      return admin("aprovarR0", {membro_id:id, cargo:cargo, castelo:castelo, poder:poder, perfil_print_url:printUrl||null});
-    }).then(function(res){
+    admin("aprovarR0", {membro_id:id, cargo:cargo}).then(function(res){
       if(res && res.ok){ toast("✔ Jogador inserido na aliança!"); paintR0(); paintMembros(); }
       else { b.disabled = false; toast("❌ Erro ao inserir."); }
     }).catch(function(err){ b.disabled = false; onAdminErr(err); });
