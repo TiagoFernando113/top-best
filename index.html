@@ -1356,9 +1356,11 @@
     return arr;
   }
   function ativarNotificacoes(){
-    if(!("serviceWorker" in navigator) || !("PushManager" in window)){ toast("Seu navegador não suporta notificações."); return; }
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){ toast("Seu navegador não suporta notificações."); return; }
+    if(Notification.permission === "denied"){ toast("🔒 Você bloqueou antes. Toque no cadeado na barra do site → Notificações → Permitir, aí tente de novo.", 5200); return; }
     Notification.requestPermission().then(function(perm){
-      if(perm !== "granted"){ toast("Notificações não permitidas."); return; }
+      if(perm === "denied"){ toast("🔒 Bloqueado. Cadeado na barra → Notificações → Permitir.", 5200); return; }
+      if(perm !== "granted"){ toast("Toque em \"Permitir\" quando o navegador perguntar."); return; }
       navigator.serviceWorker.ready.then(function(reg){
         return reg.pushManager.getSubscription().then(function(sub){
           return sub || reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToUint8(VAPID_PUB)});
@@ -1866,11 +1868,11 @@
   /* ---------------- utils ---------------- */
   var $ = function(s,r){ return (r||document).querySelector(s); };
   var toastEl = $('#toast'), toastTimer;
-  function toast(msg){
+  function toast(msg, dur){
     toastEl.textContent = msg;
     toastEl.classList.add('on');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, 2600);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, dur || 2600);
   }
   function fmt(n){ return n.toLocaleString('pt-BR'); }
   function avatarFor(name){
