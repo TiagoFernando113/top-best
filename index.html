@@ -1231,8 +1231,10 @@
         var tipo = (ev.tipo==="daily"||ev.tipo==="ally"||ev.tipo==="war") ? ev.tipo : "ally";
         var periodo = (ev.categoria==="temporario" && (ev.inicio||ev.fim)) ? '<p style="font-size:.74rem;color:var(--ink-soft);font-weight:700">🗓️ '+esc(ev.inicio||"")+(ev.fim?" → "+esc(ev.fim):"")+'</p>' : '';
         var premio = [];
-        if(ev.moedas_fixas) premio.push("🪙 "+fmt(ev.moedas_fixas)+" por participar");
-        if(ev.taxa) premio.push("+1 🪙 a cada "+fmt(ev.taxa)+" pts");
+        if(ev.premio_1) premio.push("🥇 "+fmt(ev.premio_1));
+        if(ev.premio_2) premio.push("🥈 "+fmt(ev.premio_2));
+        if(ev.premio_3) premio.push("🥉 "+fmt(ev.premio_3));
+        if(ev.moedas_fixas) premio.push("🪙 "+fmt(ev.moedas_fixas)+" participar");
         var premioHtml = premio.length ? '<p style="font-size:.74rem;color:var(--gold-dk);font-weight:800;margin-top:2px">'+premio.join(" · ")+'</p>' : '';
         return '<button class="ev '+tipo+'" data-evento="'+ev.id+'" style="width:100%;text-align:left;font-family:inherit;cursor:pointer">'+
           '<div class="when"><div class="day">'+esc(ev.dia||"")+'</div><div class="time">'+esc(ev.hora||"")+'</div></div>'+
@@ -1266,7 +1268,7 @@
   }
   function finalizarEvento(ev){
     if(!ev) return;
-    if(!confirm('Finalizar "'+ev.titulo+'"?\n\nCada membro recebe as moedas conforme a pontuação acumulada, e os pontos deste evento são zerados para o próximo round.')) return;
+    if(!confirm('Finalizar "'+ev.titulo+'"?\n\nCada membro recebe as moedas conforme a posição no ranking do evento (1º/2º/3º + participação), e os pontos deste evento são zerados para o próximo round.')) return;
     var fb = $("#eventoFinalizar"); fb.disabled = true;
     admin("finalizar", {evento_id: ev.id}).then(function(res){
       fb.disabled = false;
@@ -1377,7 +1379,7 @@
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"moedas_fixas",l:"🪙 Moedas por participar (fixo)",t:"number"},{k:"taxa",l:"🪙 Pontos por 1 moeda (0 = sem conversão)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
