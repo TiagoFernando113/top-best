@@ -975,11 +975,342 @@
 </div>
 
 <!-- ============ DETALHE / TUTORIAL DO EVENTO ============ -->
+<style>
+  /* ---- tutorial visual dos eventos ---- */
+  .tut{margin-top:12px}
+  .tut-stage{position:relative;border-radius:13px;overflow:hidden;border:3px solid var(--pill-dk);
+    background:var(--panel-3);aspect-ratio:16/9;display:grid;place-items:center}
+  .tut-stage svg,.tut-stage img{width:100%;height:100%;display:block;object-fit:cover}
+  .tut-stage .semimg{color:var(--ink-soft);font-size:.82rem;font-weight:700;padding:20px;text-align:center}
+  .tut-step{position:absolute;top:8px;left:8px;background:rgba(60,42,22,.82);color:#fff;
+    border-radius:8px;padding:2px 9px;font-size:.72rem;font-weight:800;font-variant-numeric:tabular-nums;z-index:2}
+  .tut-real{position:absolute;top:8px;right:8px;background:var(--green);color:#fff;
+    border-radius:8px;padding:2px 8px;font-size:.66rem;font-weight:800;z-index:2}
+  .tut-body{margin-top:10px}
+  .tut-body h3{font-size:1.02rem;margin-bottom:4px}
+  .tut-body p{font-size:.88rem;font-weight:600;color:var(--ink-soft);line-height:1.5}
+  .tut-nav{display:flex;align-items:center;gap:10px;margin-top:11px}
+  .tut-nav button{cursor:pointer;font-family:inherit;font-weight:800;font-size:.86rem;
+    background:linear-gradient(180deg,var(--btn-1),var(--btn-2));border:2.5px solid var(--btn-edge);
+    border-radius:10px;padding:8px 15px;color:var(--ink);box-shadow:0 3px 0 var(--btn-edge);
+    transition:transform .1s,box-shadow .1s}
+  .tut-nav button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
+  .tut-nav button[disabled]{opacity:.45}
+  .tut-dots{flex:1;display:flex;gap:6px;justify-content:center}
+  .tut-dots i{width:9px;height:9px;border-radius:50%;background:var(--pill-dk);opacity:.45;
+    transition:opacity .2s,transform .2s;cursor:pointer}
+  .tut-dots i.on{opacity:1;background:var(--gold-dk);transform:scale(1.28)}
+  .tut-upload{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;
+    cursor:pointer;font-family:inherit;font-weight:800;font-size:.82rem;background:rgba(255,255,255,.45);
+    border:2px dashed var(--pill-dk);border-radius:10px;padding:9px;color:var(--ink-soft)}
+  .tut-dicas{margin-top:12px;background:var(--panel-3);border-radius:11px;padding:11px 13px;
+    font-size:.85rem;font-weight:600;color:var(--ink);line-height:1.5}
+  .tut-dicas summary{cursor:pointer;font-weight:800;font-size:.88rem}
+  .tut-dicas #eventoTutorial{white-space:pre-wrap;margin-top:8px}
+</style>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="dg-urso-faixas" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="24" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="15" font-weight="bold" fill="#4B3722">Quanto mais DANO, melhor o prêmio</text>
+    <rect x="24" y="46" width="52" height="30" rx="5" fill="#C9B99A" stroke="#8A7458" stroke-width="2"/>
+    <rect x="82" y="46" width="52" height="30" rx="5" fill="#9FC08A" stroke="#5C8143" stroke-width="2"/>
+    <rect x="140" y="46" width="52" height="30" rx="5" fill="#7CC3BE" stroke="#4C918C" stroke-width="2"/>
+    <rect x="198" y="46" width="52" height="30" rx="5" fill="#F8D27A" stroke="#C98F22" stroke-width="2"/>
+    <rect x="256" y="46" width="40" height="30" rx="5" fill="#E8705A" stroke="#94301E" stroke-width="2"/>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#4B3722" text-anchor="middle">
+      <text x="50" y="66">F1</text><text x="108" y="66">F2</text><text x="166" y="66">F3</text>
+      <text x="224" y="66">F4</text><text x="276" y="66">F5</text></g>
+    <path d="M50 96l6 8h-4v10h-4v-10h-4z" fill="#8A7458"/>
+    <path d="M108 92l7 9h-5v13h-4v-13h-5z" fill="#5C8143"/>
+    <path d="M166 88l8 10h-6v16h-4V98h-6z" fill="#4C918C"/>
+    <path d="M224 82l9 11h-7v19h-4V93h-7z" fill="#C98F22"/>
+    <path d="M276 76l10 12h-8v22h-4V88h-8z" fill="#94301E"/>
+    <path d="M24 128h266" stroke="#8A7458" stroke-width="2.5"/>
+    <path d="M296 128l-9-5v10z" fill="#8A7458"/>
+    <text x="24" y="148" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A6244">pouco dano</text>
+    <text x="296" y="148" text-anchor="end" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#94301E">muito dano</text>
+    <text x="160" y="170" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4B3722">Cada faixa = baú melhor</text>
+  </symbol>
+
+  <symbol id="dg-urso-marcha" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="16" y="22" width="132" height="140" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <rect x="172" y="22" width="132" height="140" rx="11" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <circle cx="82" cy="46" r="13" fill="#5C8143"/>
+    <path d="M75 46l5 5 10-10" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="238" cy="46" r="13" fill="#94301E"/>
+    <path d="M232 40l12 12M244 40l-12 12" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+    <text x="82" y="80" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#3E6B2E">ATAQUE</text>
+    <text x="238" y="80" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#7A2415">DEFESA</text>
+    <g transform="translate(44,94)"><path d="M22 2l3 3-11 11-3-3z" fill="#B8C4D2" stroke="#4A5567" stroke-width="1.4"/><path d="M6 22l4-1 1-4-3-3-4 1-1 4z" fill="#C98F22" stroke="#7A5410" stroke-width="1.4"/></g>
+    <g transform="translate(84,94)"><path d="M22 2l3 3-11 11-3-3z" fill="#B8C4D2" stroke="#4A5567" stroke-width="1.4"/><path d="M6 22l4-1 1-4-3-3-4 1-1 4z" fill="#C98F22" stroke="#7A5410" stroke-width="1.4"/></g>
+    <g transform="translate(202,94)"><path d="M13 1l11 4v9c0 7-5 11-11 13C7 25 2 21 2 14V5z" fill="#3E7EC4" stroke="#22456F" stroke-width="1.6"/></g>
+    <g transform="translate(244,94)"><path d="M13 1l11 4v9c0 7-5 11-11 13C7 25 2 21 2 14V5z" fill="#3E7EC4" stroke="#22456F" stroke-width="1.6"/></g>
+    <text x="82" y="146" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#3E6B2E">dano alto</text>
+    <text x="238" y="146" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A2415">dano baixo</text>
+  </symbol>
+
+  <symbol id="dg-urso-pico" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="22" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Bata JUNTO com a aliança</text>
+    <path d="M28 132h268" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="38" y="112" width="24" height="20" rx="3" fill="#C9B99A"/>
+    <rect x="72" y="104" width="24" height="28" rx="3" fill="#C9B99A"/>
+    <rect x="106" y="118" width="24" height="14" rx="3" fill="#C9B99A"/>
+    <rect x="140" y="62" width="24" height="70" rx="3" fill="#F0B63F" stroke="#C98F22" stroke-width="2"/>
+    <rect x="174" y="48" width="24" height="84" rx="3" fill="#F0B63F" stroke="#C98F22" stroke-width="2"/>
+    <rect x="208" y="70" width="24" height="62" rx="3" fill="#F0B63F" stroke="#C98F22" stroke-width="2"/>
+    <rect x="242" y="114" width="24" height="18" rx="3" fill="#C9B99A"/>
+    <path d="M140 40h92" stroke="#C98F22" stroke-width="2.5" stroke-dasharray="5 4"/>
+    <text x="186" y="34" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#8E6510">horário de pico</text>
+    <text x="28" y="152" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A6244">manhã</text>
+    <text x="296" y="152" text-anchor="end" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A6244">madrugada</text>
+    <text x="160" y="170" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4B3722">Dano somado sobe a faixa de TODOS</text>
+  </symbol>
+
+  <symbol id="dg-urso-energia" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="24" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Divida a energia na semana</text>
+    <rect x="26" y="44" width="268" height="26" rx="13" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="29" y="47" width="128" height="20" rx="10" fill="#6BC24A"/>
+    <g stroke="#8A7458" stroke-width="2"><path d="M93 44v26M160 44v26M227 44v26"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#4B3722" text-anchor="middle">
+      <text x="60" y="88">rodada 1</text><text x="127" y="88">rodada 2</text>
+      <text x="194" y="88">rodada 3</text><text x="260" y="88">rodada 4</text></g>
+    <rect x="46" y="104" width="228" height="36" rx="9" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <path d="M70 122l8-10v7h9l-8 10v-7z" fill="#C98F22"/>
+    <text x="176" y="127" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#7A5410">Ative o BUFF antes de bater</text>
+    <text x="160" y="164" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A6244">Gastar tudo de uma vez = menos prêmio</text>
+  </symbol>
+
+  <symbol id="dg-tec-ciclo" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">É de graça e leva 10 segundos</text>
+    <g fill="none" stroke="#4C918C" stroke-width="3" stroke-linecap="round">
+      <path d="M106 66a58 58 0 01108 0"/><path d="M212 104a58 58 0 01-46 40"/><path d="M154 144a58 58 0 01-46-40"/></g>
+    <path d="M214 68l-4-12 12 5z" fill="#4C918C"/>
+    <path d="M164 146l-12-4 6-10z" fill="#4C918C"/>
+    <path d="M106 100l11 4-8 8z" fill="#4C918C"/>
+    <circle cx="76" cy="76" r="27" fill="#7CC3BE" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="244" cy="76" r="27" fill="#7CC3BE" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="160" cy="150" r="27" fill="#F8D27A" stroke="#C98F22" stroke-width="3"/>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">
+      <text x="76" y="74">VOCÊ</text><text x="76" y="86">DOA</text>
+      <text x="244" y="74">TECH</text><text x="244" y="86">SOBE</text></g>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A5410" text-anchor="middle">
+      <text x="160" y="148">BAÚS</text><text x="160" y="160">P/ VOCÊ</text></g>
+  </symbol>
+
+  <symbol id="dg-tec-reset" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">A doação zera todo dia</text>
+    <g fill="#DCEFD4" stroke="#5C8143" stroke-width="2.5">
+      <rect x="18" y="46" width="36" height="44" rx="6"/><rect x="60" y="46" width="36" height="44" rx="6"/>
+      <rect x="144" y="46" width="36" height="44" rx="6"/><rect x="186" y="46" width="36" height="44" rx="6"/>
+      <rect x="228" y="46" width="36" height="44" rx="6"/><rect x="270" y="46" width="36" height="44" rx="6"/></g>
+    <rect x="102" y="46" width="36" height="44" rx="6" fill="#F6DAD3" stroke="#94301E" stroke-width="2.5"/>
+    <g stroke="#5C8143" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M27 68l6 6 12-13"/><path d="M69 68l6 6 12-13"/><path d="M153 68l6 6 12-13"/>
+      <path d="M195 68l6 6 12-13"/><path d="M237 68l6 6 12-13"/><path d="M279 68l6 6 12-13"/></g>
+    <g stroke="#94301E" stroke-width="3.5" stroke-linecap="round"><path d="M112 60l16 16M128 60l-16 16"/></g>
+    <text x="120" y="108" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#94301E">esqueceu</text>
+    <rect x="52" y="122" width="216" height="36" rx="9" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <text x="160" y="145" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#7A5410">Doe assim que abrir o jogo</text>
+  </symbol>
+
+  <symbol id="dg-tec-foco" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Todos na MESMA pesquisa</text>
+    <rect x="30" y="44" width="228" height="24" rx="12" fill="#D9C6A9" stroke="#8A7458" stroke-width="2"/>
+    <rect x="33" y="47" width="60" height="18" rx="9" fill="#A8967C"/>
+    <rect x="30" y="78" width="228" height="30" rx="15" fill="#D9C6A9" stroke="#C98F22" stroke-width="3"/>
+    <rect x="33" y="81" width="180" height="24" rx="12" fill="#6BC24A"/>
+    <rect x="30" y="118" width="228" height="24" rx="12" fill="#D9C6A9" stroke="#8A7458" stroke-width="2"/>
+    <rect x="33" y="121" width="40" height="18" rx="9" fill="#A8967C"/>
+    <g transform="translate(270,80)">
+      <circle cx="14" cy="13" r="13" fill="none" stroke="#94301E" stroke-width="3"/>
+      <circle cx="14" cy="13" r="6" fill="none" stroke="#94301E" stroke-width="3"/>
+      <circle cx="14" cy="13" r="2" fill="#94301E"/></g>
+    <text x="160" y="166" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A6244">Foco = evolui rápido · Espalhado = trava</text>
+  </symbol>
+
+  <symbol id="dg-mob-tarefas" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="22" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Cada tarefa vale pontos</text>
+    <rect x="22" y="34" width="276" height="28" rx="7" fill="#E7DAC2" stroke="#A8875C" stroke-width="2"/>
+    <rect x="22" y="68" width="276" height="28" rx="7" fill="#E7DAC2" stroke="#A8875C" stroke-width="2"/>
+    <rect x="22" y="102" width="276" height="28" rx="7" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <rect x="22" y="136" width="276" height="28" rx="7" fill="#E7DAC2" stroke="#A8875C" stroke-width="2"/>
+    <g font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4B3722">
+      <text x="38" y="53">Construir</text><text x="38" y="87">Pesquisar</text>
+      <text x="38" y="121">Usar acelerações</text><text x="38" y="155">Treinar tropa</text></g>
+    <g font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" text-anchor="end">
+      <text x="284" y="53" fill="#7A6244">+ pts</text><text x="284" y="87" fill="#7A6244">++ pts</text>
+      <text x="284" y="121" fill="#8E6510">+++ pts</text><text x="284" y="155" fill="#7A6244">+ pts</text></g>
+  </symbol>
+
+  <symbol id="dg-mob-guardar" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="16" y="34" width="136" height="120" rx="11" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <rect x="168" y="34" width="136" height="120" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <text x="84" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#94301E">FORA do evento</text>
+    <text x="236" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#3E6B2E">DURANTE o evento</text>
+    <g fill="#7CC3BE" stroke="#4C918C" stroke-width="2">
+      <rect x="46" y="62" width="26" height="34" rx="4"/><rect x="82" y="62" width="26" height="34" rx="4"/></g>
+    <text x="84" y="124" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A2415">gastou = 0 ponto</text>
+    <g fill="#7CC3BE" stroke="#4C918C" stroke-width="2">
+      <rect x="186" y="62" width="26" height="34" rx="4"/><rect x="222" y="62" width="26" height="34" rx="4"/>
+      <rect x="258" y="62" width="26" height="34" rx="4"/></g>
+    <text x="236" y="124" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#3E6B2E">mesmo item = PONTOS</text>
+    <text x="160" y="172" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4B3722">Guarde e gaste na hora certa</text>
+  </symbol>
+
+  <symbol id="dg-mob-bau" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Baú coletivo da aliança</text>
+    <rect x="26" y="56" width="268" height="30" rx="15" fill="#D9C6A9" stroke="#8A7458" stroke-width="3"/>
+    <rect x="29" y="59" width="168" height="24" rx="12" fill="#6BC24A"/>
+    <circle cx="110" cy="71" r="15" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <circle cx="196" cy="71" r="15" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <circle cx="282" cy="71" r="15" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" text-anchor="middle">
+      <text x="110" y="76" fill="#7A5410">1</text><text x="196" y="76" fill="#7A5410">2</text>
+      <text x="282" y="76" fill="#7A6244">3</text></g>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7A6244">
+      <text x="110" y="104">aberto</text><text x="196" y="104">aberto</text><text x="282" y="104">falta pouco</text></g>
+    <rect x="34" y="120" width="252" height="38" rx="10" fill="#7CC3BE" stroke="#4C918C" stroke-width="2.5"/>
+    <text x="160" y="144" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#fff">Mais gente = prêmio maior pra todos</text>
+  </symbol>
+
+  <symbol id="dg-terr-timeline" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="24" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Linha do tempo do rally</text>
+    <path d="M32 96h256" stroke="#8A7458" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="56" cy="96" r="14" fill="#7CC3BE" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="160" cy="96" r="18" fill="#E8705A" stroke="#94301E" stroke-width="3"/>
+    <circle cx="264" cy="96" r="14" fill="#9FCF86" stroke="#5C9143" stroke-width="3"/>
+    <g font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#4B3722">
+      <text x="56" y="68">-10 min</text><text x="160" y="64">HORÁRIO</text><text x="264" y="68">depois</text></g>
+    <g font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7A6244">
+      <text x="56" y="132">cure e monte</text><text x="56" y="146">a marcha</text>
+      <text x="160" y="132">entre no</text><text x="160" y="146">rally</text>
+      <text x="264" y="132">cure e</text><text x="264" y="146">prepare</text></g>
+    <text x="160" y="170" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#94301E">Atrasou = ficou de fora</text>
+  </symbol>
+
+  <symbol id="dg-terr-mapa" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="22" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Rally cheio vence</text>
+    <path d="M136 76h48v46h-48z" fill="#A8763C" stroke="#6B4820" stroke-width="2.5"/>
+    <path d="M132 76V64l10 6 9-10 9 10 9-10 9 10 10-6v12z" fill="#8C6430" stroke="#6B4820" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="152" y="100" width="16" height="22" fill="#5C4028"/>
+    <g stroke="#4C918C" stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M46 62l74 28"/><path d="M46 138l74-22"/><path d="M274 62l-74 28"/><path d="M274 138l-74-22"/></g>
+    <g fill="#4C918C">
+      <path d="M126 94l-14-6 2 9z"/><path d="M126 114l-12 8-1-9z"/>
+      <path d="M194 94l14-6-2 9z"/><path d="M194 114l12 8 1-9z"/></g>
+    <g fill="#63AFAA" stroke="#4C918C" stroke-width="2">
+      <circle cx="38" cy="60" r="11"/><circle cx="38" cy="140" r="11"/>
+      <circle cx="282" cy="60" r="11"/><circle cx="282" cy="140" r="11"/></g>
+    <text x="160" y="166" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A6244">Pouca tropa também soma — entre!</text>
+  </symbol>
+
+  <symbol id="dg-terr-cura" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="26" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Tropa no hospital não luta</text>
+    <rect x="26" y="52" width="100" height="76" rx="10" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <path d="M68 68h16v14h14v16H84v14H68V98H54V82h14z" fill="#94301E"/>
+    <text x="76" y="148" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#7A2415">hospital</text>
+    <rect x="194" y="52" width="100" height="76" rx="10" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <g transform="translate(222,74)">
+      <path d="M30 2l4 4-15 15-4-4z" fill="#B8C4D2" stroke="#4A5567" stroke-width="1.6"/>
+      <path d="M8 30l5-1 1-5-4-4-5 1-1 5z" fill="#C98F22" stroke="#7A5410" stroke-width="1.6"/></g>
+    <text x="244" y="148" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#3E6B2E">pronta pra guerra</text>
+    <path d="M136 90h42" stroke="#5C8143" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M188 90l-13-7v14z" fill="#5C8143"/>
+    <text x="158" y="74" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#3E6B2E">CURE JÁ</text>
+  </symbol>
+
+  <symbol id="dg-show-mapa" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="24" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Controlar pontos, não matar</text>
+    <rect x="22" y="34" width="276" height="106" rx="9" fill="#DDE9D6" stroke="#8A7458" stroke-width="3"/>
+    <g stroke="#BCCDB3" stroke-width="1.5"><path d="M91 34v106M160 34v106M229 34v106M22 69h276M22 105h276"/></g>
+    <circle cx="91" cy="69" r="15" fill="#63AFAA" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="229" cy="69" r="15" fill="#63AFAA" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="160" cy="105" r="15" fill="#C9B99A" stroke="#8A7458" stroke-width="3"/>
+    <g fill="#fff"><path d="M87 62v14M87 62h9l-2.5 3.5L96 69h-9z"/><path d="M225 62v14M225 62h9l-2.5 3.5L234 69h-9z"/></g>
+    <path d="M156 98v14M156 98h9l-2.5 3.5L165 105h-9z" fill="#7A6244"/>
+    <text x="160" y="164" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4C918C">Ponto capturado = pontos o tempo todo</text>
+  </symbol>
+
+  <symbol id="dg-show-teleporte" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <text x="160" y="24" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Teleporte grátis a cada 12 min</text>
+    <circle cx="84" cy="96" r="42" fill="#F1E6D0" stroke="#8A7458" stroke-width="4"/>
+    <path d="M84 96V60a36 36 0 0131 18z" fill="#F0B63F"/>
+    <path d="M84 96V64" stroke="#4B3722" stroke-width="4" stroke-linecap="round"/>
+    <path d="M84 96l23 13" stroke="#4B3722" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="84" cy="96" r="5" fill="#4B3722"/>
+    <text x="84" y="158" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#8E6510">12 min</text>
+    <g stroke="#4C918C" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="7 6"><path d="M138 96h66"/></g>
+    <path d="M212 96l-14-8v16z" fill="#4C918C"/>
+    <rect x="226" y="64" width="66" height="64" rx="10" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <g fill="#63AFAA"><circle cx="245" cy="90" r="8"/><circle cx="266" cy="90" r="8"/><circle cx="256" cy="110" r="8"/></g>
+    <text x="259" y="152" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#3E6B2E">caia junto da aliança</text>
+  </symbol>
+
+  <symbol id="dg-show-bloco" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="16" y="30" width="136" height="132" rx="11" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <rect x="168" y="30" width="136" height="132" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <text x="84" y="52" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#7A2415">SOZINHO</text>
+    <text x="236" y="52" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="13" font-weight="bold" fill="#3E6B2E">EM BLOCO</text>
+    <circle cx="84" cy="100" r="14" fill="#63AFAA" stroke="#4C918C" stroke-width="2.5"/>
+    <g stroke="#94301E" stroke-width="3.5" fill="none" stroke-linecap="round">
+      <path d="M40 74l26 16M128 74l-26 16M40 128l26-16M128 128l-26-16"/></g>
+    <g fill="#94301E"><path d="M70 92l-12-3 3 9z"/><path d="M98 92l12-3-3 9z"/>
+      <path d="M70 110l-12 3 3-9z"/><path d="M98 110l12 3-3-9z"/></g>
+    <text x="84" y="148" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A2415">alvo fácil</text>
+    <g fill="#63AFAA" stroke="#4C918C" stroke-width="2.5">
+      <circle cx="214" cy="88" r="13"/><circle cx="242" cy="88" r="13"/>
+      <circle cx="228" cy="112" r="13"/><circle cx="256" cy="112" r="13"/></g>
+    <text x="236" y="148" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#3E6B2E">ninguém segura</text>
+  </symbol>
+</defs></svg>
+
 <div class="overlay" id="eventoOverlay">
   <div class="modal">
     <h2 id="eventoTitulo"></h2>
     <p class="sub" id="eventoQuando"></p>
-    <div id="eventoTutorial" style="white-space:pre-wrap;font-size:.9rem;font-weight:600;color:var(--ink);line-height:1.55"></div>
+
+    <div class="tut" id="eventoTut" style="display:none">
+      <div class="tut-stage" id="tutStage">
+        <span class="tut-step" id="tutStep">1/1</span>
+        <span class="tut-real" id="tutReal" style="display:none">print real</span>
+        <div id="tutArte" style="width:100%;height:100%"></div>
+      </div>
+      <div class="tut-body">
+        <h3 id="tutTitulo"></h3>
+        <p id="tutTexto"></p>
+      </div>
+      <div class="tut-nav">
+        <button id="tutPrev" type="button">‹ Voltar</button>
+        <span class="tut-dots" id="tutDots"></span>
+        <button id="tutNext" type="button">Avançar ›</button>
+      </div>
+      <label class="tut-upload" id="tutUpload" style="display:none">
+        📷 Trocar por um print real do jogo
+        <input type="file" accept="image/*" id="tutFile" style="display:none">
+      </label>
+    </div>
+
+    <details class="tut-dicas" id="eventoDicasBox" style="display:none">
+      <summary>📋 Dicas rápidas em texto</summary>
+      <div id="eventoTutorial"></div>
+    </details>
+
     <button class="bigbtn green" id="eventoLancar" style="margin-top:14px;display:none">🏆 Lançar pontos deste evento</button>
     <button class="bigbtn" id="eventoFinalizar" style="margin-top:10px;display:none">🏁 Finalizar evento e pagar moedas</button>
     <button class="bcancel" id="eventoFechar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Fechar</button>
@@ -1381,6 +1712,82 @@
   }
 
   /* ------- lançar pontos de evento (oficial) ------- */
+  /* ===== tutorial visual do evento ===== */
+  var _tutPassos = [], _tutIdx = 0, _tutEvento = null;
+
+  function tutPinta(){
+    var p = _tutPassos[_tutIdx];
+    if(!p) return;
+    var arte = $("#tutArte");
+    if(p.imagem_url){
+      arte.innerHTML = '<img src="'+esc(p.imagem_url)+'" alt="'+esc(p.titulo)+'">';
+      $("#tutReal").style.display = "";
+    }else if(p.diagrama){
+      arte.innerHTML = '<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" role="img" aria-label="'+esc(p.titulo)+'"><use href="#dg-'+esc(p.diagrama)+'"/></svg>';
+      $("#tutReal").style.display = "none";
+    }else{
+      arte.innerHTML = '<div class="semimg">Sem imagem ainda.<br>Um oficial pode enviar um print do jogo aqui.</div>';
+      $("#tutReal").style.display = "none";
+    }
+    $("#tutStep").textContent = (_tutIdx+1)+"/"+_tutPassos.length;
+    $("#tutTitulo").textContent = p.titulo || "";
+    $("#tutTexto").textContent = p.texto || "";
+    $("#tutPrev").disabled = (_tutIdx === 0);
+    $("#tutNext").disabled = (_tutIdx >= _tutPassos.length-1);
+    $("#tutDots").innerHTML = _tutPassos.map(function(_,i){
+      return '<i class="'+(i===_tutIdx?"on":"")+'" data-tutdot="'+i+'"></i>';
+    }).join("");
+    $("#tutUpload").style.display = ehOficial(ME) ? "" : "none";
+  }
+  function tutVai(d){
+    var n = _tutIdx + d;
+    if(n < 0 || n >= _tutPassos.length) return;
+    _tutIdx = n; tutPinta();
+  }
+  function carregaTutorial(ev){
+    _tutPassos = []; _tutIdx = 0; _tutEvento = ev;
+    $("#eventoTut").style.display = "none";
+    return sbGet("top_tutorial_passos?evento_id=eq."+enc(ev.id)+"&select=*&order=ordem")
+      .then(function(rows){
+        _tutPassos = Array.isArray(rows) ? rows : [];
+        if(_tutPassos.length){ $("#eventoTut").style.display = ""; tutPinta(); }
+      }).catch(function(){});
+  }
+  document.addEventListener("click", function(e){
+    if(e.target.closest("#tutPrev")) return tutVai(-1);
+    if(e.target.closest("#tutNext")) return tutVai(1);
+    var d = e.target.closest("[data-tutdot]");
+    if(d){ _tutIdx = +d.dataset.tutdot; tutPinta(); }
+  });
+  (function(){
+    var stage = null, x0 = null;
+    document.addEventListener("touchstart", function(e){
+      stage = e.target.closest("#tutStage");
+      x0 = stage ? e.touches[0].clientX : null;
+    }, {passive:true});
+    document.addEventListener("touchend", function(e){
+      if(!stage || x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      if(Math.abs(dx) > 45) tutVai(dx < 0 ? 1 : -1);
+      stage = null; x0 = null;
+    }, {passive:true});
+  })();
+  var _tutFile = document.querySelector("#tutFile");
+  if(_tutFile) _tutFile.addEventListener("change", function(e){
+    var f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    var p = _tutPassos[_tutIdx];
+    if(!f || !p || !ehOficial(ME)) return;
+    var caminho = "tutoriais/"+p.id+"_"+Date.now()+".jpg";
+    toast("📤 Enviando print...");
+    sbUpload(caminho, f).then(function(){
+      var url = SB_URL+"/storage/v1/object/public/top-provas/"+caminho;
+      return sbPatch("top_tutorial_passos?id=eq."+enc(p.id), {imagem_url:url}).then(function(){
+        p.imagem_url = url; tutPinta(); toast("✅ Print do jogo aplicado neste passo!");
+      });
+    }).catch(function(){ toast("❌ Não consegui enviar o print."); });
+  });
+
   function abrirEvento(ev){
     if(!ev) return;
     $("#eventoTitulo").textContent = ev.titulo;
@@ -1388,6 +1795,9 @@
     if(ev.categoria==="temporario" && (ev.inicio||ev.fim)) quando += (quando?" · ":"")+"🗓️ "+(ev.inicio||"")+(ev.fim?" → "+ev.fim:"");
     $("#eventoQuando").textContent = quando;
     $("#eventoTutorial").textContent = ev.tutorial || "Sem dicas cadastradas ainda. Um oficial pode adicionar no painel Admin.";
+    $("#eventoDicasBox").style.display = ev.tutorial ? "" : "none";
+    $("#eventoDicasBox").open = false;
+    carregaTutorial(ev);
     var lb = $("#eventoLancar"), fb = $("#eventoFinalizar");
     if(ehOficial(ME)){
       lb.style.display = "block"; lb.onclick = function(){ $("#eventoOverlay").classList.remove("on"); abrirResultado(ev); };
