@@ -819,25 +819,7 @@
     <p class="perfilinfo" id="perfilInfo"></p>
     <p class="rlab" style="margin-top:14px">Escolha seu avatar</p>
     <div class="avgrid" id="perfilAvatares"></div>
-    <p class="rlab" style="margin-top:12px">Idioma do portal e das traduções</p>
-    <select class="reginput" id="perfilIdioma" style="margin-top:0">
-      <option value="pt">Português</option>
-      <option value="en">English</option>
-      <option value="es">Español</option>
-      <option value="ar">العربية</option>
-      <option value="ko">한국어</option>
-      <option value="zh-CN">中文</option>
-      <option value="th">ไทย</option>
-      <option value="fr">Français</option>
-      <option value="ru">Русский</option>
-      <option value="id">Indonesia</option>
-      <option value="hi">हिन्दी</option>
-      <option value="tr">Türkçe</option>
-      <option value="de">Deutsch</option>
-      <option value="ja">日本語</option>
-      <option value="vi">Tiếng Việt</option>
-    </select>
-    <div id="perfilFotoWrap" style="display:none;margin-top:12px">
+<div id="perfilFotoWrap" style="display:none;margin-top:12px">
       <label class="drop" style="padding:14px 12px"><div style="font-size:1.6rem">📷</div><span>Enviar minha própria foto</span><input type="file" accept="image/*" id="perfilFoto"></label>
     </div>
     <p class="rlab" style="margin-top:12px">Trocar senha (opcional)</p>
@@ -1745,16 +1727,26 @@
   /* ================= IDIOMAS =================
      Chave = o texto em português. Valor = [en, es, ko, zh, th].
      Idioma sai do aparelho do jogador; quem não tiver tradução cai no inglês. */
-  /* A lista de idiomas é a do seletor do perfil (#perfilIdioma) — uma fonte só,
-     para o globo da barra e o perfil nunca mostrarem opções diferentes. */
-  function listaIdiomas(){
-    var sel = document.querySelector("#perfilIdioma");
-    if(sel && sel.options.length){
-      return Array.prototype.map.call(sel.options, function(o){ return {c:o.value, n:o.textContent}; });
-    }
-    return [{c:"pt",n:"Português"},{c:"en",n:"English"},{c:"es",n:"Español"},
-            {c:"ko",n:"한국어"},{c:"zh-CN",n:"中文"},{c:"th",n:"ไทย"}];
-  }
+  /* Fonte única da lista de idiomas. O seletor fica só no globo da barra
+     superior; o perfil não tem mais um segundo menu para a mesma coisa. */
+  var IDIOMAS = [
+    {c:"pt", n:"Português"},
+    {c:"en", n:"English"},
+    {c:"es", n:"Español"},
+    {c:"ar", n:"العربية"},
+    {c:"ko", n:"한국어"},
+    {c:"zh-CN", n:"中文"},
+    {c:"th", n:"ไทย"},
+    {c:"fr", n:"Français"},
+    {c:"ru", n:"Русский"},
+    {c:"id", n:"Indonesia"},
+    {c:"hi", n:"हिन्दी"},
+    {c:"tr", n:"Türkçe"},
+    {c:"de", n:"Deutsch"},
+    {c:"ja", n:"日本語"},
+    {c:"vi", n:"Tiếng Việt"}
+  ];
+  function listaIdiomas(){ return IDIOMAS; }
   /* O perfil grava "zh-CN"; o dicionário é indexado por "zh". Normaliza os dois lados. */
   function normLang(l){
     l = String(l || "").toLowerCase();
@@ -1912,8 +1904,6 @@
     }catch(e){}
     /* Reaproveita o tradutor que o portal já tem, igual faz salvarPerfil(). */
     try{
-      var sel = document.querySelector("#perfilIdioma");
-      if(sel && l !== "auto") sel.value = l;
       lastChatSig = "";
       iniciarTraducaoUI();
     }catch(e){}
@@ -2455,12 +2445,29 @@
     var key = alvo+"::"+texto;
     if(_trCache[key]) return Promise.resolve(_trCache[key]);
     var u = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl="+encodeURIComponent(alvo)+"&dt=t&q="+encodeURIComponent(texto);
-    return fetch(u).then(function(r){ return r.json(); }).then(function(j){
-      var out = (j && j[0]) ? j[0].map(function(x){ return x[0]; }).join("") : texto;
-      var res = {texto:out, de:(j&&j[2])||null};
-      _trCache[key] = res; return res;
-    }).catch(function(){ return {texto:texto, de:null}; });
+    /* Sem prazo, um pedido pendurado ocupa uma das TR_MAX vagas para sempre e a
+       fila inteira trava — a interface fica em português mesmo com internet boa. */
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var expirou = false;
+    var timer = setTimeout(function(){ expirou = true; if(ctrl) ctrl.abort(); }, 8000);
+    return fetch(u, ctrl ? {signal:ctrl.signal} : undefined)
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        clearTimeout(timer);
+        var out = (j && j[0]) ? j[0].map(function(x){ return x[0]; }).join("") : texto;
+        var res = {texto:out, de:(j&&j[2])||null};
+        _trCache[key] = res; return res;
+      })
+      .catch(function(){
+        clearTimeout(timer);
+        if(expirou) _trFalhas++;
+        return {texto:texto, de:null};
+      });
   }
+  /* Se o tradutor estiver inacessível para este jogador, para de enfileirar
+     pedidos que só vão expirar — assim o portal não fica travado tentando. */
+  var _trFalhas = 0, TR_FALHAS_MAX = 8;
+  function tradutorFora(){ return _trFalhas >= TR_FALHAS_MAX; }
   function aplicarTrad(el, res){
     var tx = el && el.querySelector(".tx"); if(!tx) return;
     tx.innerHTML = esc(res.texto) + (res.de && res.de !== meuIdioma()
@@ -2483,6 +2490,7 @@
   }
   function traduzirNode(n){
     var alvo = meuIdioma(); if(alvo === "pt") return;
+    if(tradutorFora()) return;
     if(n.__lang === alvo) return;
     var base = (n.__base != null) ? n.__base : n.nodeValue;
     var t = (base||"").trim();
@@ -2632,7 +2640,6 @@
     perfilFotoFile = null;
     $("#perfilSenha").value = "";
     renderAvatarGrid("#perfilAvatares", perfilAvatarSel, function(id){ perfilAvatarSel = id; $("#perfilAtual").innerHTML = avMarkup(id); });
-    $("#perfilIdioma").value = meuIdioma();
     $("#perfilFotoWrap").style.display = ME.pode_avatar ? "block" : "none";
     atualizarBotaoNotif();
     $("#perfilOverlay").classList.add("on");
@@ -2647,7 +2654,6 @@
     if(!ME) return;
     var novaS = $("#perfilSenha").value;
     if(novaS && novaS.length < 4){ toast("Senha muito curta (mínimo 4)."); return; }
-    localStorage.setItem("top.lang", $("#perfilIdioma").value);
     lastChatSig = "";
     iniciarTraducaoUI();
     var patch = {avatar: perfilAvatarSel};
