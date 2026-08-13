@@ -43,8 +43,11 @@
     --outline:#3A2A18;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%}
+  html{-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%;overscroll-behavior:none}
   input,select,textarea,img{max-width:100%}
+  /* cara de app: sem seleção/menu de contexto/zoom-duplo, sem "puxar pra atualizar" */
+  input,textarea,select,.msg .tx,[contenteditable]{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+  button,a,.gbtn,.navbtn,.ev,[data-go],[data-act]{touch-action:manipulation}
   .subm>div[style*="grid"]>div{min-width:0}
   body{
     min-height:100vh;
@@ -60,6 +63,9 @@
     overflow-x:hidden;
     padding-bottom:74px;
     -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    user-select:none;-webkit-user-select:none;
+    overscroll-behavior:none;
   }
   /* brasão marca-d'água no fundo — dá cara de app, preenche o vazio */
   body::before{
@@ -883,8 +889,8 @@
   .oficialbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
 
   /* ---- chat ---- */
-  .chatbox{display:flex;flex-direction:column;height:calc(100vh - 210px);min-height:320px}
-  .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding:4px 2px}
+  .chatbox{display:flex;flex-direction:column;height:calc(100vh - 210px);height:calc(100dvh - 200px);min-height:280px}
+  .msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:4px 2px}
   .msg{max-width:82%;background:var(--panel-3);border-radius:12px;padding:8px 12px;
     box-shadow:0 2px 4px var(--shadow);align-self:flex-start}
   .msg .who{font-size:.72rem;color:var(--ink-soft);margin-bottom:3px;display:flex;gap:6px;align-items:center}
@@ -1727,6 +1733,11 @@
       });
     });
   }
+  function scrollChatBottom(){
+    var b = $("#chatMsgs"); if(!b) return;
+    requestAnimationFrame(function(){ b.scrollTop = b.scrollHeight;
+      requestAnimationFrame(function(){ b.scrollTop = b.scrollHeight; }); });
+  }
   function renderChat(rows){
     var box = $("#chatMsgs");
     if(!rows.length){ box.innerHTML = '<p class="empty">Sem mensagens ainda. Comece a conversa!</p>'; return; }
@@ -1746,7 +1757,7 @@
         '<button class="trbtn" data-tr="'+s.id+'">🌐</button></div>'+
         '<div class="tx">'+esc(s.texto)+'</div></div>';
     }).join("");
-    box.scrollTop = box.scrollHeight;
+    scrollChatBottom();
     if(autoTrad) traduzirTudo();
   }
   function chatCarregar(){
@@ -2273,11 +2284,19 @@
       if(box.querySelector('.empty')) box.innerHTML = '';
       var d = document.createElement('div'); d.className = 'msg me'; d.style.opacity = '.55';
       d.innerHTML = '<div class="who"><span class="chatav">'+avatarSVG(ME)+'</span>'+esc(ME.nome)+'</div><div class="tx">'+esc(t)+'</div>';
-      box.appendChild(d); box.scrollTop = box.scrollHeight;
+      box.appendChild(d); scrollChatBottom();
     }
     sbPost('top_chat', {membro_id:ME.id, nome:ME.nome, cargo:ME.cargo||'R1', tipo:'msg', texto:t})
       .then(function(){ lastChatSig=''; chatCarregar(); }).catch(function(){ toast('❌ Não enviou.'); });
   });
+  // teclado abriu/fechou ou focou no campo -> mantém a última mensagem visível
+  (function(){
+    var inp = $('#chatInput');
+    if(inp) inp.addEventListener('focus', function(){ setTimeout(scrollChatBottom, 300); });
+    if(window.visualViewport) window.visualViewport.addEventListener('resize', function(){
+      if(cur === 'chat') scrollChatBottom();
+    });
+  })();
 
   $('#avisoSend').addEventListener('click', function(){
     var t = $('#avisoTexto').value.trim();
@@ -2426,6 +2445,19 @@
       .then(function(res){ if(res && res.ok){ toast("✅ Entregue!"); paintResgates(); } else { b.disabled=false; toast("❌ Erro."); } })
       .catch(function(err){ b.disabled = false; onAdminErr(err); });
   });
+
+  /* ---------------- tela cheia (navegador Android/desktop) ---------------- */
+  (function(){
+    var jaApp = window.matchMedia && window.matchMedia('(display-mode: standalone),(display-mode: fullscreen)').matches;
+    if(jaApp) return; // instalado como app já é imersivo
+    document.addEventListener('pointerdown', function goFS(){
+      document.removeEventListener('pointerdown', goFS);
+      try{
+        var el = document.documentElement;
+        if(el.requestFullscreen && document.fullscreenEnabled && !document.fullscreenElement){ el.requestFullscreen().catch(function(){}); }
+      }catch(e){}
+    });
+  })();
 
   /* ---------------- boot ---------------- */
   paintCoins();

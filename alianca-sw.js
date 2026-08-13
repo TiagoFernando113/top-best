@@ -1,6 +1,6 @@
 // Service worker do Portal [TOP] Best — só para instalabilidade/PWA.
 // Network-first (o portal precisa da internet pro Supabase); cache é fallback do shell.
-const CACHE = "top-portal-v3";
+const CACHE = "top-portal-v4";
 const SHELL = ["./", "index.html", "alianca-manifest.json", "alianca-icon.svg"];
 
 self.addEventListener("install", (e) => {

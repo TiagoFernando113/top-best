@@ -1,10 +1,11 @@
 {
   "name": "Portal [TOP] Best",
   "short_name": "[TOP] Best",
-  "description": "Portal da aliança [TOP] Best — missões, loja, chat e eventos.",
+  "description": "Portal da aliança [TOP] Best — eventos, loja, chat e ranking.",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "portrait",
   "background_color": "#C2A67F",
   "theme_color": "#56422D",
