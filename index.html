@@ -1692,6 +1692,59 @@
     return getMembro().then(function(m){ if(m){ ME = m; S.coins = m.moedas||0; paintCoins(); } });
   }
 
+  /* ===== horário do jogo (UTC) → relógio de cada jogador =====
+     O oficial cadastra hora_utc (+ dia_semana). Cada membro vê no próprio fuso,
+     detectado pelo aparelho. Sem hora_utc, continua valendo o texto livre dia/hora. */
+  function fusoDoMembro(){
+    try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; }catch(e){ return "UTC"; }
+  }
+  function localeDoMembro(){
+    var l = meuIdioma();
+    if(l === "zh") l = "zh-CN";
+    return l === "pt" ? "pt-BR" : l;
+  }
+  function proximaOcorrencia(horaUtc, diaSemana){
+    var p = String(horaUtc).split(":");
+    var hh = +p[0], mm = +(p[1] || 0);
+    if(isNaN(hh)) return null;
+    var agora = new Date();
+    var d = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate(), hh, mm, 0));
+    if(diaSemana == null){                       /* todo dia */
+      if(d <= agora) d.setUTCDate(d.getUTCDate() + 1);
+      return d;
+    }
+    var delta = (diaSemana - d.getUTCDay() + 7) % 7;
+    d.setUTCDate(d.getUTCDate() + delta);
+    if(d <= agora) d.setUTCDate(d.getUTCDate() + 7);
+    return d;
+  }
+  function falta(ate){
+    var ms = ate - new Date();
+    if(ms <= 0) return null;
+    var dias = Math.floor(ms / 864e5), hs = Math.floor(ms % 864e5 / 36e5), mi = Math.floor(ms % 36e5 / 6e4);
+    if(dias > 0) return dias + "d " + hs + "h";
+    if(hs > 0)   return hs + "h " + mi + "min";
+    return mi + "min";
+  }
+  function horarioLocal(ev){
+    if(!ev || !ev.hora_utc) return null;
+    var quando = proximaOcorrencia(ev.hora_utc, (ev.dia_semana == null ? null : +ev.dia_semana));
+    if(!quando) return null;
+    var tz = fusoDoMembro(), loc = localeDoMembro();
+    function f(opts){
+      try{ return quando.toLocaleString(loc, Object.assign({timeZone:tz}, opts)); }
+      catch(e){ return quando.toLocaleString("en", Object.assign({timeZone:"UTC"}, opts)); }
+    }
+    var hUtc = String(ev.hora_utc).slice(0,5);
+    return {
+      dia:   esc(ev.dia_semana == null ? f({weekday:"short"}) : f({weekday:"short"})).toUpperCase(),
+      hora:  esc(f({hour:"2-digit", minute:"2-digit", hour12:false})),
+      falta: falta(quando) || "agora",
+      utc:   hUtc,
+      fuso:  tz
+    };
+  }
+
   var _eventosCache = {};
   function paintEventos(){
     return sbGet("top_eventos?ativa=eq.true&select=*&order=categoria,ordem").then(function(rows){
@@ -1701,6 +1754,10 @@
       var ofi = ehOficial(ME);
       function cardEv(ev){
         var tipo = (ev.tipo==="daily"||ev.tipo==="ally"||ev.tipo==="war") ? ev.tipo : "ally";
+        var hj = horarioLocal(ev);
+        var quandoDia  = hj ? hj.dia  : esc(ev.dia||"");
+        var quandoHora = hj ? hj.hora : esc(ev.hora||"");
+        var faltaHtml  = hj ? '<p style="font-size:.74rem;color:var(--teal-dk);font-weight:800;margin-top:2px">⏳ '+esc(hj.falta)+' · '+esc(hj.utc)+' UTC</p>' : '';
         var periodo = (ev.categoria==="temporario" && (ev.inicio||ev.fim)) ? '<p style="font-size:.74rem;color:var(--ink-soft);font-weight:700">🗓️ '+esc(ev.inicio||"")+(ev.fim?" → "+esc(ev.fim):"")+'</p>' : '';
         var premio = [];
         if(ev.premio_1) premio.push("🥇 "+fmt(ev.premio_1));
@@ -1709,8 +1766,8 @@
         if(ev.moedas_fixas) premio.push("🪙 "+fmt(ev.moedas_fixas)+" participar");
         var premioHtml = premio.length ? '<p style="font-size:.74rem;color:var(--gold-dk);font-weight:800;margin-top:2px">'+premio.join(" · ")+'</p>' : '';
         return '<button class="ev '+tipo+'" data-evento="'+ev.id+'" style="width:100%;text-align:left;font-family:inherit;cursor:pointer">'+
-          '<div class="when"><div class="day">'+esc(ev.dia||"")+'</div><div class="time">'+esc(ev.hora||"")+'</div></div>'+
-          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+periodo+premioHtml+
+          '<div class="when"><div class="day">'+quandoDia+'</div><div class="time">'+quandoHora+'</div></div>'+
+          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+periodo+faltaHtml+premioHtml+
           '<p style="font-size:.74rem;color:var(--teal-dk);font-weight:800;margin-top:4px">📖 Toque para dicas'+(ofi?' · lançar pontos':'')+' ▸</p>'+
           '</div></button>';
       }
@@ -2036,7 +2093,12 @@
   function abrirEvento(ev){
     if(!ev) return;
     $("#eventoTitulo").textContent = ev.titulo;
-    var quando = [ev.dia, ev.hora].filter(Boolean).join(" · ");
+    var hl = horarioLocal(ev);
+    /* Com hora_utc cadastrada, mostra o relógio do jogo (UTC) e o horário
+       já convertido para o fuso do próprio jogador. */
+    var quando = hl
+      ? (hl.dia + " " + hl.hora + " · " + hl.utc + " UTC · ⏳ " + hl.falta + " · " + hl.fuso)
+      : [ev.dia, ev.hora].filter(Boolean).join(" · ");
     if(ev.categoria==="temporario" && (ev.inicio||ev.fim)) quando += (quando?" · ":"")+"🗓️ "+(ev.inicio||"")+(ev.fim?" → "+ev.fim:"");
     $("#eventoQuando").textContent = quando;
     $("#eventoTutorial").textContent = ev.tutorial || "Sem dicas cadastradas ainda. Um oficial pode adicionar no painel Admin.";
@@ -2163,7 +2225,7 @@
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
@@ -2181,6 +2243,8 @@
       if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
       if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
       if(c.t==="cat")   return lbl + campoSelect(c.k, v||"semanal", [["semanal","Semanal (recorrente)"],["temporario","Temporário"]]);
+      if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
+      if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
       if(c.t==="textarea") return lbl + '<textarea class="rin" data-k="'+c.k+'" rows="6" style="resize:vertical">'+esc(String(v||""))+'</textarea>';
       return lbl + '<input class="rin" data-k="'+c.k+'" type="'+(c.t==="number"?"number":"text")+'" value="'+esc(String(v))+'">';
@@ -2195,6 +2259,8 @@
       var v = el ? el.value : "";
       if(c.t==="number") body[c.k] = parseInt(v,10)||0;
       else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
+      else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
+      else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
       else body[c.k] = v;
     });
     admin("gestao", {tabela:def.tabela, op: editCtx.id ? "update" : "insert", id: editCtx.id, dados: body})
