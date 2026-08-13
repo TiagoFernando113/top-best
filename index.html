@@ -1745,10 +1745,23 @@
   /* ================= IDIOMAS =================
      Chave = o texto em português. Valor = [en, es, ko, zh, th].
      Idioma sai do aparelho do jogador; quem não tiver tradução cai no inglês. */
-  var LANGS = [
-    {c:"pt", n:"Português"}, {c:"en", n:"English"}, {c:"es", n:"Español"},
-    {c:"ko", n:"한국어"},    {c:"zh", n:"中文"},     {c:"th", n:"ไทย"}
-  ];
+  /* A lista de idiomas é a do seletor do perfil (#perfilIdioma) — uma fonte só,
+     para o globo da barra e o perfil nunca mostrarem opções diferentes. */
+  function listaIdiomas(){
+    var sel = document.querySelector("#perfilIdioma");
+    if(sel && sel.options.length){
+      return Array.prototype.map.call(sel.options, function(o){ return {c:o.value, n:o.textContent}; });
+    }
+    return [{c:"pt",n:"Português"},{c:"en",n:"English"},{c:"es",n:"Español"},
+            {c:"ko",n:"한국어"},{c:"zh-CN",n:"中文"},{c:"th",n:"ไทย"}];
+  }
+  /* O perfil grava "zh-CN"; o dicionário é indexado por "zh". Normaliza os dois lados. */
+  function normLang(l){
+    l = String(l || "").toLowerCase();
+    if(l.indexOf("zh") === 0) return "zh";
+    if(l.indexOf("pt") === 0) return "pt";
+    return l.split("-")[0];
+  }
   var LI = {en:0, es:1, ko:2, zh:3, th:4};
   var D = {
   "Quanto mais DANO, melhor o prêmio":["More DAMAGE, better reward","Más DAÑO, mejor premio","피해량이 클수록 보상이 좋다","伤害越高，奖励越好","ยิ่งสร้างดาเมจมาก รางวัลยิ่งดี"],
@@ -1868,14 +1881,17 @@
     return "auto";
   })();
   function langAtiva(){
-    var l = LANG;
-    if(l === "auto"){
-      var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "pt";
-      l = String(nav).toLowerCase().split("-")[0];
-      if(l === "pt") return "pt";
-      if(!(l in LI)) return "en";   /* idioma sem tradução → inglês, não português */
+    /* Segue a MESMA preferência do resto do portal (top.lang, usada por meuIdioma()). */
+    var bruto = null;
+    try{ bruto = localStorage.getItem("top.lang"); }catch(e){}
+    if(!bruto || bruto === "auto"){
+      bruto = (navigator.languages && navigator.languages[0]) || navigator.language || "pt";
     }
-    return l;
+    var l = normLang(bruto);
+    if(l === "pt") return "pt";
+    /* Idioma sem tradução no dicionário: o texto dos diagramas sai em inglês
+       (o resto da interface o tradutor do portal já cobre). */
+    return (l in LI) ? l : "en";
   }
   function tr(s){
     if(s == null) return s;
@@ -1890,7 +1906,17 @@
   }
   function setLang(l){
     LANG = l;
-    try{ localStorage.setItem("top.lang", l); }catch(e){}
+    try{
+      if(l === "auto") localStorage.removeItem("top.lang");
+      else localStorage.setItem("top.lang", l);
+    }catch(e){}
+    /* Reaproveita o tradutor que o portal já tem, igual faz salvarPerfil(). */
+    try{
+      var sel = document.querySelector("#perfilIdioma");
+      if(sel && l !== "auto") sel.value = l;
+      lastChatSig = "";
+      iniciarTraducaoUI();
+    }catch(e){}
     if(_tutEvento) tutPinta();
     var b = document.querySelector("#tutPrev"), n = document.querySelector("#tutNext");
     if(b) b.textContent = tr("‹ Voltar");
@@ -1904,10 +1930,11 @@
   }
   document.addEventListener("click", function(e){
     if(!e.target.closest("#langBtn")) return;
-    var atual = LANG;
-    var html = LANGS.map(function(x){
-      return '<button class="langopt'+(atual===x.c?" on":"")+'" data-setlang="'+x.c+'">'+x.n+'</button>';
-    }).join("") + '<button class="langopt'+(atual==="auto"?" on":"")+'" data-setlang="auto">🌐 '+tr("Seguir o aparelho")+'</button>';
+    var atual = null;
+    try{ atual = localStorage.getItem("top.lang"); }catch(e){}
+    var html = listaIdiomas().map(function(x){
+      return '<button class="langopt'+(atual===x.c?" on":"")+'" data-setlang="'+esc(x.c)+'">'+esc(x.n)+'</button>';
+    }).join("") + '<button class="langopt'+(!atual?" on":"")+'" data-setlang="auto">🌐 '+esc(tr("Seguir o aparelho"))+'</button>';
     var ov = document.querySelector("#langOverlay");
     ov.querySelector("#langLista").innerHTML = html;
     ov.querySelector("#langTitulo").textContent = tr("Idioma");
