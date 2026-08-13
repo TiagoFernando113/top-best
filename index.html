@@ -424,6 +424,35 @@
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* ---------- bottom nav ---------- */
+  /* ---- banner de instalação (empurra o jogador a baixar o app) ---- */
+  .instalbanner{position:fixed;left:8px;right:8px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:85;
+    display:flex;align-items:center;gap:10px;
+    background:linear-gradient(180deg,#F0CE6A,#D5A93F);border:3px solid #94701E;border-radius:14px;
+    padding:9px 11px;box-shadow:0 6px 16px rgba(0,0,0,.28);color:#3A2A18;font-weight:800;font-size:.84rem}
+  .instalbanner .ib-ic{font-size:1.35rem;flex:none}
+  .instalbanner .ib-tx{flex:1;line-height:1.2}
+  .instalbanner .ib-btn{flex:none;cursor:pointer;font-family:inherit;font-weight:900;
+    background:linear-gradient(180deg,var(--green-lt),var(--green));color:#fff;border:2.5px solid #2A5C26;
+    border-radius:10px;padding:8px 13px;box-shadow:0 3px 0 #2A5C26}
+  .instalbanner .ib-x{flex:none;background:none;border:none;color:#7A5C1E;font-size:1rem;cursor:pointer;padding:2px 5px}
+  /* ---- perfil do governador (estilo jogo) ---- */
+  .perfilcard{max-width:350px}
+  .perfilhero{border-radius:14px;background:radial-gradient(120% 90% at 50% 16%, #EAF3F9 0%, #9DC0D6 66%, #7FA6BF 100%);
+    padding:16px 0 10px;display:flex;justify-content:center;box-shadow:inset 0 2px 6px rgba(255,255,255,.4)}
+  .perfilbig{width:46vw;max-width:180px;aspect-ratio:1;border-radius:16px;overflow:hidden;
+    filter:drop-shadow(0 8px 10px rgba(0,0,0,.22))}
+  .perfilbig img,.perfilbig svg{width:100%;height:100%;object-fit:cover}
+  .perfilcx{margin-top:10px;background:linear-gradient(180deg,#41627A,#2C4454);border-radius:14px;
+    padding:13px 14px;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+  .perfiltop{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+  .perfilav{width:54px;height:54px;border-radius:12px;overflow:hidden;border:3px solid #E0B44E;flex:none;background:#12212B}
+  .perfilav img,.perfilav svg{width:100%;height:100%;object-fit:cover}
+  .perfilnome{font-size:1.12rem;font-weight:900;color:#fff;line-height:1.15;word-break:break-word}
+  .perfilcargo{display:inline-block;margin-top:3px;background:linear-gradient(180deg,#F0CE6A,#D5A93F);color:#3A2A18;
+    border-radius:7px;padding:1px 9px;font-size:.72rem;font-weight:800}
+  .perfilstats{display:flex;flex-direction:column;gap:5px}
+  .pcline{font-size:.92rem;font-weight:700;color:#CFE0EA}
+  .pcline b{color:#fff;font-weight:900}
   .bottomnav{
     position:fixed;left:0;right:0;bottom:0;z-index:80;
     background:linear-gradient(180deg,var(--bg-top-2),var(--bg-top));
@@ -722,6 +751,13 @@
 
 </div>
 
+<div id="instalBanner" class="instalbanner" style="display:none">
+  <span class="ib-ic">📲</span>
+  <span class="ib-tx">Instale o app da <b>[TOP] Best</b> — abre em tela cheia e recebe avisos!</span>
+  <button id="instalBannerBtn" class="ib-btn">Instalar</button>
+  <button id="instalBannerX" class="ib-x" aria-label="fechar">✕</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 
@@ -791,16 +827,51 @@
   </div>
 </div>
 
-<!-- ============ PROMOVER MEMBRO (oficial) ============ -->
+<!-- ============ PERFIL DO GOVERNADOR (estilo jogo) ============ -->
 <div class="overlay" id="promoOverlay">
-  <div class="modal">
-    <div id="promoAvatar" style="width:70px;height:70px;margin:4px auto;border-radius:14px;overflow:hidden;border:3px solid var(--pill-dk)"></div>
-    <h2 id="promoNome" style="text-align:center"></h2>
-    <p class="sub" id="promoInfo" style="text-align:center"></p>
-    <p class="rlab">Mudar classificação</p>
-    <div class="promogrid" id="promoGrid"></div>
-    <button class="bigbtn" id="promoRemover" style="margin-top:12px;background:linear-gradient(180deg,#E8705A,var(--red));border-color:#94301E;color:#fff;-webkit-text-stroke:2px #7A2415;paint-order:stroke fill">🗑️ Remover da aliança</button>
+  <div class="modal perfilcard">
+    <div class="perfilhero">
+      <div class="perfilbig" id="promoAvatar"></div>
+    </div>
+    <div class="perfilcx">
+      <div class="perfiltop">
+        <div class="perfilav" id="promoAvatarSm"></div>
+        <div class="perfilnc">
+          <div class="perfilnome" id="promoNome"></div>
+          <span class="perfilcargo" id="promoCargoTag"></span>
+        </div>
+      </div>
+      <div class="perfilstats">
+        <div class="pcline" id="promoID"></div>
+        <div class="pcline" id="promoPoder"></div>
+        <div class="pcline" id="promoAbates"></div>
+        <div class="pcline" id="promoAlianca"></div>
+        <div class="pcline" id="promoReino"></div>
+        <div class="pcline" id="promoPontos"></div>
+      </div>
+    </div>
+    <div id="promoControles" style="display:none">
+      <p class="sub" id="promoInfo" style="display:none"></p>
+      <p class="rlab" id="promoLabelRank">Mudar classificação</p>
+      <div class="promogrid" id="promoGrid"></div>
+      <button class="bigbtn" id="promoEditar" style="margin-top:10px;display:none">✏️ Editar dados do jogador</button>
+      <button class="bigbtn" id="promoRemover" style="margin-top:10px;background:linear-gradient(180deg,#E8705A,var(--red));border-color:#94301E;color:#fff;-webkit-text-stroke:2px #7A2415;paint-order:stroke fill">🗑️ Remover da aliança</button>
+    </div>
     <button class="bcancel" id="promoFechar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Fechar</button>
+  </div>
+</div>
+
+<!-- ============ EDITAR MEMBRO (só super-admin) ============ -->
+<div class="overlay" id="editMembroOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">✏️ Editar jogador</h2>
+    <div id="editMembroCampos"></div>
+    <p class="rlab" style="margin-top:10px">Avatar</p>
+    <div class="avgrid" id="editMembroAvatares"></div>
+    <div class="mrow" style="margin-top:12px">
+      <button class="bcancel" id="editMembroCancel">Cancelar</button>
+      <button class="bsend" id="editMembroSalvar">Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -1211,6 +1282,7 @@
     $("#r0banner").style.display = (ME.status === "pendente") ? "flex" : "none";
     if(ME.is_oficial){ $("#navAdmin").classList.remove("hidden"); $("#oficialBtn").style.display = "none"; }
     paintCoins();
+    if(typeof atualizarBanner === 'function') atualizarBanner();
     carregarLoja();
     chatCarregar();
     avisoUltimo();
@@ -1508,7 +1580,7 @@
   function admin(acao, dados){
     return fetch(SB_URL+"/functions/v1/top-admin", {method:"POST",
       headers:sbHead({"Content-Type":"application/json"}),
-      body:JSON.stringify(Object.assign({acao:acao, codigo:localStorage.getItem("top.ocode")||""}, dados||{}))})
+      body:JSON.stringify(Object.assign({acao:acao, codigo:localStorage.getItem("top.ocode")||"", caller_id:(ME&&ME.id)||null}, dados||{}))})
       .then(function(r){ return r.json().then(function(j){ return {status:r.status, j:j}; }); })
       .then(function(res){
         if(res.status === 403 || (res.j && res.j.erro === "codigo")){ localStorage.removeItem("top.ocode"); throw {codigo:true}; }
@@ -1589,7 +1661,7 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?select=id,nome,cargo,pontos,foto_url,avatar,visto_em,status,is_oficial&order=pontos.desc&limit=300").then(function(rows){
+    return sbGet("top_membros?select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
@@ -1623,16 +1695,30 @@
   }
   function abrirPromo(m){
     promoAlvo = m;
-    $("#promoAvatar").innerHTML = avatarSVG(m);
-    $("#promoNome").textContent = m.nome;
-    $("#promoInfo").textContent = "🎯 "+fmt(m.pontos||0)+" pts · "+(m.status==="pendente"?"R0 (novo)":m.cargo);
-    var maxRank = (ME.cargo === "R5") ? 4 : 3;   // R4 promove até R3; R5 até R4
-    var html = "";
-    for(var i=1;i<=maxRank;i++){
-      var r = "R"+i, atual = ((m.status==="pendente"?"R0":m.cargo) === r);
-      html += '<button class="promobtn'+(atual?" sel":"")+'" data-rank="'+r+'">'+r+" "+RANK_NOME[r]+'</button>';
+    $("#promoAvatar").innerHTML = (m.foto_url ? '<img src="'+esc(m.foto_url)+'" alt="">' : avatarSVG(m));
+    $("#promoAvatarSm").innerHTML = avatarSVG(m);
+    $("#promoNome").textContent = "[TOP]" + m.nome;
+    var cargo = (m.status==="pendente") ? "R0" : (m.cargo || "R1");
+    $("#promoCargoTag").textContent = cargo + " · " + (RANK_NOME[cargo] || "");
+    function line(sel, html){ var e = $(sel); if(!e) return; e.innerHTML = html; e.style.display = html ? "" : "none"; }
+    line("#promoID", m.jogo_id ? '🆔 ID: <b>'+esc(m.jogo_id)+'</b>' : '');
+    line("#promoPoder", '✊ Poder: <b>'+fmtPoder(m.poder)+'</b>');
+    line("#promoAbates", '⚔️ Abates: <b>'+fmt(m.abates||0)+'</b>');
+    line("#promoAlianca", '🛡️ Aliança: <b>TOP</b>');
+    line("#promoReino", m.reino ? '🏰 Reino: <b>#'+esc(String(m.reino).replace(/^#/,""))+'</b>' : '');
+    line("#promoPontos", '🎯 Pontos: <b>'+fmt(m.pontos||0)+'</b>');
+    var ofi = ehOficial(ME), sup = !!(ME && ME.super_admin);
+    $("#promoControles").style.display = ofi ? "" : "none";
+    if(ofi){
+      var maxRank = sup ? 5 : (ME.cargo === "R5" ? 4 : 3);   // R4 até R3; R5 até R4; super até R5
+      var html = "";
+      for(var i=1;i<=maxRank;i++){
+        var r = "R"+i, atual = (cargo === r);
+        html += '<button class="promobtn'+(atual?" sel":"")+'" data-rank="'+r+'">'+r+" "+RANK_NOME[r]+'</button>';
+      }
+      $("#promoGrid").innerHTML = html;
+      $("#promoEditar").style.display = sup ? "" : "none";
     }
-    $("#promoGrid").innerHTML = html;
     $("#promoOverlay").classList.add("on");
   }
   function promover(rank){
@@ -1997,6 +2083,7 @@
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
     if(name === 'eventos') paintEventos();
+    if(typeof atualizarBanner === 'function') atualizarBanner();
     window.scrollTo({top:0, behavior:'instant'});
   }
   document.addEventListener('click', function(e){
@@ -2459,12 +2546,53 @@
   /* ---- wiring: promoção de membros (oficial) ---- */
   document.addEventListener("click", function(e){
     var b = e.target.closest("#membrosLista [data-mid]"); if(!b) return;
-    if(!ehOficial(ME)) return;
-    var m = _membrosCache[b.dataset.mid]; if(m) abrirPromo(m);
+    var m = _membrosCache[b.dataset.mid]; if(m) abrirPromo(m);   // perfil abre pra todos; controles só p/ oficial
   });
   $("#promoFechar").addEventListener("click", function(){ $("#promoOverlay").classList.remove("on"); });
   $("#promoRemover").addEventListener("click", removerMembro);
   $("#promoGrid").addEventListener("click", function(e){ var b = e.target.closest("[data-rank]"); if(b) promover(b.dataset.rank); });
+
+  /* ---- editar dados do jogador (só super-admin) ---- */
+  var editMembroSel = "king", editMembroId = null;
+  function openEditMembro(m){
+    if(!m || !(ME && ME.super_admin)) return;
+    editMembroId = m.id;
+    var campos = [
+      ["nome","Nome","text", m.nome||""],
+      ["jogo_id","ID do jogo","text", m.jogo_id||""],
+      ["poder","Poder (número, ex.: 17900000)","number", m.poder||0],
+      ["abates","Abates","number", m.abates||0],
+      ["reino","Reino (nº)","text", String(m.reino||"").replace(/^#/,"")],
+      ["pontos","Pontos","number", m.pontos||0],
+      ["moedas","Moedas","number", m.moedas||0]
+    ];
+    var cargoSel = '<p class="rlab" style="margin-top:8px">Cargo</p><select class="rin" data-k="cargo">'+
+      ["R0","R1","R2","R3","R4","R5"].map(function(r){ return '<option'+((m.cargo||"R1")===r?" selected":"")+'>'+r+'</option>'; }).join("")+'</select>';
+    $("#editMembroCampos").innerHTML = campos.map(function(c){
+      return '<p class="rlab" style="margin-top:8px">'+c[1]+'</p><input class="rin" data-k="'+c[0]+'" type="'+(c[2]==="number"?"number":"text")+'" value="'+esc(String(c[3]))+'">';
+    }).join("") + cargoSel;
+    editMembroSel = m.avatar || avIdFor(m.nome);
+    renderAvatarGrid("#editMembroAvatares", editMembroSel, function(id){ editMembroSel = id; });
+    $("#editMembroOverlay").classList.add("on");
+  }
+  function salvarEditMembro(){
+    if(!editMembroId) return;
+    var dados = { avatar: editMembroSel };
+    Array.prototype.forEach.call(document.querySelectorAll('#editMembroCampos [data-k]'), function(el){
+      var k = el.dataset.k, v = el.value;
+      dados[k] = (el.type === "number") ? (parseInt(v,10)||0) : v.trim();
+    });
+    var btn = $("#editMembroSalvar"); btn.disabled = true;
+    admin("editar_membro", {membro_id:editMembroId, dados:dados}).then(function(res){
+      btn.disabled = false;
+      if(res && res.ok){ toast("✅ Jogador atualizado!"); $("#editMembroOverlay").classList.remove("on"); $("#promoOverlay").classList.remove("on"); paintMembros(); paintRanking(); }
+      else if(res && res.erro === "super"){ toast("🔒 Só o líder pode editar."); }
+      else toast("❌ Erro ao salvar.");
+    }).catch(function(err){ btn.disabled = false; onAdminErr(err); });
+  }
+  $("#promoEditar").addEventListener("click", function(){ openEditMembro(promoAlvo); });
+  $("#editMembroCancel").addEventListener("click", function(){ $("#editMembroOverlay").classList.remove("on"); });
+  $("#editMembroSalvar").addEventListener("click", salvarEditMembro);
 
   /* ---- gestão de conteúdo ---- */
   $("#editFechar").addEventListener("click", function(){ $("#editOverlay").classList.remove("on"); });
@@ -2512,9 +2640,25 @@
   applyMenuOrder();
   iniciarNuvem();
   iniciarTraducaoUI();
+  atualizarBanner();
   if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("alianca-sw.js"); }catch(e){} }
   var deferredInstall = null;
-  window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredInstall = e; var b = $("#instalarBtn"); if(b) b.style.display = "block"; });
+  function ehAppInstalado(){ return (window.matchMedia && window.matchMedia("(display-mode: standalone),(display-mode: fullscreen)").matches) || window.navigator.standalone === true; }
+  function atualizarBanner(){
+    var b = $("#instalBanner"); if(!b) return;
+    var fechou = sessionStorage.getItem("top.instalX") === "1";
+    b.style.display = (ME && !ehAppInstalado() && !fechou && cur !== "chat") ? "flex" : "none";
+  }
+  window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredInstall = e; var b = $("#instalarBtn"); if(b) b.style.display = "block"; atualizarBanner(); });
+  window.addEventListener("appinstalled", function(){ deferredInstall = null; atualizarBanner(); });
+  (function(){
+    var bb = $("#instalBannerBtn"), bx = $("#instalBannerX");
+    if(bb) bb.addEventListener("click", function(){
+      if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(function(){ deferredInstall = null; atualizarBanner(); }); }
+      else toast("No Chrome: menu ⋮ → 'Instalar app' / 'Adicionar à tela inicial'.");
+    });
+    if(bx) bx.addEventListener("click", function(){ sessionStorage.setItem("top.instalX","1"); atualizarBanner(); });
+  })();
   (function(){ var nb = $("#notifBtn"); if(nb) nb.addEventListener("click", ativarNotificacoes); })();
   (function(){ var b = $("#instalarBtn"); if(b) b.addEventListener("click", function(){
     if(!deferredInstall) { toast("No Chrome: menu ⋮ → Instalar app / Adicionar à tela inicial."); return; }
