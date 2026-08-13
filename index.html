@@ -667,6 +667,7 @@
       <div class="chatbox">
         <div class="msgs" id="chatMsgs" data-notrans><p class="empty">Carregando…</p></div>
         <form class="chatform" id="chatForm">
+          <div class="mentionpop" id="mentionPop" style="display:none"></div>
           <input id="chatInput" type="text" maxlength="400" placeholder="Fale com a aliança…" autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
@@ -905,7 +906,14 @@
   .msg.aviso{align-self:stretch;max-width:100%;background:linear-gradient(180deg,#F6E7C4,#E3C892);
     border:3px solid var(--btn-edge);box-shadow:0 3px 0 var(--btn-edge)}
   .msg.aviso .who::before{content:"📌 ";}
-  .chatform{display:flex;gap:8px;margin-top:10px}
+  .chatform{display:flex;gap:8px;margin-top:10px;position:relative}
+  .msg .ping{background:var(--gold-lt);color:var(--ink);border-radius:5px;padding:0 4px;font-weight:900}
+  .msg.me .ping{background:rgba(255,255,255,.32);color:#fff}
+  .mentionpop{position:absolute;bottom:100%;left:0;margin-bottom:8px;z-index:70;
+    background:#fff;border:3px solid var(--gold-dk);border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.25);overflow:hidden}
+  .mentionopt{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-weight:800;
+    font-size:.9rem;color:var(--ink);background:none;border:none;padding:11px 16px}
+  .mentionopt:active,.mentionopt:hover{background:var(--gold-lt)}
   .chatform input{flex:1;border:3px solid var(--pill-dk);border-radius:12px;background:var(--panel-3);
     padding:10px 12px;font-family:inherit;font-weight:700;font-size:.9rem;color:var(--ink);outline:none;min-width:0}
   .chatform button{flex:none;cursor:pointer;font-family:inherit;font-weight:800;
@@ -1733,6 +1741,12 @@
       });
     });
   }
+  // menção "@todos" traduzida por idioma (token gravado é sempre @todos; exibição é localizada)
+  var MENTION = {pt:'@todos',en:'@everyone',es:'@todos',fr:'@tous',de:'@alle',it:'@tutti',ru:'@все',ar:'@الجميع',zh:'@所有人','zh-CN':'@所有人',ko:'@모두',ja:'@全員',id:'@semua',tr:'@herkes',hi:'@सभी',pl:'@wszyscy',nl:'@iedereen',pt_BR:'@todos'};
+  var MARCAR  = {pt:'Marcar todos',en:'Mention everyone',es:'Mencionar a todos',fr:'Mentionner tous',de:'Alle erwähnen',it:'Menziona tutti',ru:'Отметить всех',ar:'منشن الجميع',zh:'提及所有人',ko:'모두 언급',ja:'全員にメンション',id:'Sebut semua',tr:'Herkesi etiketle',hi:'सभी को टैग करें'};
+  function mentionLabel(lang){ lang=String(lang||'pt'); return MENTION[lang]||MENTION[lang.slice(0,2)]||'@todos'; }
+  function marcarLabel(lang){ lang=String(lang||'pt'); return MARCAR[lang]||MARCAR[lang.slice(0,2)]||'Marcar todos'; }
+  function renderMentions(txtEsc){ return txtEsc.replace(/@todos/ig, '<span class="ping">'+esc(mentionLabel(meuIdioma()))+'</span>'); }
   function scrollChatBottom(){
     var b = $("#chatMsgs"); if(!b) return;
     requestAnimationFrame(function(){ b.scrollTop = b.scrollHeight;
@@ -1755,7 +1769,7 @@
       return '<div class="'+cls+'" data-mid="'+s.id+'"><div class="who">'+
         '<span class="chatav">'+avatarSVG(avObj)+'</span>'+(ofi?'<span class="cg">'+esc(cargo)+'</span>':'')+esc(s.nome)+
         '<button class="trbtn" data-tr="'+s.id+'">🌐</button></div>'+
-        '<div class="tx">'+esc(s.texto)+'</div></div>';
+        '<div class="tx">'+renderMentions(esc(s.texto))+'</div></div>';
     }).join("");
     scrollChatBottom();
     if(autoTrad) traduzirTudo();
@@ -2287,7 +2301,15 @@
       box.appendChild(d); scrollChatBottom();
     }
     sbPost('top_chat', {membro_id:ME.id, nome:ME.nome, cargo:ME.cargo||'R1', tipo:'msg', texto:t})
-      .then(function(){ lastChatSig=''; chatCarregar(); }).catch(function(){ toast('❌ Não enviou.'); });
+      .then(function(){
+        lastChatSig=''; chatCarregar();
+        // ping @todos: só oficial R4/R5 notifica a aliança inteira
+        if(ehOficial(ME) && /@todos\b/i.test(t)){
+          var corpo = t.replace(/@todos/ig,'').trim() || 'Mensagem no chat da aliança';
+          notificar('todos', '📢 '+ME.nome+' chamou @todos', corpo, deviceId());
+          toast('📢 @todos notificados!');
+        }
+      }).catch(function(){ toast('❌ Não enviou.'); });
   });
   // teclado abriu/fechou ou focou no campo -> mantém a última mensagem visível
   (function(){
@@ -2296,6 +2318,31 @@
     if(window.visualViewport) window.visualViewport.addEventListener('resize', function(){
       if(cur === 'chat') scrollChatBottom();
     });
+  })();
+
+  // menu "@ -> Marcar todos": só oficial R4/R5; insere o token @todos que dispara o push
+  (function(){
+    var inp = $('#chatInput'), pop = $('#mentionPop');
+    if(!inp || !pop) return;
+    function fechar(){ pop.style.display = 'none'; }
+    function abrir(){
+      pop.innerHTML = '<button type="button" class="mentionopt" id="mentionTodos">📢 '+esc(marcarLabel(meuIdioma()))+' &nbsp;·&nbsp; '+esc(mentionLabel(meuIdioma()))+'</button>';
+      pop.style.display = 'block';
+    }
+    inp.addEventListener('input', function(){
+      if(!(ME && ehOficial(ME))){ fechar(); return; }
+      var antes = inp.value.slice(0, inp.selectionStart || inp.value.length);
+      if(/@\w*$/.test(antes)) abrir(); else fechar();
+    });
+    pop.addEventListener('mousedown', function(e){ e.preventDefault(); }); // não perde o foco do input
+    pop.addEventListener('click', function(e){
+      if(!e.target.closest('#mentionTodos')) return;
+      var pos = inp.selectionStart || inp.value.length;
+      var antes = inp.value.slice(0, pos).replace(/@\w*$/, '@todos ');
+      inp.value = antes + inp.value.slice(pos);
+      fechar(); inp.focus();
+    });
+    inp.addEventListener('blur', function(){ setTimeout(fechar, 200); });
   })();
 
   $('#avisoSend').addEventListener('click', function(){
