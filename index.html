@@ -497,6 +497,18 @@
     <symbol id="i-home" viewBox="0 0 32 32">
       <path d="M16 3L3 14h4v14h8v-8h2v8h8V14h4L16 3z" fill="currentColor"/>
     </symbol>
+    <symbol id="i-speech" viewBox="0 0 32 32">
+      <path d="M5 5h22a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H13l-6 5v-5H5a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="currentColor"/>
+      <circle cx="11" cy="13.5" r="1.8" fill="#3A2A18"/>
+      <circle cx="16" cy="13.5" r="1.8" fill="#3A2A18"/>
+      <circle cx="21" cy="13.5" r="1.8" fill="#3A2A18"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 32 32">
+      <path d="M9.5 14V11a6.5 6.5 0 0 1 13 0v3" fill="none" stroke="currentColor" stroke-width="3"/>
+      <rect x="6" y="14" width="20" height="14" rx="3.2" fill="currentColor"/>
+      <circle cx="16" cy="20" r="2.3" fill="#3A2A18"/>
+      <rect x="14.9" y="20" width="2.2" height="5" rx="1.1" fill="#3A2A18"/>
+    </symbol>
     <symbol id="i-scroll" viewBox="0 0 32 32">
       <path d="M7 4h18v22a3 3 0 01-3 3H8a3 3 0 01-3-3V7" fill="currentColor"/>
       <path d="M11 11h11M11 16h11M11 21h7" stroke="var(--bg-top)" stroke-width="2" stroke-linecap="round"/>
@@ -879,8 +891,15 @@
   .oficialbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
 
   /* ---- chat ---- */
-  .chatbox{display:flex;flex-direction:column;height:calc(100vh - 210px);height:calc(100dvh - 200px);min-height:280px}
-  .msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:4px 2px}
+  /* caixa do chat FIXA (igual modal) -> rolagem confiável em qualquer aparelho.
+     top é ajustado por JS ao abrir o chat; bottom fica acima da barra de navegação. */
+  .chatbox{display:flex;flex-direction:column;
+    position:fixed;left:50%;transform:translateX(-50%);
+    width:min(calc(100% - 24px),536px);
+    top:118px; bottom:calc(64px + env(safe-area-inset-bottom,0px));
+    height:auto;z-index:40}
+  .msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    touch-action:pan-y;display:flex;flex-direction:column;gap:9px;padding:4px 2px}
   .msg{max-width:82%;background:var(--panel-3);border-radius:12px;padding:8px 12px;
     box-shadow:0 2px 4px var(--shadow);align-self:flex-start}
   .msg .who{font-size:.72rem;color:var(--ink-soft);margin-bottom:3px;display:flex;gap:6px;align-items:center}
@@ -1736,6 +1755,12 @@
   function mentionLabel(lang){ lang=String(lang||'pt'); return MENTION[lang]||MENTION[lang.slice(0,2)]||'@todos'; }
   function marcarLabel(lang){ lang=String(lang||'pt'); return MARCAR[lang]||MARCAR[lang.slice(0,2)]||'Marcar todos'; }
   function renderMentions(txtEsc){ return txtEsc.replace(/@todos/ig, '<span class="ping">'+esc(mentionLabel(meuIdioma()))+'</span>'); }
+  function posicionarChat(){
+    var cb = document.querySelector('#s-chat .chatbox'), st = document.querySelector('#s-chat .stitle');
+    if(!cb || !st) return;
+    var r = st.getBoundingClientRect();
+    if(r.bottom > 0) cb.style.top = Math.max(56, r.bottom + 8) + 'px';
+  }
   function scrollChatBottom(){
     var b = $("#chatMsgs"); if(!b) return;
     function go(){
@@ -1974,7 +1999,7 @@
       b.classList.toggle('on', b.dataset.go === name);
     });
     if(name === 'admin'){ paintR0(); paintResgates(); paintAdminGestao(); }
-    if(name === 'chat'){ chatCarregar(); chatUnread = 0; badgeChat(); scrollChatBottom(); setTimeout(scrollChatBottom, 120); setTimeout(scrollChatBottom, 400); }
+    if(name === 'chat'){ chatCarregar(); chatUnread = 0; badgeChat(); requestAnimationFrame(posicionarChat); scrollChatBottom(); setTimeout(function(){ posicionarChat(); scrollChatBottom(); }, 120); setTimeout(scrollChatBottom, 400); }
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
     if(name === 'eventos') paintEventos();
