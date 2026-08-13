@@ -435,6 +435,13 @@
     background:linear-gradient(180deg,var(--green-lt),var(--green));color:#fff;border:2.5px solid #2A5C26;
     border-radius:10px;padding:8px 13px;box-shadow:0 3px 0 #2A5C26}
   .instalbanner .ib-x{flex:none;background:none;border:none;color:#7A5C1E;font-size:1rem;cursor:pointer;padding:2px 5px}
+  /* ---- recortador de imagem ---- */
+  .cropstage{position:relative;width:260px;height:260px;margin:12px auto;border-radius:14px;overflow:hidden;
+    background:#12212B;touch-action:none;cursor:grab}
+  .cropstage:active{cursor:grabbing}
+  #cropCanvas{display:block;width:260px;height:260px}
+  .cropmask{position:absolute;inset:0;pointer-events:none;border-radius:14px;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.55), inset 0 0 0 40px rgba(0,0,0,.12)}
   /* ---- perfil do governador (estilo jogo) ---- */
   .perfilcard{max-width:350px}
   .perfilhero{border-radius:14px;background:radial-gradient(120% 90% at 50% 16%, #EAF3F9 0%, #9DC0D6 66%, #7FA6BF 100%);
@@ -865,12 +872,36 @@
 <div class="overlay" id="editMembroOverlay">
   <div class="modal">
     <h2 style="text-align:center">✏️ Editar jogador</h2>
+    <button class="bigbtn" id="editMembroOCR" style="margin-top:10px">📷 Ler print do perfil (preenche sozinho)</button>
+    <input type="file" accept="image/*" id="editMembroPrint" style="display:none">
+    <p class="note" id="editMembroOcrSt" style="display:none;margin:6px 0 0"></p>
     <div id="editMembroCampos"></div>
+    <p class="rlab" style="margin-top:10px">Foto do jogador (opcional — dá pra recortar)</p>
+    <button class="bigbtn" id="editMembroFotoBtn">📷 Enviar / recortar foto</button>
+    <input type="file" accept="image/*" id="editMembroFotoInput" style="display:none">
+    <div id="editMembroFotoPrev" style="display:none;margin-top:8px;text-align:center"></div>
     <p class="rlab" style="margin-top:10px">Avatar</p>
     <div class="avgrid" id="editMembroAvatares"></div>
     <div class="mrow" style="margin-top:12px">
       <button class="bcancel" id="editMembroCancel">Cancelar</button>
       <button class="bsend" id="editMembroSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RECORTAR IMAGEM ============ -->
+<div class="overlay" id="cropOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">✂️ Recortar imagem</h2>
+    <p class="sub" style="text-align:center">Arraste pra posicionar · use o zoom.</p>
+    <div class="cropstage" id="cropStage">
+      <canvas id="cropCanvas" width="260" height="260"></canvas>
+      <div class="cropmask"></div>
+    </div>
+    <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" style="width:100%;margin-top:10px">
+    <div class="mrow" style="margin-top:10px">
+      <button class="bcancel" id="cropCancel">Cancelar</button>
+      <button class="bsend" id="cropOk">✂️ Usar recorte</button>
     </div>
   </div>
 </div>
@@ -2506,7 +2537,10 @@
   var _pb = $("#profileBtn"); if(_pb) _pb.addEventListener("click", abrirPerfil);
   $("#perfilFechar").addEventListener("click", function(){ $("#perfilOverlay").classList.remove("on"); });
   $("#perfilSalvar").addEventListener("click", salvarPerfil);
-  $("#perfilFoto").addEventListener("change", function(e){ perfilFotoFile = (e.target.files && e.target.files[0]) || null; });
+  $("#perfilFoto").addEventListener("change", function(e){
+    var f = (e.target.files && e.target.files[0]) || null; e.target.value = "";
+    if(f) abrirCrop(f, function(cropped){ perfilFotoFile = cropped; toast("✂️ Recorte pronto! Toque em Salvar."); });
+  });
 
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-r0ok]"); if(!b) return;
@@ -2553,10 +2587,13 @@
   $("#promoGrid").addEventListener("click", function(e){ var b = e.target.closest("[data-rank]"); if(b) promover(b.dataset.rank); });
 
   /* ---- editar dados do jogador (só super-admin) ---- */
-  var editMembroSel = "king", editMembroId = null;
+  var editMembroSel = "king", editMembroId = null, editMembroFoto = null;
   function openEditMembro(m){
     if(!m || !(ME && ME.super_admin)) return;
     editMembroId = m.id;
+    editMembroFoto = null;
+    $("#editMembroOcrSt").style.display = "none";
+    $("#editMembroFotoPrev").style.display = "none"; $("#editMembroFotoPrev").innerHTML = "";
     var campos = [
       ["nome","Nome","text", m.nome||""],
       ["jogo_id","ID do jogo","text", m.jogo_id||""],
@@ -2583,7 +2620,10 @@
       dados[k] = (el.type === "number") ? (parseInt(v,10)||0) : v.trim();
     });
     var btn = $("#editMembroSalvar"); btn.disabled = true;
-    admin("editar_membro", {membro_id:editMembroId, dados:dados}).then(function(res){
+    var prep = editMembroFoto ? subirArquivo("top-avatars", editMembroFoto, "av_"+editMembroId).then(function(url){ dados.foto_url = url; }) : Promise.resolve();
+    prep.then(function(){
+      return admin("editar_membro", {membro_id:editMembroId, dados:dados});
+    }).then(function(res){
       btn.disabled = false;
       if(res && res.ok){ toast("✅ Jogador atualizado!"); $("#editMembroOverlay").classList.remove("on"); $("#promoOverlay").classList.remove("on"); paintMembros(); paintRanking(); }
       else if(res && res.erro === "super"){ toast("🔒 Só o líder pode editar."); }
@@ -2593,6 +2633,86 @@
   $("#promoEditar").addEventListener("click", function(){ openEditMembro(promoAlvo); });
   $("#editMembroCancel").addEventListener("click", function(){ $("#editMembroOverlay").classList.remove("on"); });
   $("#editMembroSalvar").addEventListener("click", salvarEditMembro);
+
+  /* ---- OCR do print do perfil (super) ---- */
+  function parsePerfilOCR(t){
+    t = t || ""; var o = {};
+    var mn = t.match(/\[TOP\]\s*([^\n]+)/i); if(mn) o.nome = mn[1].trim();
+    var mid = t.match(/ID[^0-9]{0,4}(\d{5,})/i); if(mid) o.jogo_id = mid[1];
+    var mp = t.match(/(\d+[.,]?\d*)\s*M\b/); if(mp) o.poder = Math.round(parseFloat(mp[1].replace(",","."))*1e6);
+    var ma = t.match(/Abate[^0-9]{0,4}([\d.,]+)/i); if(ma) o.abates = parseInt(ma[1].replace(/[.,]/g,""),10)||0;
+    var mr = t.match(/Rein[o0][^0-9#]{0,4}#?\s*(\d+)/i); if(mr) o.reino = mr[1];
+    return o;
+  }
+  function preencherCampoEdit(k, v){ if(v==null || v==="") return; var el = document.querySelector('#editMembroCampos [data-k="'+k+'"]'); if(el) el.value = v; }
+  function lerPerfilPrint(file){
+    if(!file || !window.Tesseract){ toast("Leitor indisponível."); return; }
+    var st = $("#editMembroOcrSt"); st.style.display = "block"; st.style.color = "var(--ink-soft)"; st.textContent = "Lendo o print… 0%";
+    Tesseract.recognize(file, "por+eng", { logger:function(m){ if(m.status==="recognizing text") st.textContent = "Lendo o print… "+Math.round((m.progress||0)*100)+"%"; } })
+      .then(function(res){
+        var d = parsePerfilOCR((res.data && res.data.text) || "");
+        ["nome","jogo_id","poder","abates","reino"].forEach(function(k){ preencherCampoEdit(k, d[k]); });
+        var n = Object.keys(d).length;
+        st.style.color = n ? "var(--green)" : "var(--red)";
+        st.textContent = n ? ("✅ "+n+" campos preenchidos — confira e ajuste.") : "❌ Não consegui ler. Tente um print mais nítido.";
+      }).catch(function(){ st.style.color = "var(--red)"; st.textContent = "❌ Falha ao ler o print."; });
+  }
+  $("#editMembroOCR").addEventListener("click", function(){ $("#editMembroPrint").click(); });
+  $("#editMembroPrint").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) lerPerfilPrint(f); });
+  $("#editMembroFotoBtn").addEventListener("click", function(){ $("#editMembroFotoInput").click(); });
+  $("#editMembroFotoInput").addEventListener("change", function(e){
+    var f = e.target.files && e.target.files[0]; e.target.value = "";
+    if(f) abrirCrop(f, function(cropped){
+      editMembroFoto = cropped;
+      var url = URL.createObjectURL(cropped);
+      $("#editMembroFotoPrev").innerHTML = '<img src="'+url+'" style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:3px solid var(--gold-dk)">';
+      $("#editMembroFotoPrev").style.display = "block";
+    });
+  });
+
+  /* ---- recortador de imagem reutilizável: abrirCrop(file, cb(fileRecortado)) ---- */
+  var cropCb = null, cropImg = null, cropSt = null, cropDrag = null;
+  function abrirCrop(file, cb){
+    cropCb = cb;
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      URL.revokeObjectURL(url); cropImg = img;
+      var stage = 260, base = Math.max(stage/img.width, stage/img.height);
+      cropSt = { stage:stage, base:base, zoom:1, ox:0, oy:0 };
+      $("#cropZoom").value = 1; cropCentraliza(); cropDesenha();
+      $("#cropOverlay").classList.add("on");
+    };
+    img.src = url;
+  }
+  function cropCentraliza(){ var s = cropSt, sc = s.base*s.zoom; s.ox = (s.stage - cropImg.width*sc)/2; s.oy = (s.stage - cropImg.height*sc)/2; }
+  function cropLimita(){ var s = cropSt, sc = s.base*s.zoom, w = cropImg.width*sc, h = cropImg.height*sc;
+    s.ox = Math.min(0, Math.max(s.stage - w, s.ox)); s.oy = Math.min(0, Math.max(s.stage - h, s.oy)); }
+  function cropDesenha(){ var s = cropSt, c = $("#cropCanvas"), ctx = c.getContext("2d"), sc = s.base*s.zoom;
+    ctx.clearRect(0,0,s.stage,s.stage); ctx.drawImage(cropImg, s.ox, s.oy, cropImg.width*sc, cropImg.height*sc); }
+  (function(){
+    var canvas = $("#cropCanvas");
+    canvas.addEventListener("pointerdown", function(e){ if(!cropSt) return; cropDrag = {x:e.clientX, y:e.clientY, ox:cropSt.ox, oy:cropSt.oy}; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener("pointermove", function(e){ if(!cropDrag) return; cropSt.ox = cropDrag.ox + (e.clientX-cropDrag.x); cropSt.oy = cropDrag.oy + (e.clientY-cropDrag.y); cropLimita(); cropDesenha(); });
+    canvas.addEventListener("pointerup", function(){ cropDrag = null; });
+    canvas.addEventListener("pointercancel", function(){ cropDrag = null; });
+    $("#cropZoom").addEventListener("input", function(){
+      if(!cropSt) return; var s = cropSt, old = s.base*s.zoom, cx = s.stage/2, cy = s.stage/2;
+      var ix = (cx-s.ox)/old, iy = (cy-s.oy)/old; s.zoom = parseFloat(this.value); var nw = s.base*s.zoom;
+      s.ox = cx - ix*nw; s.oy = cy - iy*nw; cropLimita(); cropDesenha();
+    });
+    $("#cropCancel").addEventListener("click", function(){ $("#cropOverlay").classList.remove("on"); cropCb = null; });
+    $("#cropOk").addEventListener("click", function(){
+      if(!cropSt){ $("#cropOverlay").classList.remove("on"); return; }
+      var s = cropSt, OUT = 400, k = OUT/s.stage, sc = s.base*s.zoom*k;
+      var out = document.createElement("canvas"); out.width = OUT; out.height = OUT;
+      out.getContext("2d").drawImage(cropImg, s.ox*k, s.oy*k, cropImg.width*sc, cropImg.height*sc);
+      out.toBlob(function(blob){
+        var f = new File([blob], "crop.jpg", {type:"image/jpeg"});
+        $("#cropOverlay").classList.remove("on");
+        var cb = cropCb; cropCb = null; if(cb) cb(f);
+      }, "image/jpeg", 0.9);
+    });
+  })();
 
   /* ---- gestão de conteúdo ---- */
   $("#editFechar").addEventListener("click", function(){ $("#editOverlay").classList.remove("on"); });
