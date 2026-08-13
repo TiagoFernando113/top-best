@@ -43,11 +43,8 @@
     --outline:#3A2A18;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%;overscroll-behavior:none}
+  html{-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%}
   input,select,textarea,img{max-width:100%}
-  /* cara de app: sem seleção/menu de contexto/zoom-duplo, sem "puxar pra atualizar" */
-  input,textarea,select,.msg .tx,[contenteditable]{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
-  button,a,.gbtn,.navbtn,.ev,[data-go],[data-act]{touch-action:manipulation}
   .subm>div[style*="grid"]>div{min-width:0}
   body{
     min-height:100vh;
@@ -63,9 +60,6 @@
     overflow-x:hidden;
     padding-bottom:74px;
     -webkit-tap-highlight-color:transparent;
-    -webkit-touch-callout:none;
-    user-select:none;-webkit-user-select:none;
-    overscroll-behavior:none;
   }
   /* brasão marca-d'água no fundo — dá cara de app, preenche o vazio */
   body::before{
