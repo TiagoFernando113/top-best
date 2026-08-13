@@ -2511,19 +2511,6 @@
       .catch(function(err){ b.disabled = false; onAdminErr(err); });
   });
 
-  /* ---------------- tela cheia (navegador Android/desktop) ---------------- */
-  (function(){
-    var jaApp = window.matchMedia && window.matchMedia('(display-mode: standalone),(display-mode: fullscreen)').matches;
-    if(jaApp) return; // instalado como app já é imersivo
-    document.addEventListener('pointerdown', function goFS(){
-      document.removeEventListener('pointerdown', goFS);
-      try{
-        var el = document.documentElement;
-        if(el.requestFullscreen && document.fullscreenEnabled && !document.fullscreenElement){ el.requestFullscreen().catch(function(){}); }
-      }catch(e){}
-    });
-  })();
-
   /* ---------------- boot ---------------- */
   paintCoins();
   paintShop();
