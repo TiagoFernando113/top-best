@@ -576,6 +576,13 @@
     <svg viewBox="0 0 40 26"><path d="M14 2L2 13l12 11v-6h24V8H14V2z" fill="#6ECFCF" stroke="#2C7A7A" stroke-width="2.5" stroke-linejoin="round"/></svg>
   </button>
   <h1 class="stroked" id="screenTitle">Aliança</h1>
+  <button class="langbtn" id="langBtn" aria-label="Idioma / Language" title="Idioma / Language">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.5" fill="#F3E2BC" stroke="#7A5C34" stroke-width="2"/>
+      <ellipse cx="12" cy="12" rx="4.2" ry="9.5" fill="none" stroke="#7A5C34" stroke-width="1.7"/>
+      <path d="M2.9 9h18.2M2.9 15h18.2" stroke="#7A5C34" stroke-width="1.7"/>
+    </svg>
+  </button>
   <button class="bell" id="bellBtn" aria-label="Avisos">!</button>
   <button class="topav" id="profileBtn" aria-label="Meu perfil" style="display:none"></button>
 </header>
@@ -1007,7 +1014,30 @@
     font-size:.85rem;font-weight:600;color:var(--ink);line-height:1.5}
   .tut-dicas summary{cursor:pointer;font-weight:800;font-size:.88rem}
   .tut-dicas #eventoTutorial{white-space:pre-wrap;margin-top:8px}
+
+  /* ---- seletor de idioma ---- */
+  .langbtn{width:34px;height:34px;flex:none;border-radius:9px;cursor:pointer;padding:4px;
+    background:linear-gradient(180deg,#F3E2BC,#D9B87E);border:2.5px solid #7A5C34;
+    box-shadow:0 3px 0 #7A5C34;display:grid;place-items:center;margin-left:auto}
+  .langbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #7A5C34}
+  .langbtn svg{width:100%;height:100%;display:block}
+  .topbar .bell{margin-left:8px}
+  #langLista{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+  .langopt{cursor:pointer;font-family:inherit;font-weight:800;font-size:.95rem;text-align:left;
+    background:linear-gradient(180deg,var(--btn-1),var(--btn-2));border:2.5px solid var(--btn-edge);
+    border-radius:11px;padding:11px 14px;color:var(--ink);box-shadow:0 3px 0 var(--btn-edge)}
+  .langopt:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
+  .langopt.on{background:linear-gradient(180deg,var(--gold-lt),var(--gold));border-color:var(--gold-dk);
+    box-shadow:0 3px 0 var(--gold-dk)}
 </style>
+
+<div class="overlay" id="langOverlay">
+  <div class="modal">
+    <h2 id="langTitulo">Idioma</h2>
+    <div id="langLista"></div>
+    <button class="bcancel" id="langFechar" style="width:100%;margin-top:12px;border-radius:11px;padding:11px">✕</button>
+  </div>
+</div>
 
 <svg style="display:none" aria-hidden="true"><defs>
   <symbol id="dg-urso-faixas" viewBox="0 0 320 180">
@@ -1053,7 +1083,7 @@
 
   <symbol id="dg-urso-pico" viewBox="0 0 320 180">
     <rect width="320" height="180" fill="#F1E6D0"/>
-    <text x="160" y="22" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Bata JUNTO com a aliança</text>
+    <text x="160" y="18" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="14" font-weight="bold" fill="#4B3722">Bata JUNTO com a aliança</text>
     <path d="M28 132h268" stroke="#8A7458" stroke-width="2.5"/>
     <rect x="38" y="112" width="24" height="20" rx="3" fill="#C9B99A"/>
     <rect x="72" y="104" width="24" height="28" rx="3" fill="#C9B99A"/>
@@ -1062,8 +1092,8 @@
     <rect x="174" y="48" width="24" height="84" rx="3" fill="#F0B63F" stroke="#C98F22" stroke-width="2"/>
     <rect x="208" y="70" width="24" height="62" rx="3" fill="#F0B63F" stroke="#C98F22" stroke-width="2"/>
     <rect x="242" y="114" width="24" height="18" rx="3" fill="#C9B99A"/>
-    <path d="M140 40h92" stroke="#C98F22" stroke-width="2.5" stroke-dasharray="5 4"/>
-    <text x="186" y="34" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#8E6510">horário de pico</text>
+    <path d="M140 42h92" stroke="#C98F22" stroke-width="2.5" stroke-dasharray="5 4"/>
+    <text x="186" y="37" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#8E6510">horário de pico</text>
     <text x="28" y="152" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A6244">manhã</text>
     <text x="296" y="152" text-anchor="end" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#7A6244">madrugada</text>
     <text x="160" y="170" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="12" font-weight="bold" fill="#4B3722">Dano somado sobe a faixa de TODOS</text>
@@ -1712,6 +1742,184 @@
   }
 
   /* ------- lançar pontos de evento (oficial) ------- */
+  /* ================= IDIOMAS =================
+     Chave = o texto em português. Valor = [en, es, ko, zh, th].
+     Idioma sai do aparelho do jogador; quem não tiver tradução cai no inglês. */
+  var LANGS = [
+    {c:"pt", n:"Português"}, {c:"en", n:"English"}, {c:"es", n:"Español"},
+    {c:"ko", n:"한국어"},    {c:"zh", n:"中文"},     {c:"th", n:"ไทย"}
+  ];
+  var LI = {en:0, es:1, ko:2, zh:3, th:4};
+  var D = {
+  "Quanto mais DANO, melhor o prêmio":["More DAMAGE, better reward","Más DAÑO, mejor premio","피해량이 클수록 보상이 좋다","伤害越高，奖励越好","ยิ่งสร้างดาเมจมาก รางวัลยิ่งดี"],
+  "F1":["T1","N1","1단계","1档","ชั้น1"],"F2":["T2","N2","2단계","2档","ชั้น2"],"F3":["T3","N3","3단계","3档","ชั้น3"],
+  "F4":["T4","N4","4단계","4档","ชั้น4"],"F5":["T5","N5","5단계","5档","ชั้น5"],
+  "pouco dano":["low damage","poco daño","낮은 피해","伤害少","ดาเมจน้อย"],
+  "muito dano":["high damage","mucho daño","높은 피해","伤害多","ดาเมจมาก"],
+  "Cada faixa = baú melhor":["Each tier = better chest","Cada nivel = mejor cofre","단계마다 더 좋은 상자","每档=更好宝箱","แต่ละชั้น = หีบดีขึ้น"],
+  "ATAQUE":["ATTACK","ATAQUE","공격","攻击","โจมตี"],"DEFESA":["DEFENSE","DEFENSA","방어","防御","ป้องกัน"],
+  "dano alto":["high damage","daño alto","높은 피해","高伤害","ดาเมจสูง"],
+  "dano baixo":["low damage","daño bajo","낮은 피해","低伤害","ดาเมจต่ำ"],
+  "Bata JUNTO com a aliança":["Hit TOGETHER with the alliance","Ataca JUNTO con la alianza","연맹과 함께 공격","和联盟一起打","ตีพร้อมพันธมิตร"],
+  "horário de pico":["peak hours","hora pico","피크 시간","高峰时段","ช่วงพีค"],
+  "manhã":["morning","mañana","아침","早上","เช้า"],"madrugada":["late night","madrugada","새벽","深夜","ดึก"],
+  "Dano somado sobe a faixa de TODOS":["Combined damage raises EVERYONE's tier","El daño sumado sube el nivel de TODOS","합산 피해가 모두의 단계를 올린다","合计伤害提升所有人档位","ดาเมจรวมดันชั้นของทุกคน"],
+  "Divida a energia na semana":["Split your energy over the week","Reparte la energía en la semana","에너지를 일주일에 나눠 쓰기","把体力分配到整周","แบ่งพลังงานตลอดสัปดาห์"],
+  "rodada 1":["round 1","ronda 1","1라운드","第1轮","รอบ 1"],"rodada 2":["round 2","ronda 2","2라운드","第2轮","รอบ 2"],
+  "rodada 3":["round 3","ronda 3","3라운드","第3轮","รอบ 3"],"rodada 4":["round 4","ronda 4","4라운드","第4轮","รอบ 4"],
+  "Ative o BUFF antes de bater":["Activate the BUFF before hitting","Activa el BUFF antes de atacar","공격 전에 버프 켜기","攻击前先开增益","เปิดบัฟก่อนตี"],
+  "Gastar tudo de uma vez = menos prêmio":["Spending it all at once = less reward","Gastarlo todo de una vez = menos premio","한 번에 다 쓰면 보상이 줄어듦","一次用完=奖励更少","ใช้หมดทีเดียว = รางวัลน้อยลง"],
+  "É de graça e leva 10 segundos":["It's free and takes 10 seconds","Es gratis y toma 10 segundos","무료이고 10초면 끝","免费，只要10秒","ฟรีและใช้เวลา 10 วินาที"],
+  "VOCÊ":["YOU","TÚ","당신","你","คุณ"],"DOA":["DONATE","DONA","기부","捐献","บริจาค"],
+  "TECH":["TECH","TECH","기술","科技","เทค"],"SOBE":["GOES UP","SUBE","상승","提升","เพิ่มขึ้น"],
+  "BAÚS":["CHESTS","COFRES","상자","宝箱","หีบ"],"P/ VOCÊ":["FOR YOU","PARA TI","당신에게","给你","สำหรับคุณ"],
+  "A doação zera todo dia":["Donations reset every day","La donación se reinicia cada día","기부는 매일 초기화","捐献每天重置","การบริจาครีเซ็ตทุกวัน"],
+  "esqueceu":["missed it","lo olvidó","놓침","忘了","ลืม"],
+  "Doe assim que abrir o jogo":["Donate as soon as you open the game","Dona apenas abras el juego","게임 켜자마자 기부","一打开游戏就捐","บริจาคทันทีที่เปิดเกม"],
+  "Todos na MESMA pesquisa":["Everyone on the SAME research","Todos en la MISMA investigación","모두 같은 연구에","所有人研究同一项","ทุกคนวิจัยอันเดียวกัน"],
+  "Foco = evolui rápido · Espalhado = trava":["Focused = fast progress · Scattered = stuck","Enfocado = avanza rápido · Disperso = se traba","집중=빠른 성장 · 분산=정체","集中=进展快 · 分散=卡住","โฟกัส=ไปเร็ว · กระจาย=ติด"],
+  "Cada tarefa vale pontos":["Each task is worth points","Cada tarea vale puntos","각 임무마다 점수","每个任务都有分","แต่ละภารกิจมีแต้ม"],
+  "Construir":["Build","Construir","건설","建造","สร้าง"],"Pesquisar":["Research","Investigar","연구","研究","วิจัย"],
+  "Usar acelerações":["Use speedups","Usar aceleradores","가속 사용","使用加速","ใช้ไอเทมเร่ง"],
+  "Treinar tropa":["Train troops","Entrenar tropas","병력 훈련","训练部队","ฝึกทหาร"],
+  "+ pts":["+ pts","+ pts","+점","+分","+แต้ม"],"++ pts":["++ pts","++ pts","++점","++分","++แต้ม"],"+++ pts":["+++ pts","+++ pts","+++점","+++分","+++แต้ม"],
+  "FORA do evento":["OUTSIDE the event","FUERA del evento","이벤트 밖","活动之外","นอกอีเวนต์"],
+  "DURANTE o evento":["DURING the event","DURANTE el evento","이벤트 중","活动期间","ระหว่างอีเวนต์"],
+  "gastou = 0 ponto":["spent = 0 points","gastado = 0 puntos","사용 = 0점","用掉=0分","ใช้แล้ว = 0 แต้ม"],
+  "mesmo item = PONTOS":["same item = POINTS","mismo ítem = PUNTOS","같은 아이템 = 점수","同样道具=得分","ไอเทมเดียวกัน = แต้ม"],
+  "Guarde e gaste na hora certa":["Save it and spend at the right time","Guárdalo y gástalo en el momento justo","모아뒀다가 제때 쓰기","存起来在对的时候用","เก็บไว้ใช้ตอนที่ใช่"],
+  "Baú coletivo da aliança":["Alliance shared chest","Cofre colectivo de la alianza","연맹 공동 상자","联盟共享宝箱","หีบรวมของพันธมิตร"],
+  "aberto":["opened","abierto","열림","已开","เปิดแล้ว"],
+  "falta pouco":["almost there","casi","거의 다 됨","就差一点","อีกนิดเดียว"],
+  "Mais gente = prêmio maior pra todos":["More people = bigger reward for everyone","Más gente = mayor premio para todos","참여가 많을수록 모두 보상 증가","人越多，所有人奖励越大","คนยิ่งเยอะ รางวัลยิ่งมากทุกคน"],
+  "Linha do tempo do rally":["Rally timeline","Línea de tiempo del rally","집결 타임라인","集结时间线","ไทม์ไลน์การรวมพล"],
+  "-10 min":["-10 min","-10 min","-10분","-10分钟","-10 นาที"],
+  "HORÁRIO":["TIME","HORA","정각","时间","เวลา"],"depois":["after","después","이후","之后","หลังจาก"],
+  "cure e monte":["heal and build","cura y arma","치료하고 편성","治疗并编队","รักษาและจัดทัพ"],
+  "a marcha":["your march","la marcha","행군","部队","กองทัพ"],
+  "entre no":["join the","únete al","집결에","加入","เข้าร่วม"],"rally":["rally","rally","참여","集结","รวมพล"],
+  "cure e":["heal and","cura y","치료하고","治疗并","รักษาและ"],"prepare":["prepare","prepara","준비","准备","เตรียม"],
+  "Atrasou = ficou de fora":["Late = left out","Tarde = te quedas fuera","늦으면 못 낀다","迟到=错过","มาสาย = ตกขบวน"],
+  "Rally cheio vence":["A full rally wins","Un rally lleno gana","꽉 찬 집결이 이긴다","满员集结才会赢","รวมพลเต็ม = ชนะ"],
+  "Pouca tropa também soma — entre!":["Few troops still count — join!","Pocas tropas también suman — ¡únete!","적은 병력도 도움이 된다 — 참여!","兵少也算数——快加入！","ทหารน้อยก็ช่วยได้ — เข้าร่วมเลย!"],
+  "Tropa no hospital não luta":["Troops in the hospital can't fight","Las tropas en el hospital no pelean","병원에 있는 병력은 못 싸운다","在医院的部队不能作战","ทหารในโรงพยาบาลรบไม่ได้"],
+  "hospital":["hospital","hospital","병원","医院","โรงพยาบาล"],
+  "pronta pra guerra":["battle ready","lista para la guerra","전투 준비 완료","备战完毕","พร้อมรบ"],
+  "CURE JÁ":["HEAL NOW","CURA YA","바로 치료","立刻治疗","รักษาเลย"],
+  "Controlar pontos, não matar":["Control points, don't just kill","Controlar puntos, no matar","거점 점령이 목표, 킬이 아님","占点，不是杀人","ยึดจุด ไม่ใช่ฆ่า"],
+  "Ponto capturado = pontos o tempo todo":["Captured point = points nonstop","Punto capturado = puntos todo el tiempo","점령한 거점 = 계속 점수","占领的点=持续得分","จุดที่ยึดได้ = ได้แต้มตลอด"],
+  "Teleporte grátis a cada 12 min":["Free teleport every 12 min","Teletransporte gratis cada 12 min","12분마다 무료 순간이동","每12分钟免费传送","เทเลพอร์ตฟรีทุก 12 นาที"],
+  "12 min":["12 min","12 min","12분","12分钟","12 นาที"],
+  "caia junto da aliança":["land with the alliance","cae junto a la alianza","연맹과 함께 이동","和联盟一起落点","ลงพร้อมพันธมิตร"],
+  "SOZINHO":["ALONE","SOLO","혼자","单独","คนเดียว"],"EM BLOCO":["AS A GROUP","EN GRUPO","뭉쳐서","抱团","เป็นกลุ่ม"],
+  "alvo fácil":["easy target","blanco fácil","쉬운 표적","活靶子","เป้าง่าย"],
+  "ninguém segura":["unstoppable","imparable","막을 수 없다","没人挡得住","ไม่มีใครหยุดได้"],
+
+  /* --- títulos dos passos --- */
+  "O que é o evento":["What this event is","Qué es el evento","이 이벤트란","这个活动是什么","อีเวนต์นี้คืออะไร"],
+  "Monte a marcha certa":["Build the right march","Arma la marcha correcta","알맞은 부대 편성","编好正确的队伍","จัดทัพให้ถูก"],
+  "Ataque no horário de pico":["Attack at peak hours","Ataca en hora pico","피크 시간에 공격","在高峰时段攻击","โจมตีช่วงพีค"],
+  "Não gaste tudo de uma vez":["Don't spend it all at once","No lo gastes todo de una vez","한 번에 다 쓰지 마세요","别一次用完","อย่าใช้หมดทีเดียว"],
+  "O ciclo da doação":["The donation cycle","El ciclo de donación","기부 순환","捐献循环","วงจรการบริจาค"],
+  "Doe todo dia no reset":["Donate every day at reset","Dona todos los días en el reinicio","매일 리셋 때 기부","每天重置时捐献","บริจาคทุกวันตอนรีเซ็ต"],
+  "Priorize o que a liderança pedir":["Prioritize what leadership asks for","Prioriza lo que pida el liderazgo","운영진이 요청한 것을 우선","优先做领导要求的","ทำตามที่ผู้นำขอก่อน"],
+  "Como pontuar":["How to score","Cómo puntuar","점수 얻는 법","如何得分","วิธีทำแต้ม"],
+  "Guarde acelerações antes":["Save speedups beforehand","Guarda aceleradores antes","미리 가속 아이템 모으기","提前存加速道具","เก็บไอเทมเร่งไว้ก่อน"],
+  "Estoure o baú da aliança":["Max out the alliance chest","Revienta el cofre de la alianza","연맹 상자 최대치 달성","冲爆联盟宝箱","ดันหีบพันธมิตรให้เต็ม"],
+  "Tropas prontas 10 min antes":["Troops ready 10 min early","Tropas listas 10 min antes","10분 전에 병력 준비","提前10分钟备好部队","เตรียมทหารก่อน 10 นาที"],
+  "Entre no rally do líder":["Join the leader's rally","Únete al rally del líder","리더의 집결에 참여","加入队长的集结","เข้าร่วมรวมพลของหัวหน้า"],
+  "Cure rápido e volte":["Heal fast and come back","Cura rápido y vuelve","빨리 치료하고 복귀","快速治疗并回归","รักษาเร็วแล้วกลับมา"],
+  "O objetivo é o mapa":["The map is the objective","El objetivo es el mapa","목표는 지도 장악","目标是地图","เป้าหมายคือแผนที่"],
+  "Teleporte a cada 12 minutos":["Teleport every 12 minutes","Teletransporte cada 12 minutos","12분마다 순간이동","每12分钟传送一次","เทเลพอร์ตทุก 12 นาที"],
+  "Nunca avance sozinho":["Never push alone","Nunca avances solo","절대 혼자 나서지 마세요","绝不要单独推进","อย่าบุกคนเดียว"],
+
+  /* --- textos dos passos --- */
+  "Durante a semana toda a aliança ataca o Urso. Não é sobre matar: é sobre acumular DANO. Quanto mais dano você soma, melhor a recompensa.":["All week the alliance attacks the Bear. It's not about killing it: it's about stacking DAMAGE. The more damage you add up, the better your reward.","Durante toda la semana la alianza ataca al Oso. No se trata de matarlo: se trata de acumular DAÑO. Cuanto más daño sumes, mejor la recompensa.","일주일 내내 연맹이 곰을 공격합니다. 처치가 아니라 피해 누적이 핵심입니다. 피해를 많이 쌓을수록 보상이 좋아집니다.","整周联盟都在攻击熊。重点不是击杀，而是累积伤害。你累积的伤害越多，奖励越好。","ตลอดทั้งสัปดาห์พันธมิตรจะโจมตีหมี ไม่ได้เน้นฆ่า แต่เน้นสะสมดาเมจ ยิ่งสะสมมาก รางวัลยิ่งดี"],
+  "Leve a marcha mais forte que tiver e priorize heróis de ATAQUE. Tropa de defesa rende bem menos dano aqui.":["Bring your strongest march and prioritize ATTACK heroes. Defensive troops deal far less damage here.","Lleva la marcha más fuerte que tengas y prioriza héroes de ATAQUE. Las tropas defensivas hacen mucho menos daño aquí.","가장 강한 부대를 보내고 공격형 영웅을 우선하세요. 방어 병력은 여기서 피해가 훨씬 적습니다.","带上你最强的队伍，优先使用攻击型英雄。防御部队在这里造成的伤害少得多。","ส่งกองทัพที่แข็งที่สุดและเน้นฮีโร่สายโจมตี ทหารสายป้องกันทำดาเมจได้น้อยกว่ามาก"],
+  "Bata junto com a aliança. Quando todo mundo ataca no mesmo período, o dano total sobe e todos sobem de faixa.":["Hit together with the alliance. When everyone attacks in the same window, total damage rises and everyone moves up a tier.","Ataca junto con la alianza. Cuando todos atacan en el mismo período, el daño total sube y todos suben de nivel.","연맹과 같은 시간대에 공격하세요. 모두가 함께 치면 총 피해가 올라가 모두의 단계가 올라갑니다.","和联盟一起打。大家在同一时段进攻时，总伤害上升，所有人都能提升档位。","ตีพร้อมกับพันธมิตร เมื่อทุกคนโจมตีในช่วงเดียวกัน ดาเมจรวมจะสูงขึ้นและทุกคนเลื่อนชั้น"],
+  "Guarde energia para várias rodadas na semana e ative os buffs de ataque ANTES de bater.":["Save energy for several rounds through the week and turn on your attack buffs BEFORE you hit.","Guarda energía para varias rondas en la semana y activa los buffs de ataque ANTES de golpear.","일주일 동안 여러 라운드에 쓸 에너지를 남기고, 공격 버프는 치기 전에 켜세요.","把体力留给一周内的多个回合，并在攻击前先开启攻击增益。","เก็บพลังงานไว้ใช้หลายรอบตลอดสัปดาห์ และเปิดบัฟโจมตีก่อนตี"],
+  "Você doa → a tecnologia da aliança sobe → todo mundo fica mais forte → você coleta baús de ajuda. É de graça e leva 10 segundos.":["You donate → alliance tech levels up → everyone gets stronger → you collect help chests. It's free and takes 10 seconds.","Tú donas → la tecnología de la alianza sube → todos se vuelven más fuertes → recoges cofres de ayuda. Es gratis y toma 10 segundos.","기부 → 연맹 기술 상승 → 모두 강해짐 → 지원 상자 획득. 무료이고 10초면 됩니다.","你捐献 → 联盟科技提升 → 大家变强 → 你领取帮助宝箱。免费，只要10秒。","คุณบริจาค → เทคพันธมิตรเพิ่ม → ทุกคนแข็งขึ้น → คุณเก็บหีบช่วยเหลือ ฟรีและใช้เวลา 10 วินาที"],
+  "A doação reseta diariamente. Perdeu o dia, perdeu os pontos. Crie o hábito de doar assim que abrir o jogo.":["Donations reset daily. Miss the day, lose the points. Make it a habit to donate as soon as you open the game.","La donación se reinicia a diario. Si pierdes el día, pierdes los puntos. Haz el hábito de donar apenas abras el juego.","기부는 매일 초기화됩니다. 하루를 놓치면 점수도 사라집니다. 게임을 켜자마자 기부하는 습관을 들이세요.","捐献每天重置。错过一天就少一天的分。养成一打开游戏就捐的习惯。","การบริจาครีเซ็ตทุกวัน พลาดวันไหนก็เสียแต้มวันนั้น ทำให้เป็นนิสัยว่าเปิดเกมแล้วบริจาคเลย"],
+  "Se os oficiais pedirem uma pesquisa específica, doe nela. Aliança focada evolui muito mais rápido.":["If the officers ask for a specific research, donate to that one. A focused alliance grows much faster.","Si los oficiales piden una investigación específica, dona ahí. Una alianza enfocada avanza mucho más rápido.","운영진이 특정 연구를 요청하면 거기에 기부하세요. 집중한 연맹이 훨씬 빨리 성장합니다.","如果官员指定了某项研究，就捐那一项。集中的联盟成长快得多。","ถ้าออฟฟิเซอร์ขอให้วิจัยอันไหน ให้บริจาคอันนั้น พันธมิตรที่โฟกัสจะโตเร็วกว่ามาก"],
+  "Você ganha pontos completando tarefas: construir, pesquisar, treinar tropa e usar acelerações. Cada tarefa vale uma quantidade diferente.":["You score by completing tasks: building, researching, training troops and using speedups. Each task is worth a different amount.","Ganas puntos completando tareas: construir, investigar, entrenar tropas y usar aceleradores. Cada tarea vale una cantidad distinta.","건설, 연구, 병력 훈련, 가속 사용 등 임무를 완료하면 점수를 얻습니다. 임무마다 점수가 다릅니다.","完成任务即可得分：建造、研究、训练部队和使用加速。每个任务的分值不同。","คุณได้แต้มจากการทำภารกิจ: สร้าง วิจัย ฝึกทหาร และใช้ไอเทมเร่ง แต่ละภารกิจให้แต้มไม่เท่ากัน"],
+  "O segredo: NÃO use acelerações fora do evento. Guarde tudo e gaste durante a mobilização — os mesmos itens rendem pontos.":["The trick: do NOT use speedups outside the event. Save them all and spend during mobilization — the same items now score points.","El truco: NO uses aceleradores fuera del evento. Guárdalos y gástalos durante la movilización — los mismos ítems dan puntos.","비법: 이벤트 밖에서는 가속을 쓰지 마세요. 모아뒀다가 동원 기간에 쓰면 같은 아이템이 점수가 됩니다.","诀窍：活动之外不要用加速。全部存起来在动员期间用——同样的道具就能换成分数。","เคล็ดลับ: อย่าใช้ไอเทมเร่งนอกอีเวนต์ เก็บไว้ใช้ตอนระดมพล ไอเทมเดียวกันจะกลายเป็นแต้ม"],
+  "O baú tem metas de pontos coletivos. Quanto mais membros participam, melhor a recompensa PARA TODOS.":["The chest has collective point goals. The more members take part, the better the reward FOR EVERYONE.","El cofre tiene metas de puntos colectivos. Cuantos más miembros participen, mejor la recompensa PARA TODOS.","상자에는 공동 점수 목표가 있습니다. 참여하는 인원이 많을수록 모두의 보상이 좋아집니다.","宝箱有集体分数目标。参与的成员越多，所有人的奖励越好。","หีบมีเป้าแต้มรวม ยิ่งมีสมาชิกร่วมมาก รางวัลยิ่งดีสำหรับทุกคน"],
+  "Cure as tropas e deixe a marcha montada ANTES do horário. Quem chega atrasado não entra no rally.":["Heal your troops and have the march ready BEFORE the time. Whoever shows up late doesn't make the rally.","Cura las tropas y deja la marcha armada ANTES de la hora. Quien llega tarde no entra al rally.","정각 전에 병력을 치료하고 부대를 편성해 두세요. 늦게 오면 집결에 못 들어갑니다.","在时间之前治疗部队并编好队伍。迟到的人进不了集结。","รักษาทหารและจัดทัพให้พร้อมก่อนเวลา ใครมาสายจะไม่ได้เข้าร่วมรวมพล"],
+  "Rally cheio vence. Mesmo com pouca tropa, entre — o que conta é o total somado da aliança.":["A full rally wins. Even with few troops, join — what counts is the alliance's combined total.","Un rally lleno gana. Aunque tengas pocas tropas, únete — lo que cuenta es el total sumado de la alianza.","꽉 찬 집결이 이깁니다. 병력이 적어도 참여하세요 — 중요한 것은 연맹의 합산 전력입니다.","满员集结才会赢。就算兵少也要加入——重要的是联盟的合计总量。","รวมพลเต็มถึงจะชนะ แม้ทหารน้อยก็เข้าร่วม เพราะสิ่งที่นับคือยอดรวมของพันธมิตร"],
+  "Depois do ataque, cure imediatamente. Tropa no hospital não luta no próximo rally.":["After the attack, heal immediately. Troops sitting in the hospital can't fight the next rally.","Después del ataque, cura de inmediato. Las tropas en el hospital no pelean el próximo rally.","공격 후에는 즉시 치료하세요. 병원에 있는 병력은 다음 집결에서 싸울 수 없습니다.","进攻结束后立刻治疗。躺在医院的部队参加不了下一次集结。","หลังโจมตีให้รักษาทันที ทหารที่อยู่ในโรงพยาบาลจะรบในรอบถัดไปไม่ได้"],
+  "Não é matar por matar: é CONTROLAR pontos. Cada ponto capturado vale pontuação contínua para a aliança.":["It's not about killing for the sake of it: it's about CONTROLLING points. Each captured point scores continuously for the alliance.","No se trata de matar por matar: se trata de CONTROLAR puntos. Cada punto capturado da puntuación continua a la alianza.","무작정 처치가 아니라 거점 장악이 핵심입니다. 점령한 거점은 연맹에 계속 점수를 줍니다.","不是为了杀而杀，而是要占点。每个占领的点都会持续为联盟得分。","ไม่ใช่ฆ่าเพื่อฆ่า แต่คือการยึดจุด ทุกจุดที่ยึดได้จะทำแต้มให้พันธมิตรตลอดเวลา"],
+  "Você ganha um teleporte grátis a cada 12 min. Use para TOMAR POSIÇÃO junto da aliança, nunca para fugir à toa.":["You get a free teleport every 12 min. Use it to TAKE POSITION with the alliance, never to run away for nothing.","Recibes un teletransporte gratis cada 12 min. Úsalo para TOMAR POSICIÓN junto a la alianza, nunca para huir sin motivo.","12분마다 무료 순간이동이 주어집니다. 연맹과 함께 자리를 잡는 데 쓰고, 괜히 도망치는 데 쓰지 마세요.","每12分钟可获得一次免费传送。用它和联盟一起抢占位置，别拿来白白逃跑。","คุณจะได้เทเลพอร์ตฟรีทุก 12 นาที ใช้เพื่อยึดตำแหน่งพร้อมพันธมิตร อย่าใช้หนีเปล่าๆ"],
+  "Sozinho você vira alvo fácil. Ande em bloco com a aliança e ataque no sinal do líder.":["Alone you're an easy target. Move as a group with the alliance and strike on the leader's call.","Solo eres un blanco fácil. Muévete en grupo con la alianza y ataca a la señal del líder.","혼자 다니면 쉬운 표적이 됩니다. 연맹과 뭉쳐 다니고 리더의 신호에 맞춰 공격하세요.","单独行动就是活靶子。和联盟抱团行动，听队长的信号再进攻。","อยู่คนเดียวจะกลายเป็นเป้าง่าย เคลื่อนที่เป็นกลุ่มกับพันธมิตรและโจมตีตามสัญญาณของหัวหน้า"],
+
+  /* --- interface do tutorial --- */
+  "‹ Voltar":["‹ Back","‹ Atrás","‹ 이전","‹ 上一步","‹ ย้อน"],
+  "Avançar ›":["Next ›","Siguiente ›","다음 ›","下一步 ›","ถัดไป ›"],
+  "print real":["real screenshot","captura real","실제 스크린샷","真实截图","ภาพจริง"],
+  "📷 Trocar por um print real do jogo":["📷 Replace with a real screenshot","📷 Cambiar por una captura real del juego","📷 실제 게임 스크린샷으로 교체","📷 换成游戏真实截图","📷 เปลี่ยนเป็นภาพจริงจากเกม"],
+  "📋 Dicas rápidas em texto":["📋 Quick text tips","📋 Consejos rápidos en texto","📋 간단 텍스트 팁","📋 快速文字提示","📋 เคล็ดลับแบบข้อความ"],
+  "Sem imagem ainda.":["No image yet.","Sin imagen todavía.","아직 이미지가 없습니다.","还没有图片。","ยังไม่มีรูป"],
+  "Um oficial pode enviar um print do jogo aqui.":["An officer can upload a game screenshot here.","Un oficial puede subir una captura del juego aquí.","운영진이 여기에 게임 스크린샷을 올릴 수 있습니다.","官员可以在这里上传游戏截图。","ออฟฟิเซอร์อัปโหลดภาพจากเกมได้ที่นี่"],
+  "Idioma":["Language","Idioma","언어","语言","ภาษา"],
+  "Seguir o aparelho":["Follow my device","Seguir el dispositivo","기기 설정 따르기","跟随设备设置","ตามการตั้งค่าเครื่อง"]
+  };
+
+  var LANG = (function(){
+    try{ var s = localStorage.getItem("top.lang"); if(s) return s; }catch(e){}
+    return "auto";
+  })();
+  function langAtiva(){
+    var l = LANG;
+    if(l === "auto"){
+      var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "pt";
+      l = String(nav).toLowerCase().split("-")[0];
+      if(l === "pt") return "pt";
+      if(!(l in LI)) return "en";   /* idioma sem tradução → inglês, não português */
+    }
+    return l;
+  }
+  function tr(s){
+    if(s == null) return s;
+    var txt = String(s).trim();
+    if(!txt) return s;
+    var l = langAtiva();
+    if(l === "pt") return s;
+    var e = D[txt];
+    if(!e) return s;
+    var v = e[LI[l]];
+    return v || e[LI.en] || s;
+  }
+  function setLang(l){
+    LANG = l;
+    try{ localStorage.setItem("top.lang", l); }catch(e){}
+    if(_tutEvento) tutPinta();
+    var b = document.querySelector("#tutPrev"), n = document.querySelector("#tutNext");
+    if(b) b.textContent = tr("‹ Voltar");
+    if(n) n.textContent = tr("Avançar ›");
+    var u = document.querySelector("#tutUpload");
+    if(u) u.childNodes[0].nodeValue = tr("📷 Trocar por um print real do jogo");
+    var d = document.querySelector("#eventoDicasBox summary");
+    if(d) d.textContent = tr("📋 Dicas rápidas em texto");
+    var r = document.querySelector("#tutReal");
+    if(r) r.textContent = tr("print real");
+  }
+  document.addEventListener("click", function(e){
+    if(!e.target.closest("#langBtn")) return;
+    var atual = LANG;
+    var html = LANGS.map(function(x){
+      return '<button class="langopt'+(atual===x.c?" on":"")+'" data-setlang="'+x.c+'">'+x.n+'</button>';
+    }).join("") + '<button class="langopt'+(atual==="auto"?" on":"")+'" data-setlang="auto">🌐 '+tr("Seguir o aparelho")+'</button>';
+    var ov = document.querySelector("#langOverlay");
+    ov.querySelector("#langLista").innerHTML = html;
+    ov.querySelector("#langTitulo").textContent = tr("Idioma");
+    ov.classList.add("on");
+  });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-setlang]");
+    if(b){ setLang(b.dataset.setlang); document.querySelector("#langOverlay").classList.remove("on"); return; }
+    var ov = document.querySelector("#langOverlay");
+    if(ov && (e.target === ov || e.target.closest("#langFechar"))) ov.classList.remove("on");
+  });
+
   /* ===== tutorial visual do evento ===== */
   var _tutPassos = [], _tutIdx = 0, _tutEvento = null;
 
@@ -1722,16 +1930,36 @@
     if(p.imagem_url){
       arte.innerHTML = '<img src="'+esc(p.imagem_url)+'" alt="'+esc(p.titulo)+'">';
       $("#tutReal").style.display = "";
-    }else if(p.diagrama){
-      arte.innerHTML = '<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" role="img" aria-label="'+esc(p.titulo)+'"><use href="#dg-'+esc(p.diagrama)+'"/></svg>';
+    }else if(p.diagrama && document.getElementById("dg-"+p.diagrama)){
+      /* clona o símbolo em vez de usar <use>: dentro de <use> o conteúdo fica em
+         shadow DOM e não dá para traduzir os rótulos. */
+      var sym = document.getElementById("dg-"+p.diagrama);
+      var NS = "http://www.w3.org/2000/svg";
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("viewBox", sym.getAttribute("viewBox") || "0 0 320 180");
+      svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", p.titulo || "");
+      for(var k = 0; k < sym.childNodes.length; k++) svg.appendChild(sym.childNodes[k].cloneNode(true));
+      var ts = svg.getElementsByTagName("text");
+      for(var q = 0; q < ts.length; q++) ts[q].textContent = tr(ts[q].textContent);
+      arte.innerHTML = "";
+      arte.appendChild(svg);
       $("#tutReal").style.display = "none";
     }else{
-      arte.innerHTML = '<div class="semimg">Sem imagem ainda.<br>Um oficial pode enviar um print do jogo aqui.</div>';
+      arte.innerHTML = '<div class="semimg">'+esc(tr("Sem imagem ainda."))+'<br>'+
+                       esc(tr("Um oficial pode enviar um print do jogo aqui."))+'</div>';
       $("#tutReal").style.display = "none";
     }
     $("#tutStep").textContent = (_tutIdx+1)+"/"+_tutPassos.length;
-    $("#tutTitulo").textContent = p.titulo || "";
-    $("#tutTexto").textContent = p.texto || "";
+    $("#tutReal").textContent = tr("print real");
+    $("#tutTitulo").textContent = tr(p.titulo || "");
+    $("#tutTexto").textContent = tr(p.texto || "");
+    $("#tutPrev").textContent = tr("‹ Voltar");
+    $("#tutNext").textContent = tr("Avançar ›");
+    $("#tutUpload").childNodes[0].nodeValue = tr("📷 Trocar por um print real do jogo");
+    var _dsum = document.querySelector("#eventoDicasBox summary");
+    if(_dsum) _dsum.textContent = tr("📋 Dicas rápidas em texto");
     $("#tutPrev").disabled = (_tutIdx === 0);
     $("#tutNext").disabled = (_tutIdx >= _tutPassos.length-1);
     $("#tutDots").innerHTML = _tutPassos.map(function(_,i){
