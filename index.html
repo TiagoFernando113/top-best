@@ -123,6 +123,9 @@
   .inforow{display:flex;align-items:center;gap:8px;font-size:.9rem;padding:3px 0;color:var(--ink-soft)}
   .inforow .ic{width:18px;text-align:center;flex:none}
   .inforow .val{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+  /* ícone SVG inline (substitui emoji no meio do texto) */
+  .icn{width:1.05em;height:1.05em;vertical-align:-0.16em;display:inline-block;flex:none}
+  .inforow .ic .icn{width:18px;height:18px;vertical-align:middle}
   .sup{font-size:.62em;vertical-align:super;opacity:.8}
 
   .lvlbar{display:flex;align-items:center;gap:10px;margin-top:12px}
@@ -558,6 +561,13 @@
       <circle cx="16" cy="16" r="8" fill="#F8DC86" stroke="#C99A1E" stroke-width="1.5"/>
       <path d="M16 10v12M13 13h5a2.5 2.5 0 010 5h-4a2.5 2.5 0 000 5h5" fill="none" stroke="#9A6E12" stroke-width="2" stroke-linecap="round"/>
     </symbol>
+    <symbol id="i-hourglass" viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="3" rx="1.5" fill="#9A6E12"/><rect x="7" y="25" width="18" height="3" rx="1.5" fill="#9A6E12"/><path d="M9 7h14c0 6-6 7-6 9s6 3 6 9H9c0-6 6-7 6-9S9 13 9 7z" fill="#F5D77A" stroke="#C99A1E" stroke-width="1.4"/><path d="M12 9h8l-4 4-4-4z" fill="#E0B44E"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 32 32"><path d="M21 5l6 6-15 15-7 1 1-7L21 5z" fill="#F2C33C" stroke="#9A6E12" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 8l6 6" stroke="#9A6E12" stroke-width="1.6"/></symbol>
+    <symbol id="i-key" viewBox="0 0 32 32"><circle cx="11" cy="12" r="6.5" fill="none" stroke="#E0B44E" stroke-width="3"/><path d="M15 16l11 11M21 22l4-4M24 25l3-3" stroke="#E0B44E" stroke-width="3" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 32 32"><path d="M16 27S4 19 4 11.5A6.5 6.5 0 0116 8a6.5 6.5 0 0112 3.5C28 19 16 27 16 27z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-thumbdown" viewBox="0 0 32 32"><path d="M20 4H10a3 3 0 00-3 3v9a3 3 0 003 3h4l-1 6c0 1.6 1.2 2.5 2.4 2l.6-.3L21 19h1V4z" fill="currentColor"/><rect x="23" y="4" width="5" height="15" rx="2" fill="currentColor" opacity=".7"/></symbol>
+    <symbol id="i-drag" viewBox="0 0 32 32"><g fill="currentColor"><circle cx="12" cy="8" r="2.4"/><circle cx="20" cy="8" r="2.4"/><circle cx="12" cy="16" r="2.4"/><circle cx="20" cy="16" r="2.4"/><circle cx="12" cy="24" r="2.4"/><circle cx="20" cy="24" r="2.4"/></g></symbol>
+    <symbol id="i-pin" viewBox="0 0 32 32"><path d="M12 3h8l-1.5 9 5 5-4.5 1.5V28l-2 1.5-2-1.5v-9.5L10.5 17l5-5L12 3z" fill="#E0544A" stroke="#8E2B24" stroke-width="1.6" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -575,7 +585,7 @@
   <!-- ============ INÍCIO ============ -->
   <div class="screen on" id="s-inicio">
     <div class="panel">
-      <div class="r0banner" id="r0banner">⏳ Seu perfil ainda não foi inserido — você entrou como <b>novo jogador (R0)</b>. Um oficial vai revisar e completar seus dados.</div>
+      <div class="r0banner" id="r0banner"><svg class="icn"><use href="#i-hourglass"/></svg> Seu perfil ainda não foi inserido — você entrou como <b>novo jogador (R0)</b>. Um oficial vai revisar e completar seus dados.</div>
       <div class="ah">
         <svg class="crest" viewBox="0 0 88 100" aria-label="Brasão [TOP]">
           <path d="M6 8h76v52c0 22-18 32-38 40C24 92 6 82 6 60V8z" fill="#3E7EC4" stroke="#EAF2FB" stroke-width="4" stroke-linejoin="round"/>
@@ -591,10 +601,10 @@
         <div class="ah-right">
           <div class="ah-name stroked">[TOP]Best</div>
           <div class="infobox">
-            <div class="inforow"><span class="ic">📜</span>Líder da Aliança:<span class="val">LOGAN<span class="sup">Top</span></span></div>
-            <div class="inforow"><span class="ic">✊</span>Poder:<span class="val">1.526.376.571</span></div>
-            <div class="inforow"><span class="ic">👥</span>Membros:<span class="val">100/100</span></div>
-            <div class="inforow"><span class="ic">💬</span>Idioma:<span class="val">Todos os Idiomas</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-crown"/></svg></span>Líder da Aliança:<span class="val">LOGAN<span class="sup">Top</span></span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-power"/></svg></span>Poder:<span class="val">1.526.376.571</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-people"/></svg></span>Membros:<span class="val">100/100</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-speech"/></svg></span>Idioma:<span class="val">Todos os Idiomas</span></div>
           </div>
         </div>
       </div>
@@ -607,8 +617,8 @@
       <div class="pinned" id="pinnedBox">
         <p><b>Sworland showdown playbook!</b></p>
         <p>Use seu teleporte grátis a cada 12 minutos com sabedoria para controlar o campo.</p>
-        <div class="by"><span>📝</span> Maelle<span class="sup">Top</span>
-          <span class="likes"><span>🤍 7</span><span>👎 0</span></span>
+        <div class="by"><svg class="icn"><use href="#i-pencil"/></svg> Maelle<span class="sup">Top</span>
+          <span class="likes"><span style="display:inline-flex;align-items:center;gap:3px"><svg class="icn"><use href="#i-heart"/></svg>7</span><span style="display:inline-flex;align-items:center;gap:3px"><svg class="icn"><use href="#i-thumbdown"/></svg>0</span></span>
         </div>
       </div>
 
@@ -636,10 +646,10 @@
         </button>
       </div>
 
-      <div class="hint">✋ Segure e arraste um botão para mudar a ordem — fica salvo no seu aparelho.</div>
+      <div class="hint"><svg class="icn"><use href="#i-drag"/></svg> Segure e arraste um botão para mudar a ordem — fica salvo no seu aparelho.</div>
 
       <div class="eurow" id="eurow" style="cursor:pointer"><span class="nm" id="euNome">…</span>
-        <button class="oficialbtn" id="oficialBtn">🔑 Sou oficial</button>
+        <button class="oficialbtn" id="oficialBtn"><svg class="icn"><use href="#i-key"/></svg> Sou oficial</button>
       </div>
     </div>
   </div>
@@ -1911,8 +1921,8 @@
   function avisoUltimo(){
     return sbGet("top_chat?tipo=eq.aviso&select=nome,texto&order=id.desc&limit=1").then(function(r){
       if(r&&r[0]){ var a = r[0];
-        $("#pinnedBox").innerHTML = '<p><b>📌 Aviso da liderança</b></p><p>'+esc(a.texto)+'</p>'+
-          '<div class="by"><span>📝</span> '+esc(a.nome)+'</div>';
+        $("#pinnedBox").innerHTML = '<p><b><svg class="icn"><use href="#i-pin"/></svg> Aviso da liderança</b></p><p>'+esc(a.texto)+'</p>'+
+          '<div class="by"><svg class="icn"><use href="#i-pencil"/></svg> '+esc(a.nome)+'</div>';
       }
     }).catch(function(){});
   }
