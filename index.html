@@ -3345,21 +3345,78 @@
     else toast("❌ Não foi possível executar a ação.");
   }
   /* ------- Realtime (o servidor empurra as mudanças = interação instantânea) ------- */
-  var _rt = null, chatUnread = 0;
+  /* _rtOk = o websocket está mesmo conectado. Diferente de _rt, que só diz
+     que o cliente foi criado. A rede de segurança lá embaixo depende disso:
+     enquanto ela olhava _rt, nunca entrava em ação, porque _rt fica verdadeiro
+     desde a criação — mesmo com a conexão caída. */
+  var _rt = null, _rtCh = null, _rtOk = false, chatUnread = 0;
   function badgeChat(){
     var b = $("#nbChat"); if(!b) return;
     if(chatUnread > 0){ b.textContent = chatUnread; b.style.display = ""; } else { b.style.display = "none"; }
   }
+  /* Chamado pelos dois caminhos (broadcast e banco). Como a mesma mensagem
+     chega duas vezes, a trava evita duas buscas seguidas à toa. */
+  var _chatBuscando = false;
+  function chatChegou(membroId, tipo){
+    if(cur === "chat"){
+      if(!_chatBuscando){
+        _chatBuscando = true; lastChatSig = "";
+        chatCarregar().then(function(){ _chatBuscando = false; },
+                            function(){ _chatBuscando = false; });
+      }
+    }else if(!(ME && membroId && membroId === ME.id)){
+      chatUnread++; badgeChat();
+    }
+    if(tipo === "aviso") avisoUltimo();
+  }
+  function avisaChat(msg){
+    if(!_rtCh || !_rtOk || !ME) return;
+    try{
+      _rtCh.send({type:"broadcast", event:"msg", payload:{
+        membro_id: ME.id, nome: ME.nome, cargo: ME.cargo || "R1", tipo: msg.tipo,
+        texto: msg.texto, avatar: ME.avatar, foto_url: ME.foto_url
+      }});
+    }catch(e){}
+  }
+  /* Bolha provisória, desenhada assim que o broadcast chega. O carregamento
+     seguinte reconstrói a lista inteira a partir do banco e substitui ela —
+     por isso não dá pra ficar mensagem duplicada nem fora de ordem. */
+  function chatBolhaTemp(d){
+    var box = $("#chatMsgs"); if(!box || !d.texto) return;
+    if(box.querySelector(".empty")) box.innerHTML = "";
+    var ofi = d.cargo === "R5" || d.cargo === "R4";
+    var div = document.createElement("div");
+    div.className = "msg" + (d.tipo === "aviso" ? " aviso" : (ofi ? " oficial" : ""));
+    div.innerHTML = '<div class="who"><span class="chatav">'+
+      avatarSVG({nome:d.nome, avatar:d.avatar, foto_url:d.foto_url})+'</span>'+
+      (ofi ? '<span class="cg">'+esc(d.cargo)+'</span>' : '')+esc(d.nome)+'</div>'+
+      '<div class="tx">'+renderMentions(esc(d.texto))+'</div>';
+    box.appendChild(div); scrollChatBottom();
+    lastChatSig = "";   /* obriga o próximo carregamento a redesenhar por cima */
+  }
+
   function iniciarRealtime(){
     if(_rt || !window.supabase || !window.supabase.createClient) return;
     try{
       _rt = window.supabase.createClient(SB_URL, SB_KEY);
       var ch = _rt.channel("top-portal");
+      /* Dois caminhos para a mesma mensagem:
+         - broadcast: vai direto de aparelho para aparelho (~40 ms medidos)
+         - postgres_changes: passa pela replicação do banco (~1,7 s medidos)
+         O broadcast é o rápido; o do banco fica de rede de segurança para quem
+         estava offline ou perdeu o broadcast. Os dois só avisam "chegou algo" —
+         quem desenha é sempre o chatCarregar(), então não tem risco de a tela
+         divergir do banco nem de mensagem duplicada. */
+      ch.on("broadcast", {event:"msg"}, function(p){
+        var d = (p && p.payload) || {};
+        if(ME && d.membro_id === ME.id) return;      /* a minha já apareceu ao enviar */
+        if(cur === "chat") chatBolhaTemp(d);
+        else { chatUnread++; badgeChat(); }
+        if(d.tipo === "aviso") avisoUltimo();
+      });
       ch.on("postgres_changes", {event:"INSERT", schema:"public", table:"top_chat"}, function(p){
         var novo = p && p.new;
-        if(cur === "chat"){ lastChatSig = ""; chatCarregar(); }
-        else if(!(ME && novo && novo.membro_id === ME.id)){ chatUnread++; badgeChat(); }
-        if(novo && novo.tipo === "aviso") avisoUltimo();
+        chatChegou(novo && novo.membro_id, novo && novo.tipo);
       });
       ch.on("postgres_changes", {event:"*", schema:"public", table:"top_resgates"}, function(){
         if(ME && ME.is_oficial && cur === "admin") paintResgates();
@@ -3377,9 +3434,23 @@
         if(cur === "membros") paintMembros();
         if(cur === "ranking") paintRanking();
       });
-      ch.subscribe();
-    }catch(e){}
+      /* Guarda o status real. Se cair (CHANNEL_ERROR, TIMED_OUT, CLOSED), o
+         _rtOk volta a falso e a busca periódica assume até reconectar. */
+      ch.subscribe(function(status){
+        var antes = _rtOk;
+        _rtOk = (status === "SUBSCRIBED");
+        if(_rtOk && !antes && cur === "chat") chatCarregar();
+      });
+      _rtCh = ch;
+    }catch(e){ _rtOk = false; }
   }
+  /* Celular suspende o websocket quando o app vai pro segundo plano. Ao voltar,
+     busca o que perdeu em vez de esperar a próxima mensagem. */
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState !== "visible" || !ME) return;
+    if(cur === "chat") chatCarregar();
+    avisoUltimo();
+  });
   function atualizarBotaoNotif(){
     var b = $("#notifBtn"); if(!b) return;
     if(!("Notification" in window)){ b.style.display = "none"; return; }
@@ -4169,6 +4240,9 @@
       d.innerHTML = '<div class="who"><span class="chatav">'+avatarSVG(ME)+'</span>'+esc(ME.nome)+'</div><div class="tx">'+esc(t)+'</div>';
       box.appendChild(d); scrollChatBottom();
     }
+    /* O aviso sai ANTES de gravar: a gravação leva ~1s e o broadcast ~40ms.
+       Esperar o banco pra só depois avisar jogava fora todo o ganho. */
+    avisaChat({tipo:'msg', texto:t});
     sbPost('top_chat', {membro_id:ME.id, nome:ME.nome, cargo:ME.cargo||'R1', tipo:'msg', texto:t})
       .then(function(){
         lastChatSig=''; chatCarregar();
@@ -4217,6 +4291,7 @@
   $('#avisoSend').addEventListener('click', function(){
     var t = $('#avisoTexto').value.trim();
     if(!t || !ME) return;
+    avisaChat({tipo:'aviso', texto:t});
     sbPost('top_chat', {membro_id:ME.id, nome:ME.nome, cargo:ME.cargo||'R4', tipo:'aviso', texto:t})
       .then(function(){ $('#avisoTexto').value=''; toast('📌 Aviso publicado!'); avisoUltimo(); lastChatSig='';
         notificar('todos', '📢 Aviso da liderança', t, deviceId()); });
@@ -4608,8 +4683,9 @@
     deferredInstall.userChoice.finally(function(){ deferredInstall = null; b.style.display = "none"; });
   }); })();
 
-  setInterval(function(){ if(cur === 'chat' && ME && !_rt) chatCarregar(); }, 12000);   // reserva se o realtime cair
-  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial && !_rt){ paintR0(); paintResgates(); } }, 15000);
+  // reserva enquanto o tempo real estiver fora do ar (5s: com o realtime de pé, não roda)
+  setInterval(function(){ if(cur === 'chat' && ME && !_rtOk) chatCarregar(); }, 5000);
+  setInterval(function(){ if(cur === 'admin' && ME && ME.is_oficial && !_rtOk){ paintR0(); paintResgates(); } }, 15000);
   setInterval(function(){ if(ME){ heartbeat(); if(cur === 'membros') paintMembros(); } }, 45000);
 })();
 </script>
