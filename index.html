@@ -2033,11 +2033,20 @@
     font-size:1rem;font-weight:900;line-height:1;padding:0}
   .presbtn.on{background:linear-gradient(180deg,var(--green-lt),var(--green));
     border-color:#33702F;color:#fff}
-  .posin{flex:none;width:52px;border:2.5px solid var(--pill-dk);border-radius:9px;
-    background:#fff;padding:7px 3px;font-family:inherit;font-weight:800;font-size:.85rem;
-    color:var(--ink);text-align:center;outline:none}
-  .posin::placeholder{font-size:.72rem;font-weight:700;color:#A8875C}
-  #resultLista.modo-pontos .posin{display:none}
+  /* seletor de colocação: toca nas setas em vez de digitar.
+     O campo do meio continua editável pra quando a posição for alta. */
+  .posbox{flex:none;display:flex;align-items:center;gap:3px}
+  .posdec,.posinc{flex:none;width:26px;height:33px;border-radius:8px;cursor:pointer;padding:0;
+    border:2px solid var(--pill-dk);color:var(--ink);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));
+    font-family:inherit;font-weight:900;font-size:1.05rem;line-height:1}
+  .posdec:active,.posinc:active{transform:translateY(1px)}
+  .posin{flex:none;width:40px;border:2px solid var(--pill-dk);border-radius:8px;
+    background:#fff;padding:7px 2px;font-family:inherit;font-weight:800;font-size:.88rem;
+    color:var(--ink);text-align:center;outline:none;-moz-appearance:textfield}
+  .posin::-webkit-outer-spin-button,.posin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .posin::placeholder{font-weight:800;color:#BFA57E}
+  #resultLista.modo-pontos .posbox{display:none}
   .hojept{color:#3E6B2E}
   .escrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
     font-size:.82rem;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.07)}
@@ -3006,7 +3015,11 @@
         return '<div class="resrow'+(marc?" marcado":"")+'" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
           '<span class="mav" style="width:32px;height:32px">'+avatarSVG(m)+'</span>'+
           '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts<span class="hojept"></span></span></span>'+
-          '<input class="posin" data-mid="'+m.id+'" type="number" inputmode="numeric" min="1" placeholder="pos" value="'+pos+'">'+
+          '<span class="posbox">'+
+            '<button class="posdec" type="button" aria-label="posição anterior">‹</button>'+
+            '<input class="posin" data-mid="'+m.id+'" type="number" inputmode="numeric" min="1" placeholder="–" value="'+pos+'">'+
+            '<button class="posinc" type="button" aria-label="próxima posição">›</button>'+
+          '</span>'+
           '<button class="presbtn'+(marc?" on":"")+'" type="button" data-mid="'+m.id+'" aria-pressed="'+(marc?"true":"false")+'">✓</button>'+
           '<input class="resin" data-mid="'+m.id+'" type="number" inputmode="numeric" placeholder="hoje" value="'+v+'">'+
         '</div>';
@@ -4381,8 +4394,20 @@
     var b = e.target.closest("[data-modo]"); if(b) setResultModo(b.dataset.modo);
   });
   $("#resultLista").addEventListener("click", function(e){
+    var seta = e.target.closest(".posinc, .posdec");
+    if(seta){
+      var lin = seta.closest(".resrow"), campo = lin && lin.querySelector(".posin");
+      if(campo){
+        var n = (parseInt(campo.value, 10) || 0) + (seta.classList.contains("posinc") ? 1 : -1);
+        if(n < 1) n = 0;                       /* voltou do 1º: fica sem posição, mas presente */
+        campo.value = n ? n : "";
+        if(n) marcarLinha(lin, true); else pintaLinha(lin);
+        contaPresenca();
+      }
+      return;
+    }
     if(resultModo !== "presenca") return;
-    if(e.target.closest(".posin")) return;   /* digitar a posição não alterna a linha */
+    if(e.target.closest(".posin")) return;   /* mexer na posição não alterna a linha */
     var row = e.target.closest(".resrow"); if(!row) return;
     marcarLinha(row); contaPresenca();
   });
