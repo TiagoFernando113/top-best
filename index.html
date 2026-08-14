@@ -770,37 +770,49 @@
     <div class="panel">
       <div class="stitle"><h2>Painel do Oficial</h2><div class="rule"></div></div>
 
-      <div class="avisoform">
-        <label class="field" style="display:block;font-size:.82rem;color:var(--ink-soft);margin-bottom:6px">📢 Postar aviso/evento pra todos</label>
-        <textarea id="avisoTexto" placeholder="Ex.: Rally coordenado sexta 21h. Tropas prontas 10 min antes."></textarea>
-        <button class="bigbtn green" id="avisoSend" style="margin-top:10px">📌 Publicar aviso</button>
-      </div>
+      <p class="admintro" id="adminResumo">Vendo o que precisa de você…</p>
 
-      <div class="avisoform">
-        <label class="field" style="display:block;font-size:.82rem;color:var(--ink-soft);margin-bottom:6px">🔗 Gerar convite de acesso (uso único)</label>
-        <button class="bigbtn" id="conviteBtn">➕ Gerar link de convite</button>
-        <div id="conviteOut" style="display:none;margin-top:10px">
-          <input id="conviteLink" type="text" readonly style="width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.78rem;color:var(--ink);outline:none">
-          <button class="bigbtn green" id="conviteCopy" style="margin-top:8px">📋 Copiar link</button>
-          <p class="note" style="font-size:.78rem;color:var(--ink-soft);margin-top:6px">Envie pra UM membro. Expira no primeiro que abrir.</p>
-        </div>
-      </div>
-
-      <div class="stitle"><h2>Solicitações de entrada (R0)</h2><div class="rule"></div></div>
+      <div class="admhd"><span class="ic">📥</span><span class="tx">Entradas para aprovar</span><span class="badge zero" id="badgeR0">–</span></div>
       <div id="adminR0"><p class="empty">Carregando…</p></div>
 
-      <div class="stitle"><h2>Resgates a entregar</h2><div class="rule"></div></div>
+      <div class="admhd"><span class="ic">📦</span><span class="tx">Resgates para entregar</span><span class="badge zero" id="badgeResg">–</span></div>
       <div id="adminResgates"><p class="empty">Carregando…</p></div>
 
-      <div class="stitle"><h2>⚙️ Gerenciar conteúdo</h2><div class="rule"></div></div>
-      <div class="gestbloco">
-        <div class="gesthd">🎁 Loja <button class="gadd" data-add="loja">+ Novo</button></div>
-        <div id="gestLoja"></div>
-      </div>
-      <div class="gestbloco">
-        <div class="gesthd">📅 Eventos <button class="gadd" data-add="evento">+ Novo</button></div>
-        <div id="gestEventos"></div>
-      </div>
+      <details class="admbox">
+        <summary><span class="ic">📢</span>Publicar aviso para todos</summary>
+        <div class="admbody">
+          <textarea id="avisoTexto" placeholder="Ex.: Rally coordenado sexta 21h. Tropas prontas 10 min antes."></textarea>
+          <button class="bigbtn green" id="avisoSend" style="margin-top:10px">📌 Publicar aviso</button>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">🔗</span>Convidar um membro</summary>
+        <div class="admbody">
+          <button class="bigbtn" id="conviteBtn">➕ Gerar link de convite</button>
+          <div id="conviteOut" style="display:none;margin-top:10px">
+            <input id="conviteLink" type="text" readonly style="width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.78rem;color:var(--ink);outline:none">
+            <button class="bigbtn green" id="conviteCopy" style="margin-top:8px">📋 Copiar link</button>
+            <p class="note" style="margin-top:6px">Envie pra UM membro. Expira no primeiro que abrir.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">🎁</span>Itens da loja</summary>
+        <div class="admbody">
+          <button class="gadd" data-add="loja">+ Novo item</button>
+          <div id="gestLoja"></div>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">📅</span>Eventos da agenda</summary>
+        <div class="admbody">
+          <button class="gadd" data-add="evento">+ Novo evento</button>
+          <div id="gestEventos"></div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -1832,6 +1844,38 @@
   .avisoform textarea{width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;
     padding:10px;font-family:inherit;font-weight:700;font-size:.9rem;color:var(--ink);resize:vertical;min-height:56px;outline:none}
   .navbtn.hidden{display:none}
+
+  /* ---- Painel do Oficial ----
+     O que precisa de acao fica no topo com contador; o resto (publicar
+     aviso, convite, loja, eventos) fica recolhido para nao virar uma
+     rolagem unica de blocos soltos. */
+  .admintro{font-size:.86rem;font-weight:700;color:var(--ink-soft);
+    background:rgba(255,255,255,.4);border:2px dashed var(--pill-dk);
+    border-radius:11px;padding:10px 12px;margin-bottom:14px}
+  .admintro b{color:var(--ink)}
+  .admhd{display:flex;align-items:center;gap:8px;margin:16px 0 8px;
+    font-size:.95rem;font-weight:800;color:var(--ink)}
+  .admhd .ic{flex:none;font-size:1.05rem}
+  .admhd .tx{flex:1;min-width:0}
+  .badge{flex:none;min-width:28px;text-align:center;border-radius:999px;
+    padding:3px 9px;font-size:.8rem;font-weight:800;color:#fff;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#E8705A,var(--red));
+    border:2px solid #94301E;box-shadow:0 2px 0 #94301E}
+  .badge.zero{background:linear-gradient(180deg,#C4B49A,#A3927A);
+    border-color:#7E6E58;box-shadow:0 2px 0 #7E6E58}
+  .admbox{background:var(--panel-3);border-radius:13px;margin-bottom:10px}
+  .admbox>summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+    gap:8px;padding:12px;font-size:.92rem;font-weight:800;color:var(--ink)}
+  .admbox>summary::-webkit-details-marker{display:none}
+  .admbox>summary::after{content:"\25B8";margin-left:auto;font-size:1.05rem;
+    color:var(--ink-soft);transition:transform .15s}
+  .admbox[open]>summary::after{transform:rotate(90deg)}
+  .admbody{padding:0 12px 12px}
+  .admbody textarea{width:100%;border:3px solid var(--pill-dk);border-radius:11px;
+    background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.9rem;
+    color:var(--ink);resize:vertical;min-height:56px;outline:none}
+  .admbody .gadd{margin:0 0 9px}
 
   /* ---- ativos no portal ---- */
   .pmember{display:flex;align-items:center;gap:9px;background:var(--panel-3);border-radius:11px;padding:7px 10px;
@@ -2919,10 +2963,27 @@
     gestaoLista("top_loja?select=*&order=ordem", "gestLoja", "loja");
     gestaoLista("top_eventos?select=*&order=ordem", "gestEventos", "evento");
   }
+  /* pendencias do Painel do Oficial: contador em cada fila + resumo no topo */
+  var _admPend = {r0:0, resg:0};
+  function admBadge(id, n){
+    var b = $("#"+id); if(!b) return;
+    b.textContent = n;
+    if(n) b.classList.remove("zero"); else b.classList.add("zero");
+  }
+  function admResumo(){
+    var el = $("#adminResumo"); if(!el) return;
+    var a = _admPend.r0, b = _admPend.resg, p = [];
+    if(!a && !b){ el.innerHTML = "✅ <b>Tudo em dia.</b> Nada esperando por você."; return; }
+    if(a) p.push("<b>"+a+"</b> "+(a === 1 ? "entrada para aprovar" : "entradas para aprovar"));
+    if(b) p.push("<b>"+b+"</b> "+(b === 1 ? "resgate para entregar" : "resgates para entregar"));
+    el.innerHTML = "👋 Você tem " + p.join(" e ") + ".";
+  }
+
   function paintResgates(){
     if(!ME || !ME.is_oficial) return;
     sbGet("top_resgates?status=eq.pendente&select=id,item_titulo,custo,criado_em,top_membros(nome)&order=criado_em").then(function(rows){
       rows = rows || []; var host = $("#adminResgates"); if(!host) return;
+      _admPend.resg = rows.length; admBadge("badgeResg", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>📦</div>Nenhum resgate pra entregar.</div>'; return; }
       host.innerHTML = rows.map(function(r){
         var nome = (r.top_membros && r.top_membros.nome) || "Membro";
@@ -3314,6 +3375,7 @@
     if(!ME || !ME.is_oficial) return;
     sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
       rows = rows||[]; var host = $("#adminR0"); if(!host) return;
+      _admPend.r0 = rows.length; admBadge("badgeR0", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>👌</div>Nenhuma solicitação pendente.</div>'; return; }
       host.innerHTML = rows.map(function(m){
         return '<div class="subm" data-r0="'+m.id+'">'+
