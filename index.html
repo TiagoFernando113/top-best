@@ -1986,6 +1986,9 @@
   .field{display:block;font-size:.82rem;font-weight:800;color:var(--ink-soft);margin-bottom:6px}
   .note{font-size:.8rem;font-weight:700;color:var(--ink-soft)}
   .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
+  .gtag{flex:none;font-size:.68rem;font-weight:800;border-radius:7px;padding:3px 7px;
+    background:rgba(0,0,0,.07);color:var(--ink-soft);white-space:nowrap}
+  .gtag.on{background:#DCEFD4;color:#3E6B2E;border:1.5px solid #5C8143}
   .resrow{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid rgba(0,0,0,.06)}
   .resnome{flex:1;min-width:0;font-size:.9rem;font-weight:700;display:flex;flex-direction:column;overflow:hidden}
   .resnome{white-space:nowrap;text-overflow:ellipsis}
@@ -2898,7 +2901,7 @@
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"avisar_min",l:"🔔 Avisar quantos minutos antes (0 = não avisa)",t:"number"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"avisar_min",l:"🔔 Notificar antes de começar (só funciona com a hora preenchida)",t:"aviso"},{k:"avisar_alvo",l:"📲 Quem recebe o aviso",t:"alvo"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
@@ -2916,6 +2919,10 @@
       if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
       if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
       if(c.t==="cat")   return lbl + campoSelect(c.k, v||"semanal", [["semanal","Semanal (recorrente)"],["temporario","Temporário"]]);
+      if(c.t==="aviso") return lbl + campoSelect(c.k, (v===""?"0":String(v)),
+        [["0","Não avisar"],["5","5 minutos antes"],["10","10 minutos antes"],["15","15 minutos antes"],
+         ["20","20 minutos antes"],["30","30 minutos antes"],["45","45 minutos antes"],["60","1 hora antes"]]);
+      if(c.t==="alvo")  return lbl + campoSelect(c.k, v||"todos", [["todos","Todos os membros"],["oficiais","Só os oficiais"]]);
       if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
       if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
@@ -2930,7 +2937,7 @@
     def.campos.forEach(function(c){
       var el = document.querySelector('#editCampos [data-k="'+c.k+'"]');
       var v = el ? el.value : "";
-      if(c.t==="number") body[c.k] = parseInt(v,10)||0;
+      if(c.t==="number" || c.t==="aviso") body[c.k] = parseInt(v,10)||0;
       else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
@@ -2952,7 +2959,14 @@
       rows = rows || []; var host = $("#"+hostId); if(!host) return;
       _gestCache[tipoKey] = {}; rows.forEach(function(r){ _gestCache[tipoKey][r.id] = r; });
       host.innerHTML = rows.map(function(r){
-        return '<div class="gestrow"><span class="gnome">'+esc(r.titulo)+'</span>'+
+        /* nos eventos, mostra de relance se o aviso esta ligado — sem isso
+           nao da pra saber qual evento avisa sem abrir um por um */
+        var sino = "";
+        if(tipoKey === "evento"){
+          if(r.avisar_min > 0) sino = '<span class="gtag on">🔔 '+r.avisar_min+' min</span>';
+          else if(r.hora_utc)  sino = '<span class="gtag">🔕 sem aviso</span>';
+        }
+        return '<div class="gestrow"><span class="gnome">'+esc(r.titulo)+'</span>'+sino+
           '<button class="gedit" data-edit="'+tipoKey+'" data-id="'+r.id+'">✏️</button>'+
           '<button class="gdel" data-del="'+tipoKey+'" data-id="'+r.id+'">🗑️</button></div>';
       }).join("") || '<p class="empty" style="padding:10px">Vazio.</p>';
