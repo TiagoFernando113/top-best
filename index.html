@@ -1781,6 +1781,11 @@
     <h2 id="eventoTitulo"></h2>
     <p class="sub" id="eventoQuando"></p>
 
+    <div class="inscbox" id="eventoInscBox" style="display:none">
+      <button class="bigbtn" id="eventoInscBtn" type="button">✋ Eu vou participar</button>
+      <p class="note" id="eventoInscTx" style="margin-top:7px"></p>
+    </div>
+
     <div class="tut" id="eventoTut" style="display:none">
       <div class="tut-stage" id="tutStage">
         <span class="tut-step" id="tutStep">1/1</span>
@@ -1800,6 +1805,12 @@
         📷 Trocar por um print real do jogo
         <input type="file" accept="image/*" id="tutFile" style="display:none">
       </label>
+    </div>
+
+    <div class="tutvazio" id="eventoSemTut" style="display:none">
+      <span class="tv-ic">📭</span>
+      <div class="tv-tx"><b>Ainda sem tutorial</b>
+        <p id="eventoSemTutTx">Este evento ainda não tem passo a passo.</p></div>
     </div>
 
     <details class="tut-dicas" id="eventoDicasBox" style="display:none">
@@ -2015,6 +2026,21 @@
   .embreve .eb-tx{flex:1;min-width:0}
   .embreve .eb-tx b{display:block;font-size:.92rem;color:#7A5410;margin-bottom:2px}
   .embreve .eb-tx p{font-size:.8rem;font-weight:700;line-height:1.4;color:var(--ink-soft)}
+  /* evento sem tutorial: sem isso o modal abria praticamente vazio */
+  .tutvazio{display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px;
+    background:rgba(255,255,255,.45);border:2px dashed var(--pill-dk);
+    border-radius:12px;padding:12px}
+  .tutvazio .tv-ic{flex:none;font-size:1.4rem;line-height:1.1}
+  .tutvazio .tv-tx{flex:1;min-width:0}
+  .tutvazio .tv-tx b{display:block;font-size:.92rem;color:var(--ink);margin-bottom:3px}
+  .tutvazio .tv-tx p{font-size:.82rem;font-weight:700;line-height:1.45;color:var(--ink-soft)}
+  /* confirmação de presença antes do evento */
+  .inscbox{margin:12px 0 4px}
+  .inscbox .note{text-align:center}
+  #eventoInscBtn.confirmado{background:linear-gradient(180deg,var(--green-lt),var(--green));
+    border-color:#33702F;color:#fff;-webkit-text-stroke:2px #2A5C26;paint-order:stroke fill;
+    box-shadow:0 4px 0 #33702F, 0 5px 9px var(--shadow)}
+  #eventoInscBtn.confirmado:active{box-shadow:0 1px 0 #33702F}
   .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
   .gtag{flex:none;font-size:.68rem;font-weight:800;border-radius:7px;padding:3px 7px;
     background:rgba(0,0,0,.07);color:var(--ink-soft);white-space:nowrap}
@@ -2097,6 +2123,10 @@
   }
   function sbPost(path, body){ return sbSend("POST", path, body); }
   function sbPatch(path, body){ return sbSend("PATCH", path, body); }
+  function sbDel(path){
+    return fetch(SB_URL+"/rest/v1/"+path, {method:"DELETE", headers:sbHead()})
+      .then(function(r){ return r.ok; });
+  }
   function sbUpload(path, file){
     return fetch(SB_URL+"/storage/v1/object/top-provas/"+path,
       {method:"POST", headers:sbHead({"Content-Type":file.type||"image/jpeg","x-upsert":"true"}), body:file})
@@ -2785,10 +2815,19 @@
   function carregaTutorial(ev){
     _tutPassos = []; _tutIdx = 0; _tutEvento = ev;
     $("#eventoTut").style.display = "none";
+    $("#eventoSemTut").style.display = "none";
     return sbGet("top_tutorial_passos?evento_id=eq."+enc(ev.id)+"&select=*&order=ordem")
       .then(function(rows){
         _tutPassos = Array.isArray(rows) ? rows : [];
-        if(_tutPassos.length){ $("#eventoTut").style.display = ""; tutPinta(); }
+        if(_tutPassos.length){ $("#eventoTut").style.display = ""; tutPinta(); return; }
+        /* nem passos nem dicas: sem isso o modal abria só com os botões do
+           oficial e parecia quebrado */
+        if(!ev.tutorial){
+          $("#eventoSemTutTx").textContent = ehOficial(ME)
+            ? "Escreva as dicas deste evento no painel Admin, em Eventos da agenda → editar → Dicas / estratégia."
+            : "Ainda não escrevemos o passo a passo deste. Peça a um oficial no chat.";
+          $("#eventoSemTut").style.display = "";
+        }
       }).catch(function(){});
   }
   document.addEventListener("click", function(e){
@@ -2826,6 +2865,46 @@
     }).catch(function(){ toast("❌ Não consegui enviar o print."); });
   });
 
+  /* ----- confirmação de presença (antes do evento) -----
+     Só aparece em evento com horário marcado, que é onde o aviso faz diferença.
+     Serve pro oficial saber quantos vêm, e pro aviso automático poder ir só
+     pra quem confirmou: quem vai no Urso 1 não é acordado pelo Urso 2. */
+  var _inscEvento = null, _inscMinhaId = null;
+
+  function pintaInscricao(qtd){
+    var b = $("#eventoInscBtn"), t = $("#eventoInscTx");
+    var ok = !!_inscMinhaId;
+    b.classList.toggle("confirmado", ok);
+    b.textContent = ok ? "✅ Presença confirmada — toque para desmarcar" : "✋ Eu vou participar";
+    t.textContent = qtd ? (qtd === 1 ? "1 pessoa confirmou." : qtd + " pessoas confirmaram.")
+                        : "Ninguém confirmou ainda. Seja o primeiro!";
+  }
+  function carregaInscricao(ev){
+    _inscEvento = ev; _inscMinhaId = null;
+    var box = $("#eventoInscBox");
+    if(!box) return;
+    if(!ev.hora_utc || !ME || !ME.id){ box.style.display = "none"; return; }
+    box.style.display = "";
+    $("#eventoInscTx").textContent = "…";
+    sbGet("top_inscricoes?evento_id=eq."+enc(ev.id)+"&select=id,membro_id").then(function(rows){
+      rows = Array.isArray(rows) ? rows : [];
+      for(var i = 0; i < rows.length; i++) if(rows[i].membro_id === ME.id){ _inscMinhaId = rows[i].id; break; }
+      pintaInscricao(rows.length);
+    }).catch(function(){ box.style.display = "none"; });
+  }
+  function alternaInscricao(){
+    if(!_inscEvento || !ME || !ME.id) return;
+    var b = $("#eventoInscBtn"), tinha = _inscMinhaId;
+    b.disabled = true;
+    var acao = tinha ? sbDel("top_inscricoes?id=eq."+enc(tinha))
+                     : sbPost("top_inscricoes", {evento_id:_inscEvento.id, membro_id:ME.id});
+    acao.then(function(){
+      b.disabled = false;
+      toast(tinha ? "Presença desmarcada." : "✅ Confirmado! Você recebe o aviso antes de começar.", 3800);
+      carregaInscricao(_inscEvento);
+    }).catch(function(){ b.disabled = false; toast("❌ Não consegui salvar."); });
+  }
+
   function abrirEvento(ev){
     if(!ev) return;
     $("#eventoTitulo").textContent = ev.titulo;
@@ -2841,6 +2920,7 @@
     $("#eventoDicasBox").style.display = ev.tutorial ? "" : "none";
     $("#eventoDicasBox").open = false;
     carregaTutorial(ev);
+    carregaInscricao(ev);
     var lb = $("#eventoLancar"), fb = $("#eventoFinalizar");
     if(ehOficial(ME)){
       lb.style.display = "block"; lb.onclick = function(){ $("#eventoOverlay").classList.remove("on"); abrirResultado(ev); };
@@ -3089,7 +3169,8 @@
       if(c.t==="aviso") return lbl + campoSelect(c.k, (v===""?"0":String(v)),
         [["0","Não avisar"],["5","5 minutos antes"],["10","10 minutos antes"],["15","15 minutos antes"],
          ["20","20 minutos antes"],["30","30 minutos antes"],["45","45 minutos antes"],["60","1 hora antes"]]);
-      if(c.t==="alvo")  return lbl + campoSelect(c.k, v||"todos", [["todos","Todos os membros"],["oficiais","Só os oficiais"]]);
+      if(c.t==="alvo")  return lbl + campoSelect(c.k, v||"todos",
+        [["todos","Todos os membros"],["inscritos","Só quem confirmou presença"],["oficiais","Só os oficiais"]]);
       if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
       if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
@@ -4390,6 +4471,7 @@
   });
   $("#resultFechar").addEventListener("click", function(){ $("#resultOverlay").classList.remove("on"); });
   $("#resultSalvar").addEventListener("click", salvarResultado);
+  $("#eventoInscBtn").addEventListener("click", alternaInscricao);
   $("#resultModos").addEventListener("click", function(e){
     var b = e.target.closest("[data-modo]"); if(b) setResultModo(b.dataset.modo);
   });
