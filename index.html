@@ -701,6 +701,11 @@
         <span class="amt"><span id="coinAmt2">0</span></span>
       </div>
       <div class="stitle"><h2>Loja da Aliança</h2><div class="rule"></div></div>
+      <div class="embreve">
+        <span class="eb-ic">🚧</span>
+        <div class="eb-tx"><b>Em breve</b>
+          <p>A loja ainda está sendo montada. Dá pra espiar os prêmios, mas o resgate abre junto com a nova forma de ganhar moeda.</p></div>
+      </div>
       <div class="shop" id="shopGrid"></div>
       <div class="hint">🎁 Prêmios entregues pelos oficiais no jogo ou no Discord após o resgate.</div>
     </div>
@@ -744,6 +749,11 @@
   <div class="screen" id="s-ranking">
     <div class="panel">
       <div class="stitle"><h2>Ranking de Pontos</h2><div class="rule"></div></div>
+      <div class="embreve">
+        <span class="eb-ic">🚧</span>
+        <div class="eb-tx"><b>Em breve</b>
+          <p>Estamos acertando como contar a participação de cada um. Enquanto isso o ranking fica parado — ninguém está perdendo posição.</p></div>
+      </div>
       <div id="rankTabs" class="rtabs"></div>
       <div id="rankTop"></div>
       <div class="hint">🎯 Pontos são ganhos participando dos eventos — quanto mais pontos, mais alto no ranking e mais moedas na Loja.</div>
@@ -1985,6 +1995,13 @@
   .trorig{color:inherit;text-decoration:underline;cursor:pointer}
   .field{display:block;font-size:.82rem;font-weight:800;color:var(--ink-soft);margin-bottom:6px}
   .note{font-size:.8rem;font-weight:700;color:var(--ink-soft)}
+  /* aviso de secao ainda em construcao (loja e ranking) */
+  .embreve{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;
+    background:#FBEBCB;border:2.5px dashed var(--gold-dk);border-radius:12px;padding:11px 12px}
+  .embreve .eb-ic{flex:none;font-size:1.3rem;line-height:1.1}
+  .embreve .eb-tx{flex:1;min-width:0}
+  .embreve .eb-tx b{display:block;font-size:.92rem;color:#7A5410;margin-bottom:2px}
+  .embreve .eb-tx p{font-size:.8rem;font-weight:700;line-height:1.4;color:var(--ink-soft)}
   .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
   .gtag{flex:none;font-size:.68rem;font-weight:800;border-radius:7px;padding:3px 7px;
     background:rgba(0,0,0,.07);color:var(--ink-soft);white-space:nowrap}
