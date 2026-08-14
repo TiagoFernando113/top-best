@@ -1985,6 +1985,10 @@
   .trtoggle.on{background:linear-gradient(180deg,var(--teal-lt),var(--teal));color:#fff;border-color:var(--teal-dk)}
   /* ---- admin R0 ---- */
   .rlab{display:block;font-size:.75rem;color:var(--ink-soft);margin-bottom:4px}
+  /* divisórias do formulário de evento: sem elas eram 17 campos em fila */
+  .editsec{margin:16px 0 2px;padding-bottom:5px;font-size:.82rem;font-weight:800;
+    color:var(--ink);border-bottom:2.5px solid var(--pill-dk)}
+  .editsec:first-child{margin-top:2px}
   .rin{width:100%;border:2.5px solid var(--pill-dk);border-radius:9px;background:#fff;padding:9px;
     font-family:inherit;font-weight:700;font-size:.86rem;color:var(--ink);outline:none}
   .gestbloco{background:var(--panel-3);border-radius:12px;padding:10px;margin-bottom:12px}
@@ -2883,7 +2887,7 @@
     _inscEvento = ev; _inscMinhaId = null;
     var box = $("#eventoInscBox");
     if(!box) return;
-    if(!ev.hora_utc || !ME || !ME.id){ box.style.display = "none"; return; }
+    if(!ev.permite_inscricao || !ME || !ME.id){ box.style.display = "none"; return; }
     box.style.display = "";
     $("#eventoInscTx").textContent = "…";
     sbGet("top_inscricoes?evento_id=eq."+enc(ev.id)+"&select=id,membro_id").then(function(rows){
@@ -3147,8 +3151,38 @@
   var EDIT_DEFS = {
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
+    /* Em seções: eram 17 campos numa lista corrida e ninguém achava o que
+       procurava — o aviso e a presença ficavam perdidos no meio. */
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"avisar_min",l:"🔔 Notificar antes de começar (só funciona com a hora preenchida)",t:"aviso"},{k:"avisar_alvo",l:"📲 Quem recebe o aviso",t:"alvo"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
+      campos:[
+        {sec:"📋 O que é"},
+        {k:"titulo",l:"Título",t:"text"},
+        {k:"descricao",l:"Descrição curta",t:"text"},
+        {k:"categoria",l:"Categoria",t:"cat"},
+        {k:"tipo",l:"Cor/Tipo",t:"tipo"},
+
+        {sec:"🕐 Quando acontece"},
+        {k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},
+        {k:"hora",l:"Hora (ex.: 21:00)",t:"text"},
+        {k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},
+        {k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},
+        {k:"inicio",l:"Início (só temporário)",t:"date"},
+        {k:"fim",l:"Fim (só temporário)",t:"date"},
+
+        {sec:"🔔 Aviso e presença"},
+        {k:"permite_inscricao",l:"✋ Deixar os membros confirmarem presença",t:"simnao"},
+        {k:"avisar_min",l:"🔔 Notificar antes de começar (precisa da hora preenchida)",t:"aviso"},
+        {k:"avisar_alvo",l:"📲 Quem recebe o aviso",t:"alvo"},
+
+        {sec:"🪙 Moedas do evento"},
+        {k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},
+        {k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},
+        {k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},
+        {k:"moedas_fixas",l:"🪙 Participação (todos os que pontuaram)",t:"number"},
+
+        {sec:"📖 Tutorial"},
+        {k:"tutorial",l:"Dicas / estratégia (texto)",t:"textarea"}
+      ] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
@@ -3161,8 +3195,11 @@
     editCtx = { tipoKey:tipoKey, def:def, id: item ? item.id : null };
     $("#editTitulo").textContent = (item ? "Editar " : "Novo ") + def.titulo;
     $("#editCampos").innerHTML = def.campos.map(function(c){
+      if(c.sec) return '<div class="editsec">'+esc(c.sec)+'</div>';
       var v = item ? (item[c.k]==null?"":item[c.k]) : "";
       var lbl = '<p class="rlab" style="margin-top:8px">'+c.l+'</p>';
+      if(c.t==="simnao") return lbl + campoSelect(c.k, (v===true||v==="true") ? "true" : "false",
+        [["true","Sim, mostrar o botão"],["false","Não"]]);
       if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
       if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
       if(c.t==="cat")   return lbl + campoSelect(c.k, v||"semanal", [["semanal","Semanal (recorrente)"],["temporario","Temporário"]]);
@@ -3183,9 +3220,11 @@
     if(!editCtx) return;
     var def = editCtx.def, body = {};
     def.campos.forEach(function(c){
+      if(c.sec) return;
       var el = document.querySelector('#editCampos [data-k="'+c.k+'"]');
       var v = el ? el.value : "";
-      if(c.t==="number" || c.t==="aviso") body[c.k] = parseInt(v,10)||0;
+      if(c.t==="simnao") body[c.k] = (v === "true");
+      else if(c.t==="number" || c.t==="aviso") body[c.k] = parseInt(v,10)||0;
       else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
