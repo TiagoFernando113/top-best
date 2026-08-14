@@ -1006,7 +1006,11 @@
       <button class="rtab on" data-modo="presenca" type="button">✅ Marcar presença</button>
       <button class="rtab" data-modo="pontos" type="button">🔢 Lançar pontos</button>
     </div>
-    <p class="sub" id="resultSub">Toque em quem participou. Cada presença vale 1 ponto.</p>
+    <p class="sub" id="resultSub">Toque em quem participou. A posição é opcional.</p>
+    <details class="admbox" id="escalaBox" style="margin:8px 0">
+      <summary><span class="ic">ℹ️</span>Como a posição vira ponto</summary>
+      <div class="admbody" id="escalaPos"></div>
+    </details>
     <div id="presAcoes" style="display:flex;gap:8px;margin:8px 0">
       <button class="bcancel" id="presTodos" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Marcar todos</button>
       <button class="bcancel" id="presLimpar" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Limpar</button>
@@ -2029,6 +2033,17 @@
     font-size:1rem;font-weight:900;line-height:1;padding:0}
   .presbtn.on{background:linear-gradient(180deg,var(--green-lt),var(--green));
     border-color:#33702F;color:#fff}
+  .posin{flex:none;width:52px;border:2.5px solid var(--pill-dk);border-radius:9px;
+    background:#fff;padding:7px 3px;font-family:inherit;font-weight:800;font-size:.85rem;
+    color:var(--ink);text-align:center;outline:none}
+  .posin::placeholder{font-size:.72rem;font-weight:700;color:#A8875C}
+  #resultLista.modo-pontos .posin{display:none}
+  .hojept{color:#3E6B2E}
+  .escrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    font-size:.82rem;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.07)}
+  .escrow:last-child{border-bottom:none}
+  .escrow span{color:var(--ink-soft);font-weight:700}
+  .escrow b{flex:none;color:var(--ink)}
   .rtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px}
   .rtab{flex:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:.8rem;padding:7px 12px;border-radius:11px;
     border:2.5px solid var(--pill-dk);background:var(--panel-3);color:var(--ink-soft);white-space:nowrap}
@@ -2894,12 +2909,48 @@
      participa mais", que é o que a aliança quer premiar. */
   var resultModo = "presenca";
 
+  /* Escala de colocação → pontos. Achatada de propósito: aparecer é o que mais
+     conta e a posição é um bônus pequeno. Se o 1º lugar valesse muito mais, os
+     mais fortes travariam o topo do ranking e os outros parariam de aparecer —
+     o contrário do que a aliança quer. Mexer aqui muda a legenda junto. */
+  var ESCALA_POS = [[1,5],[3,4],[5,3],[10,2]];
+  var PTS_PRESENCA = 1;
+
+  function ptsPorPosicao(pos){
+    pos = parseInt(pos, 10);
+    if(!pos || pos < 1) return PTS_PRESENCA;
+    for(var i = 0; i < ESCALA_POS.length; i++) if(pos <= ESCALA_POS[i][0]) return ESCALA_POS[i][1];
+    return PTS_PRESENCA;
+  }
+  function pintaEscala(){
+    var el = $("#escalaPos"); if(!el) return;
+    var linhas = [], antes = 0;
+    ESCALA_POS.forEach(function(f){
+      var lab = (antes + 1 === f[0]) ? (f[0]+"º lugar") : ("do "+(antes+1)+"º ao "+f[0]+"º");
+      linhas.push('<div class="escrow"><span>'+lab+'</span><b>'+f[1]+' pts</b></div>');
+      antes = f[0];
+    });
+    linhas.push('<div class="escrow"><span>Participou, sem posição</span><b>'+PTS_PRESENCA+' pt</b></div>');
+    linhas.push('<div class="escrow"><span>Não participou</span><b>0</b></div>');
+    el.innerHTML = linhas.join("");
+  }
+
+  function pintaLinha(row){
+    var b = row.querySelector(".presbtn"), p = row.querySelector(".posin"), lab = row.querySelector(".hojept");
+    if(!b || !lab) return;
+    if(!b.classList.contains("on")){ lab.textContent = ""; return; }
+    var pos = p ? p.value.trim() : "", pts = ptsPorPosicao(pos);
+    lab.textContent = " · hoje: " + pts + (pts === 1 ? " pt" : " pts") + (pos ? " ("+pos+"º)" : "");
+  }
   function marcarLinha(row, forca){
     var b = row.querySelector(".presbtn"); if(!b) return;
     var novo = (forca === undefined) ? !b.classList.contains("on") : !!forca;
     b.classList.toggle("on", novo);
     b.setAttribute("aria-pressed", novo ? "true" : "false");
     row.classList.toggle("marcado", novo);
+    /* desmarcou: a posição some junto, senão sobra número de quem não participou */
+    if(!novo){ var p = row.querySelector(".posin"); if(p) p.value = ""; }
+    pintaLinha(row);
   }
   function contaPresenca(){
     var el = $("#presContagem"); if(!el) return;
@@ -2921,10 +2972,11 @@
       b.classList.toggle("on", b.dataset.modo === m);
     });
     var pres = (m === "presenca");
-    $("#presAcoes").style.display = pres ? "flex" : "none";
-    $("#ocrBtn").style.display    = pres ? "none" : "";
-    $("#resultSub").textContent   = pres
-      ? "Toque em quem participou. Cada presença vale 1 ponto."
+    $("#presAcoes").style.display  = pres ? "flex" : "none";
+    $("#escalaBox").style.display  = pres ? "" : "none";
+    $("#ocrBtn").style.display     = pres ? "none" : "";
+    $("#resultSub").textContent    = pres
+      ? "Toque em quem participou. A posição é opcional — só preencha a de quem ficou no topo."
       : "Coloque os pontos de quem participou (deixe vazio = não pontuou).";
     $("#resultSalvar").textContent = pres ? "Salvar presença" : "Salvar pontos";
     contaPresenca();
@@ -2939,24 +2991,28 @@
     $("#resultBusca").value = "";
     Promise.all([
       sbGet("top_membros?status=eq.ativo&select=id,nome,cargo,avatar,foto_url&order=nome"),
-      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,dia")
+      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,posicao,dia")
     ]).then(function(res){
-      var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {};
+      var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {}, posHoje = {};
       _resultMembros = membros;
       resultados.forEach(function(r){
         acum[r.membro_id] = (acum[r.membro_id]||0) + (r.pontos||0);
-        if(r.dia === resultDia) hoje[r.membro_id] = r.pontos;
+        if(r.dia === resultDia){ hoje[r.membro_id] = r.pontos; posHoje[r.membro_id] = r.posicao; }
       });
       host.innerHTML = membros.map(function(m){
         var v = (hoje[m.id] != null) ? hoje[m.id] : "";
         var marc = (hoje[m.id] || 0) > 0;
+        var pos = (posHoje[m.id] != null) ? posHoje[m.id] : "";
         return '<div class="resrow'+(marc?" marcado":"")+'" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
           '<span class="mav" style="width:32px;height:32px">'+avatarSVG(m)+'</span>'+
-          '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts</span></span>'+
+          '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts<span class="hojept"></span></span></span>'+
+          '<input class="posin" data-mid="'+m.id+'" type="number" inputmode="numeric" min="1" placeholder="pos" value="'+pos+'">'+
           '<button class="presbtn'+(marc?" on":"")+'" type="button" data-mid="'+m.id+'" aria-pressed="'+(marc?"true":"false")+'">✓</button>'+
           '<input class="resin" data-mid="'+m.id+'" type="number" inputmode="numeric" placeholder="hoje" value="'+v+'">'+
         '</div>';
       }).join("") || '<p class="empty">Nenhum membro ativo ainda.</p>';
+      pintaEscala();
+      Array.prototype.forEach.call(host.querySelectorAll(".resrow"), pintaLinha);
       setResultModo(resultModo);
       $("#resultOverlay").classList.add("on");
     }).catch(function(){ toast("❌ Erro ao carregar."); });
@@ -2965,8 +3021,12 @@
     if(!resultEventoId) return;
     var itens = [];
     if(resultModo === "presenca"){
-      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .presbtn"), function(b){
-        itens.push({membro_id: b.dataset.mid, pontos: b.classList.contains("on") ? 1 : null});
+      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(row){
+        var b = row.querySelector(".presbtn"), p = row.querySelector(".posin");
+        if(!b) return;
+        if(!b.classList.contains("on")){ itens.push({membro_id: b.dataset.mid, pontos: null, posicao: null}); return; }
+        var pos = p ? p.value.trim() : "";
+        itens.push({membro_id: b.dataset.mid, pontos: ptsPorPosicao(pos), posicao: pos ? (parseInt(pos,10)||null) : null});
       });
     }else{
       Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
@@ -4322,8 +4382,17 @@
   });
   $("#resultLista").addEventListener("click", function(e){
     if(resultModo !== "presenca") return;
+    if(e.target.closest(".posin")) return;   /* digitar a posição não alterna a linha */
     var row = e.target.closest(".resrow"); if(!row) return;
     marcarLinha(row); contaPresenca();
+  });
+  $("#resultLista").addEventListener("input", function(e){
+    var p = e.target.closest(".posin"); if(!p) return;
+    var row = p.closest(".resrow"); if(!row) return;
+    /* digitou posição = participou, não precisa marcar o ✓ também */
+    if(p.value.trim() !== "") marcarLinha(row, true);
+    else pintaLinha(row);
+    contaPresenca();
   });
   $("#presTodos").addEventListener("click", function(){
     /* respeita a busca: marca só quem está visível na lista */
