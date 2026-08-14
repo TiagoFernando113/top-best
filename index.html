@@ -249,6 +249,37 @@
     display:flex;align-items:center;gap:6px;
   }
 
+  /* ---------- botão grande de ação principal ----------
+     Usada em toda a interface (entrar na aliança, ativar notificações,
+     publicar aviso, lançar pontos...). Sem esta regra o navegador
+     desenhava o botão cinza/branco padrão, destoando do tema. */
+  .bigbtn{
+    display:block;width:100%;text-align:center;
+    font-family:inherit;font-weight:800;font-size:.95rem;line-height:1.25;
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));
+    border:3px solid var(--btn-edge);border-radius:13px;
+    padding:13px 14px;color:var(--ink);cursor:pointer;
+    box-shadow:0 4px 0 var(--btn-edge), 0 5px 9px var(--shadow);
+    transition:transform .1s,box-shadow .1s;
+  }
+  .bigbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--btn-edge)}
+  .bigbtn.green{
+    background:linear-gradient(180deg,var(--green-lt),var(--green));
+    border-color:#33702F;color:#fff;
+    -webkit-text-stroke:2px #2A5C26;paint-order:stroke fill;
+    box-shadow:0 4px 0 #33702F, 0 5px 9px var(--shadow);
+  }
+  .bigbtn.green:active{box-shadow:0 1px 0 #33702F}
+  .bigbtn.red{
+    background:linear-gradient(180deg,#E8705A,var(--red));
+    border-color:#94301E;color:#fff;
+    -webkit-text-stroke:2px #7A2415;paint-order:stroke fill;
+    box-shadow:0 4px 0 #94301E, 0 5px 9px var(--shadow);
+  }
+  .bigbtn.red:active{box-shadow:0 1px 0 #94301E}
+  .bigbtn[disabled]{opacity:.6;cursor:default;transform:none;
+    box-shadow:0 4px 0 var(--btn-edge)}
+
   /* ---------- shop ---------- */
   .shop{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .sitem{
@@ -670,6 +701,11 @@
         <span class="amt"><span id="coinAmt2">0</span></span>
       </div>
       <div class="stitle"><h2>Loja da Aliança</h2><div class="rule"></div></div>
+      <div class="embreve">
+        <span class="eb-ic">🚧</span>
+        <div class="eb-tx"><b>Em breve</b>
+          <p>A loja ainda está sendo montada. Dá pra espiar os prêmios, mas o resgate abre junto com a nova forma de ganhar moeda.</p></div>
+      </div>
       <div class="shop" id="shopGrid"></div>
       <div class="hint">🎁 Prêmios entregues pelos oficiais no jogo ou no Discord após o resgate.</div>
     </div>
@@ -713,6 +749,11 @@
   <div class="screen" id="s-ranking">
     <div class="panel">
       <div class="stitle"><h2>Ranking de Pontos</h2><div class="rule"></div></div>
+      <div class="embreve">
+        <span class="eb-ic">🚧</span>
+        <div class="eb-tx"><b>Em breve</b>
+          <p>Estamos acertando como contar a participação de cada um. Enquanto isso o ranking fica parado — ninguém está perdendo posição.</p></div>
+      </div>
       <div id="rankTabs" class="rtabs"></div>
       <div id="rankTop"></div>
       <div class="hint">🎯 Pontos são ganhos participando dos eventos — quanto mais pontos, mais alto no ranking e mais moedas na Loja.</div>
@@ -739,37 +780,49 @@
     <div class="panel">
       <div class="stitle"><h2>Painel do Oficial</h2><div class="rule"></div></div>
 
-      <div class="avisoform">
-        <label class="field" style="display:block;font-size:.82rem;color:var(--ink-soft);margin-bottom:6px">📢 Postar aviso/evento pra todos</label>
-        <textarea id="avisoTexto" placeholder="Ex.: Rally coordenado sexta 21h. Tropas prontas 10 min antes."></textarea>
-        <button class="bigbtn green" id="avisoSend" style="margin-top:10px">📌 Publicar aviso</button>
-      </div>
+      <p class="admintro" id="adminResumo">Vendo o que precisa de você…</p>
 
-      <div class="avisoform">
-        <label class="field" style="display:block;font-size:.82rem;color:var(--ink-soft);margin-bottom:6px">🔗 Gerar convite de acesso (uso único)</label>
-        <button class="bigbtn" id="conviteBtn">➕ Gerar link de convite</button>
-        <div id="conviteOut" style="display:none;margin-top:10px">
-          <input id="conviteLink" type="text" readonly style="width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.78rem;color:var(--ink);outline:none">
-          <button class="bigbtn green" id="conviteCopy" style="margin-top:8px">📋 Copiar link</button>
-          <p class="note" style="font-size:.78rem;color:var(--ink-soft);margin-top:6px">Envie pra UM membro. Expira no primeiro que abrir.</p>
-        </div>
-      </div>
-
-      <div class="stitle"><h2>Solicitações de entrada (R0)</h2><div class="rule"></div></div>
+      <div class="admhd"><span class="ic">📥</span><span class="tx">Entradas para aprovar</span><span class="badge zero" id="badgeR0">–</span></div>
       <div id="adminR0"><p class="empty">Carregando…</p></div>
 
-      <div class="stitle"><h2>Resgates a entregar</h2><div class="rule"></div></div>
+      <div class="admhd"><span class="ic">📦</span><span class="tx">Resgates para entregar</span><span class="badge zero" id="badgeResg">–</span></div>
       <div id="adminResgates"><p class="empty">Carregando…</p></div>
 
-      <div class="stitle"><h2>⚙️ Gerenciar conteúdo</h2><div class="rule"></div></div>
-      <div class="gestbloco">
-        <div class="gesthd">🎁 Loja <button class="gadd" data-add="loja">+ Novo</button></div>
-        <div id="gestLoja"></div>
-      </div>
-      <div class="gestbloco">
-        <div class="gesthd">📅 Eventos <button class="gadd" data-add="evento">+ Novo</button></div>
-        <div id="gestEventos"></div>
-      </div>
+      <details class="admbox">
+        <summary><span class="ic">📢</span>Publicar aviso para todos</summary>
+        <div class="admbody">
+          <textarea id="avisoTexto" placeholder="Ex.: Rally coordenado sexta 21h. Tropas prontas 10 min antes."></textarea>
+          <button class="bigbtn green" id="avisoSend" style="margin-top:10px">📌 Publicar aviso</button>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">🔗</span>Convidar um membro</summary>
+        <div class="admbody">
+          <button class="bigbtn" id="conviteBtn">➕ Gerar link de convite</button>
+          <div id="conviteOut" style="display:none;margin-top:10px">
+            <input id="conviteLink" type="text" readonly style="width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.78rem;color:var(--ink);outline:none">
+            <button class="bigbtn green" id="conviteCopy" style="margin-top:8px">📋 Copiar link</button>
+            <p class="note" style="margin-top:6px">Envie pra UM membro. Expira no primeiro que abrir.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">🎁</span>Itens da loja</summary>
+        <div class="admbody">
+          <button class="gadd" data-add="loja">+ Novo item</button>
+          <div id="gestLoja"></div>
+        </div>
+      </details>
+
+      <details class="admbox">
+        <summary><span class="ic">📅</span>Eventos da agenda</summary>
+        <div class="admbody">
+          <button class="gadd" data-add="evento">+ Novo evento</button>
+          <div id="gestEventos"></div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -861,7 +914,7 @@
       <p class="rlab" id="promoLabelRank">Mudar classificação</p>
       <div class="promogrid" id="promoGrid"></div>
       <button class="bigbtn" id="promoEditar" style="margin-top:10px;display:none">✏️ Editar dados do jogador</button>
-      <button class="bigbtn" id="promoRemover" style="margin-top:10px;background:linear-gradient(180deg,#E8705A,var(--red));border-color:#94301E;color:#fff;-webkit-text-stroke:2px #7A2415;paint-order:stroke fill">🗑️ Remover da aliança</button>
+      <button class="bigbtn red" id="promoRemover" style="margin-top:10px">🗑️ Remover da aliança</button>
     </div>
     <button class="bcancel" id="promoFechar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Fechar</button>
   </div>
@@ -949,13 +1002,26 @@
 <div class="overlay" id="resultOverlay">
   <div class="modal">
     <h2 id="resultTitulo">Lançar pontos</h2>
-    <p class="sub">Coloque os pontos de quem participou (deixe vazio = não pontuou).</p>
+    <div class="rtabs" id="resultModos" style="margin:9px 0 6px">
+      <button class="rtab on" data-modo="presenca" type="button">✅ Marcar presença</button>
+      <button class="rtab" data-modo="pontos" type="button">🔢 Lançar pontos</button>
+    </div>
+    <p class="sub" id="resultSub">Toque em quem participou. A posição é opcional.</p>
+    <details class="admbox" id="escalaBox" style="margin:8px 0">
+      <summary><span class="ic">ℹ️</span>Como a posição vira ponto</summary>
+      <div class="admbody" id="escalaPos"></div>
+    </details>
+    <div id="presAcoes" style="display:flex;gap:8px;margin:8px 0">
+      <button class="bcancel" id="presTodos" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Marcar todos</button>
+      <button class="bcancel" id="presLimpar" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Limpar</button>
+    </div>
     <label class="bigbtn" id="ocrBtn" style="cursor:pointer">📷 Ler print (preenche sozinho)
       <input type="file" accept="image/*" id="ocrFile" style="display:none">
     </label>
     <p class="note" id="ocrStatus" style="display:none;margin:6px 0 0"></p>
     <div class="search" style="margin:10px 0"><input id="resultBusca" type="search" placeholder="Buscar membro"><span>🔍</span></div>
-    <div id="resultLista" style="max-height:48vh;overflow-y:auto"></div>
+    <p class="note" id="presContagem" style="margin:0 0 6px"></p>
+    <div id="resultLista" class="modo-presenca" style="max-height:44vh;overflow-y:auto"></div>
     <div class="mrow">
       <button class="bcancel" id="resultFechar">Cancelar</button>
       <button class="bsend" id="resultSalvar">Salvar pontos</button>
@@ -980,7 +1046,7 @@
   .tut-body p{font-size:.88rem;font-weight:600;color:var(--ink-soft);line-height:1.5}
   .tut-nav{display:flex;align-items:center;gap:10px;margin-top:11px}
   .tut-nav button{cursor:pointer;font-family:inherit;font-weight:800;font-size:.86rem;
-    background:linear-gradient(180deg,var(--btn-1),var(--btn-2));border:2.5px solid var(--btn-edge);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));border:2.5px solid var(--btn-edge);
     border-radius:10px;padding:8px 15px;color:var(--ink);box-shadow:0 3px 0 var(--btn-edge);
     transition:transform .1s,box-shadow .1s}
   .tut-nav button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
@@ -1006,7 +1072,7 @@
   .topbar .bell{margin-left:8px}
   #langLista{display:flex;flex-direction:column;gap:9px;margin-top:12px}
   .langopt{cursor:pointer;font-family:inherit;font-weight:800;font-size:.95rem;text-align:left;
-    background:linear-gradient(180deg,var(--btn-1),var(--btn-2));border:2.5px solid var(--btn-edge);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));border:2.5px solid var(--btn-edge);
     border-radius:11px;padding:11px 14px;color:var(--ink);box-shadow:0 3px 0 var(--btn-edge)}
   .langopt:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
   .langopt.on{background:linear-gradient(180deg,var(--gold-lt),var(--gold));border-color:var(--gold-dk);
@@ -1290,6 +1356,424 @@
       <circle cx="228" cy="112" r="13"/><circle cx="256" cy="112" r="13"/></g>
     <text x="236" y="148" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="11" font-weight="bold" fill="#3E6B2E">ninguém segura</text>
   </symbol>
+
+  <!-- ===== Urso (Bear Trap) ===== -->
+  <symbol id="dg-urso-duas" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="16" y="34" width="132" height="112" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <rect x="172" y="34" width="132" height="112" rx="11" fill="#FBEBCB" stroke="#C98F22" stroke-width="3"/>
+    <circle cx="82" cy="96" r="23" fill="#fff" stroke="#5C8143" stroke-width="3"/>
+    <path d="M82 96V79M82 96l12 7" stroke="#3E6B2E" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <circle cx="238" cy="96" r="23" fill="#fff" stroke="#C98F22" stroke-width="3"/>
+    <path d="M238 96V82M238 96l-12 8" stroke="#8E6510" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="22" font-size="14" fill="#4B3722">Duas chances na mesma semana</text>
+      <text x="82" y="56" font-size="12" fill="#3E6B2E">ARMADILHA 1</text>
+      <text x="238" y="56" font-size="12" fill="#8E6510">ARMADILHA 2</text>
+      <text x="82" y="136" font-size="11" fill="#3E6B2E">horário A</text>
+      <text x="238" y="136" font-size="11" fill="#8E6510">horário B</text>
+      <text x="160" y="168" font-size="12" fill="#7A6244">Participe da que couber no seu dia</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-urso-30min" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="24" y="62" width="272" height="30" rx="15" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="27" y="65" width="150" height="24" rx="12" fill="#E8705A"/>
+    <path d="M24 112v14M296 112v14M24 119h272" stroke="#94301E" stroke-width="2.5" fill="none"/>
+    <circle cx="252" cy="77" r="20" fill="#fff" stroke="#94301E" stroke-width="3"/>
+    <path d="M252 77V64M252 77l9 6" stroke="#94301E" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="15" fill="#4B3722">A janela é curta</text>
+      <text x="160" y="46" font-size="13" fill="#94301E">30 MINUTOS</text>
+      <text x="160" y="140" font-size="12" fill="#7A6244">acabou o tempo, acabou o dano</text>
+      <text x="160" y="166" font-size="13" fill="#4B3722">Entre assim que abrir</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-urso-habilitar" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="18" y="52" width="112" height="84" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <path d="M74 68l19 7v15c0 12-8 18-19 21-11-3-19-9-19-21V75z" fill="#5C8143" stroke="#3E6B2E" stroke-width="2"/>
+    <path d="M66 96l6 6 13-14" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M138 94h38" stroke="#8A7458" stroke-width="3.5"/>
+    <path d="M184 94l-13-7v14z" fill="#8A7458"/>
+    <rect x="192" y="52" width="112" height="84" rx="11" fill="#FBEBCB" stroke="#C98F22" stroke-width="3"/>
+    <g stroke="#C98F22" stroke-width="3" stroke-linecap="round">
+      <path d="M248 62v-8M222 72l-6-6M274 72l6-6"/></g>
+    <path d="M228 92h40l-6 26h-28z" fill="#F0B63F" stroke="#8E6510" stroke-width="2.5"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">Só a liderança habilita</text>
+      <text x="74" y="44" font-size="12" fill="#3E6B2E">R4 / LÍDER</text>
+      <text x="248" y="44" font-size="12" fill="#8E6510">ARMADILHA ATIVA</text>
+      <text x="160" y="166" font-size="12" fill="#7A6244">Sem habilitar, ninguém ataca</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-urso-upgrade" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="26" y="86" width="72" height="46" rx="8" fill="#C9B99A" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="124" y="68" width="72" height="64" rx="8" fill="#9FC08A" stroke="#5C8143" stroke-width="2.5"/>
+    <rect x="222" y="46" width="72" height="86" rx="8" fill="#F0B63F" stroke="#C98F22" stroke-width="2.5"/>
+    <path d="M116 108l-12-6v12z" fill="#8A7458"/>
+    <path d="M214 108l-12-6v12z" fill="#8A7458"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">Armadilha melhor = mais prêmio</text>
+      <text x="62" y="114" font-size="14" fill="#4B3722">Nv 1</text>
+      <text x="160" y="106" font-size="14" fill="#3E6B2E">Nv 2</text>
+      <text x="258" y="96" font-size="14" fill="#7A5410">Nv 3</text>
+      <text x="160" y="154" font-size="12" fill="#7A6244">A aliança sobe o nível doando recurso</text>
+      <text x="160" y="172" font-size="12" fill="#4B3722">Nível alto = mais dano para todos</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-urso-danototal" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g fill="#7CC3BE" stroke="#4C918C" stroke-width="2">
+      <rect x="24" y="74" width="26" height="34" rx="4"/>
+      <rect x="58" y="62" width="26" height="46" rx="4"/>
+      <rect x="92" y="84" width="26" height="24" rx="4"/>
+      <rect x="126" y="56" width="26" height="52" rx="4"/></g>
+    <text x="172" y="94" font-family="Trebuchet MS,sans-serif" font-size="26" font-weight="bold" fill="#8A7458">+</text>
+    <rect x="196" y="40" width="98" height="68" rx="9" fill="#F0B63F" stroke="#C98F22" stroke-width="3"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">Cada dano soma no total</text>
+      <text x="88" y="128" font-size="12" fill="#4C918C">o dano de cada um</text>
+      <text x="245" y="72" font-size="15" fill="#7A5410">DANO</text>
+      <text x="245" y="92" font-size="15" fill="#7A5410">TOTAL</text>
+      <text x="245" y="128" font-size="12" fill="#8E6510">é ele que dá o prêmio</text>
+      <text x="160" y="164" font-size="12" fill="#7A6244">Pouco dano também ajuda — bata mesmo assim</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Salão dos Chefes ===== -->
+  <symbol id="dg-salao-estagios" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g fill="#DCEFD4" stroke="#5C8143" stroke-width="2.5">
+      <rect x="16" y="60" width="36" height="44" rx="6"/>
+      <rect x="58" y="60" width="36" height="44" rx="6"/>
+      <rect x="100" y="60" width="36" height="44" rx="6"/></g>
+    <rect x="142" y="54" width="36" height="56" rx="6" fill="#F0B63F" stroke="#C98F22" stroke-width="3"/>
+    <g fill="#DCEFD4" stroke="#5C8143" stroke-width="2.5">
+      <rect x="184" y="60" width="36" height="44" rx="6"/>
+      <rect x="226" y="60" width="36" height="44" rx="6"/>
+      <rect x="268" y="60" width="36" height="44" rx="6"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle" font-size="15" fill="#3E6B2E">
+      <text x="34" y="89">1</text><text x="76" y="89">2</text><text x="118" y="89">3</text>
+      <text x="202" y="89">5</text><text x="244" y="89">6</text><text x="286" y="89">7</text></g>
+    <text x="160" y="88" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="17" font-weight="bold" fill="#7A5410">4</text>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Um estágio por dia, 7 na semana</text>
+      <text x="160" y="132" font-size="12" fill="#8E6510">o estágio 4 é o que mais rende</text>
+      <text x="160" y="162" font-size="12" fill="#7A6244">Cada dia pede uma tarefa diferente</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-salao-meta" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="24" y="70" width="216" height="30" rx="15" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="27" y="73" width="132" height="24" rx="12" fill="#6BC24A"/>
+    <path d="M186 62v46" stroke="#94301E" stroke-width="3" stroke-dasharray="5 4"/>
+    <g transform="translate(250,64)">
+      <rect x="0" y="12" width="44" height="22" rx="4" fill="#C98F22" stroke="#7A5410" stroke-width="2.5"/>
+      <path d="M0 14A22 13 0 0 1 44 14Z" fill="#F0B63F" stroke="#7A5410" stroke-width="2.5"/>
+      <rect x="17" y="11" width="10" height="13" rx="3" fill="#F8D27A" stroke="#7A5410" stroke-width="2"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Bata a meta e leve o baú</text>
+      <text x="186" y="52" font-size="12" fill="#94301E">meta</text>
+      <text x="132" y="128" font-size="12" fill="#3E6B2E">seus pontos</text>
+      <text x="160" y="162" font-size="12" fill="#7A6244">Passar da meta rende baú melhor</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-salao-recursos" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="16" y="46" width="132" height="100" rx="11" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <rect x="172" y="46" width="132" height="100" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <circle cx="82" cy="88" r="15" fill="#94301E"/>
+    <path d="M75 81l14 14M89 81l-14 14" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="238" cy="88" r="15" fill="#5C8143"/>
+    <path d="M231 88l5 6 11-12" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Estágio 4: guarde os recursos</text>
+      <text x="82" y="122" font-size="12" fill="#7A2415">coletar antes</text>
+      <text x="82" y="138" font-size="12" fill="#7A2415">não conta</text>
+      <text x="238" y="122" font-size="12" fill="#3E6B2E">coletar no dia</text>
+      <text x="238" y="138" font-size="12" fill="#3E6B2E">vale pontos</text>
+      <text x="160" y="170" font-size="12" fill="#7A6244">Deixe a fazenda cheia esperando o dia</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-salao-honra" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="118" y="56" width="84" height="76" rx="6" fill="#F0B63F" stroke="#C98F22" stroke-width="3"/>
+    <rect x="30" y="82" width="84" height="50" rx="6" fill="#C9C9C9" stroke="#8A8A8A" stroke-width="3"/>
+    <rect x="206" y="98" width="84" height="34" rx="6" fill="#D2A277" stroke="#9C7448" stroke-width="3"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Ranking entre as alianças</text>
+      <text x="160" y="100" font-size="26" fill="#7A5410">1</text>
+      <text x="72" y="118" font-size="22" fill="#5E5E5E">2</text>
+      <text x="248" y="124" font-size="20" fill="#6E4F2E">3</text>
+      <text x="160" y="158" font-size="12" fill="#7A6244">A soma dos pontos de todos vira posição</text>
+      <text x="160" y="174" font-size="12" fill="#4B3722">Posição melhor = baú melhor pra todos</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Batalha do Santuário ===== -->
+  <symbol id="dg-sant-fases" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <path d="M40 96h240" stroke="#8A7458" stroke-width="3"/>
+    <path d="M288 96l-13-7v14z" fill="#8A7458"/>
+    <circle cx="52" cy="96" r="19" fill="#7CC3BE" stroke="#4C918C" stroke-width="3"/>
+    <circle cx="160" cy="96" r="19" fill="#9FC08A" stroke="#5C8143" stroke-width="3"/>
+    <circle cx="262" cy="96" r="19" fill="#F0B63F" stroke="#C98F22" stroke-width="3"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">A temporada tem fases</text>
+      <text x="52" y="64" font-size="12" fill="#4C918C">INSCRIÇÃO</text>
+      <text x="160" y="64" font-size="12" fill="#3E6B2E">BATALHAS</text>
+      <text x="262" y="64" font-size="12" fill="#8E6510">FINAL</text>
+      <text x="160" y="146" font-size="12" fill="#7A6244">Cada fase abre em um dia diferente</text>
+      <text x="160" y="168" font-size="12" fill="#4B3722">Olhe a agenda para não perder a sua</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-sant-inscricao" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="18" y="50" width="122" height="94" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <rect x="60" y="72" width="38" height="50" rx="5" fill="#fff" stroke="#5C8143" stroke-width="2.5"/>
+    <path d="M67 92l6 6 14-15" stroke="#3E6B2E" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="180" y="50" width="122" height="94" rx="11" fill="#EDE4D2" stroke="#A8875C" stroke-width="3"/>
+    <rect x="223" y="88" width="36" height="28" rx="5" fill="#C9B99A" stroke="#8A7458" stroke-width="2.5"/>
+    <path d="M229 88v-9a12 12 0 0124 0v9" stroke="#8A7458" stroke-width="3" fill="none"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">A inscrição é da liderança</text>
+      <text x="79" y="68" font-size="12" fill="#3E6B2E">R4 / LÍDER</text>
+      <text x="241" y="68" font-size="12" fill="#7A6244">demais cargos</text>
+      <text x="79" y="136" font-size="11" fill="#3E6B2E">inscreve a aliança</text>
+      <text x="241" y="136" font-size="11" fill="#7A6244">não precisa fazer nada</text>
+      <text x="160" y="168" font-size="12" fill="#4B3722">Você só precisa aparecer no horário</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-sant-pilar" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g stroke="#F0B63F" stroke-width="3" stroke-linecap="round" opacity=".75">
+      <path d="M160 30v-14M116 44l-9-10M204 44l9-10M96 84H82M224 84h14"/></g>
+    <rect x="128" y="42" width="64" height="18" rx="5" fill="#F0B63F" stroke="#C98F22" stroke-width="2.5"/>
+    <rect x="138" y="60" width="44" height="66" fill="#F8D27A" stroke="#C98F22" stroke-width="2.5"/>
+    <g stroke="#C98F22" stroke-width="2"><path d="M150 62v62M160 62v62M170 62v62"/></g>
+    <rect x="122" y="126" width="76" height="20" rx="5" fill="#F0B63F" stroke="#C98F22" stroke-width="2.5"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">O prêmio é o Pilar da Honra</text>
+      <text x="160" y="164" font-size="12" fill="#7A6244">Ele dá bônus para a aliança inteira</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Campeonato da Aliança ===== -->
+  <symbol id="dg-camp-liga" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g fill="#7CC3BE" stroke="#4C918C" stroke-width="2.5">
+      <rect x="20" y="70" width="70" height="40" rx="8"/>
+      <rect x="125" y="70" width="70" height="40" rx="8"/>
+      <rect x="230" y="70" width="70" height="40" rx="8"/></g>
+    <path d="M96 90h22M201 90h22" stroke="#8A7458" stroke-width="3"/>
+    <path d="M124 90l-11-6v12z" fill="#8A7458"/>
+    <path d="M229 90l-11-6v12z" fill="#8A7458"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Rodadas contra outras alianças</text>
+      <text x="55" y="96" font-size="13" fill="#2F6B67">rodada 1</text>
+      <text x="160" y="96" font-size="13" fill="#2F6B67">rodada 2</text>
+      <text x="265" y="96" font-size="13" fill="#2F6B67">rodada 3</text>
+      <text x="160" y="140" font-size="12" fill="#7A6244">Toda rodada soma pontos, ganhando ou não</text>
+      <text x="160" y="164" font-size="12" fill="#4B3722">Aparecer já vale — falta é que zera</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-camp-estrelas" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g stroke="#C98F22" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M74 58l11 23 25 3-18 18 4 25-22-12-22 12 4-25-18-18 25-3z" fill="#F0B63F"/>
+      <path d="M160 58l11 23 25 3-18 18 4 25-22-12-22 12 4-25-18-18 25-3z" fill="#F0B63F"/>
+      <path d="M246 58l11 23 25 3-18 18 4 25-22-12-22 12 4-25-18-18 25-3z" fill="#E7DAC2"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="30" font-size="14" fill="#4B3722">Estrelas medem o desempenho</text>
+      <text x="160" y="150" font-size="12" fill="#7A6244">Cada objetivo cumprido acende uma estrela</text>
+      <text x="160" y="170" font-size="12" fill="#4B3722">Mais estrelas = recompensa melhor</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-camp-rota" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <circle cx="46" cy="96" r="16" fill="#C9B99A" stroke="#8A7458" stroke-width="3"/>
+    <path d="M62 92c40-30 80-34 118-34" stroke="#5C8143" stroke-width="4" fill="none"/>
+    <path d="M62 100c40 30 80 34 118 34" stroke="#C98F22" stroke-width="4" fill="none"/>
+    <path d="M188 58l-14-7v14z" fill="#5C8143"/>
+    <path d="M188 134l-14-7v14z" fill="#C98F22"/>
+    <rect x="196" y="42" width="104" height="32" rx="8" fill="#DCEFD4" stroke="#5C8143" stroke-width="2.5"/>
+    <rect x="196" y="118" width="104" height="32" rx="8" fill="#FBEBCB" stroke="#C98F22" stroke-width="2.5"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">Escolha por onde avançar</text>
+      <text x="248" y="63" font-size="13" fill="#3E6B2E">rota A</text>
+      <text x="248" y="139" font-size="13" fill="#8E6510">rota B</text>
+      <text x="160" y="172" font-size="12" fill="#7A6244">Dá para trocar de rota durante o evento</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Roleta de Herói ===== -->
+  <symbol id="dg-rol-giros" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <circle cx="112" cy="98" r="52" fill="#fff" stroke="#4C918C" stroke-width="4"/>
+    <path d="M112 98L112 46A52 52 0 0 1 157 72Z" fill="#7CC3BE"/>
+    <path d="M112 98l45 26A52 52 0 0 1 67 124Z" fill="#F8D27A"/>
+    <path d="M112 98L67 72A52 52 0 0 1 112 46Z" fill="#F6DAD3"/>
+    <circle cx="112" cy="98" r="9" fill="#4B3722"/>
+    <path d="M112 34l9 14h-18z" fill="#94301E"/>
+    <circle cx="232" cy="86" r="24" fill="#F0B63F" stroke="#C98F22" stroke-width="3"/>
+    <text x="232" y="94" text-anchor="middle" font-family="Trebuchet MS,sans-serif" font-size="20" font-weight="bold" fill="#7A5410">$</text>
+    <path d="M206 120h52" stroke="#8A7458" stroke-width="2.5"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="24" font-size="14" fill="#4B3722">A moeda do evento gira a roleta</text>
+      <text x="232" y="142" font-size="12" fill="#8E6510">junte antes de girar</text>
+      <text x="160" y="170" font-size="12" fill="#7A6244">Sem moeda não tem giro — guarde a sua</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-rol-bau" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="24" y="84" width="272" height="26" rx="13" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+    <rect x="27" y="87" width="150" height="20" rx="10" fill="#7CC3BE"/>
+    <g stroke="#8A7458" stroke-width="2"><path d="M110 84v26M188 84v26M266 84v26"/></g>
+    <g transform="translate(94,42)">
+      <rect x="0" y="10" width="32" height="17" rx="3" fill="#C98F22" stroke="#7A5410" stroke-width="2"/>
+      <path d="M0 12A16 10 0 0 1 32 12Z" fill="#F0B63F" stroke="#7A5410" stroke-width="2"/></g>
+    <g transform="translate(172,42)">
+      <rect x="0" y="10" width="32" height="17" rx="3" fill="#C98F22" stroke="#7A5410" stroke-width="2"/>
+      <path d="M0 12A16 10 0 0 1 32 12Z" fill="#F0B63F" stroke="#7A5410" stroke-width="2"/></g>
+    <g transform="translate(250,42)">
+      <rect x="0" y="10" width="32" height="17" rx="3" fill="#C98F22" stroke="#7A5410" stroke-width="2"/>
+      <path d="M0 12A16 10 0 0 1 32 12Z" fill="#F0B63F" stroke="#7A5410" stroke-width="2"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="26" font-size="14" fill="#4B3722">Girar enche a barra de progresso</text>
+      <text x="160" y="136" font-size="12" fill="#4C918C">cada giro empurra a barra</text>
+      <text x="160" y="164" font-size="12" fill="#4B3722">Os baús vêm mesmo sem sorte no giro</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-rol-limite" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="70" y="48" width="180" height="94" rx="11" fill="#fff" stroke="#8A7458" stroke-width="3"/>
+    <rect x="70" y="48" width="180" height="24" rx="11" fill="#C9B99A" stroke="#8A7458" stroke-width="3"/>
+    <g fill="#6BC24A" stroke="#3E6B2E" stroke-width="2">
+      <circle cx="104" cy="98" r="13"/><circle cx="140" cy="98" r="13"/><circle cx="176" cy="98" r="13"/></g>
+    <g fill="#E7DAC2" stroke="#8A7458" stroke-width="2">
+      <circle cx="212" cy="98" r="13"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="30" font-size="14" fill="#4B3722">Tem limite de giros por dia</text>
+      <text x="160" y="66" font-size="12" fill="#4B3722">HOJE</text>
+      <text x="160" y="130" font-size="11" fill="#7A6244">usados / disponíveis</text>
+      <text x="160" y="164" font-size="12" fill="#4B3722">Giro não usado não acumula — volte todo dia</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Vingança Viking ===== -->
+  <symbol id="dg-vik-defesa" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="18" y="42" width="130" height="106" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <rect x="172" y="42" width="130" height="106" rx="11" fill="#F6DAD3" stroke="#94301E" stroke-width="3"/>
+    <path d="M83 70l22 8v18c0 14-10 21-22 25-12-4-22-11-22-25V78z" fill="#5C8143" stroke="#3E6B2E" stroke-width="2.5"/>
+    <path d="M74 100l7 7 15-16" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(218,72)">
+      <path d="M40 4l6 6-24 24-6-6z" fill="#B8C4D2" stroke="#4A5567" stroke-width="2"/>
+      <path d="M8 44l8-2 2-8-6-6-8 2-2 8z" fill="#C98F22" stroke="#7A5410" stroke-width="2"/></g>
+    <path d="M196 66l60 60M256 66l-60 60" stroke="#94301E" stroke-width="5" stroke-linecap="round"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Aqui você DEFENDE</text>
+      <text x="83" y="62" font-size="13" fill="#3E6B2E">DEFESA</text>
+      <text x="237" y="62" font-size="13" fill="#7A2415">ATAQUE</text>
+      <text x="160" y="170" font-size="12" fill="#7A6244">Deixe a tropa em casa e cure antes</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-vik-habilitar" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="24" y="72" width="104" height="46" rx="23" fill="#D9C6A9" stroke="#8A7458" stroke-width="3"/>
+    <circle cx="47" cy="95" r="17" fill="#fff" stroke="#8A7458" stroke-width="2.5"/>
+    <path d="M142 95h34" stroke="#8A7458" stroke-width="3.5"/>
+    <path d="M184 95l-13-7v14z" fill="#8A7458"/>
+    <rect x="192" y="72" width="104" height="46" rx="23" fill="#9FC08A" stroke="#5C8143" stroke-width="3"/>
+    <circle cx="273" cy="95" r="17" fill="#fff" stroke="#5C8143" stroke-width="2.5"/>
+    <path d="M266 95l5 6 11-13" stroke="#3E6B2E" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="30" font-size="14" fill="#4B3722">Ligue o evento antes de começar</text>
+      <text x="76" y="146" font-size="12" fill="#7A6244">DESLIGADO</text>
+      <text x="244" y="146" font-size="12" fill="#3E6B2E">LIGADO</text>
+      <text x="160" y="172" font-size="12" fill="#4B3722">Desligado, o que você fizer não conta</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-vik-rankings" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <rect x="18" y="44" width="130" height="104" rx="11" fill="#DCEFD4" stroke="#5C8143" stroke-width="3"/>
+    <rect x="172" y="44" width="130" height="104" rx="11" fill="#D6EAF6" stroke="#3E7EC4" stroke-width="3"/>
+    <g fill="#fff" stroke="#5C8143" stroke-width="2">
+      <rect x="32" y="86" width="102" height="15" rx="4"/>
+      <rect x="32" y="106" width="102" height="15" rx="4"/>
+      <rect x="32" y="126" width="102" height="15" rx="4"/></g>
+    <g fill="#fff" stroke="#3E7EC4" stroke-width="2">
+      <rect x="186" y="86" width="102" height="15" rx="4"/>
+      <rect x="186" y="106" width="102" height="15" rx="4"/>
+      <rect x="186" y="126" width="102" height="15" rx="4"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Dois rankings ao mesmo tempo</text>
+      <text x="83" y="70" font-size="13" fill="#3E6B2E">VOCÊ</text>
+      <text x="237" y="70" font-size="13" fill="#22456F">ALIANÇA</text>
+      <text x="160" y="170" font-size="12" fill="#7A6244">O mesmo esforço pontua nos dois</text>
+    </g>
+  </symbol>
+
+  <!-- ===== Vai com Tudo ===== -->
+  <symbol id="dg-vai-pontos" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g transform="translate(74,96)">
+      <path d="M0 -36l8 11v33H-8v-33z" fill="#D5DEE8" stroke="#4A5567" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M0 -36v44" stroke="#8FA0B4" stroke-width="2"/>
+      <rect x="-18" y="8" width="36" height="8" rx="4" fill="#F0B63F" stroke="#7A5410" stroke-width="2.5"/>
+      <rect x="-5" y="16" width="10" height="18" rx="4" fill="#8A6A3E" stroke="#5C4526" stroke-width="2.5"/>
+      <circle cx="0" cy="38" r="6" fill="#F0B63F" stroke="#7A5410" stroke-width="2.5"/></g>
+    <g fill="#E8705A" stroke="#94301E" stroke-width="2.5">
+      <circle cx="176" cy="76" r="14"/><circle cx="212" cy="96" r="14"/><circle cx="176" cy="116" r="14"/></g>
+    <path d="M244 96h34" stroke="#8A7458" stroke-width="3"/>
+    <path d="M286 96l-13-7v14z" fill="#8A7458"/>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Pontos por tropa inimiga morta</text>
+      <text x="266" y="80" font-size="14" fill="#7A5410">+ pontos</text>
+      <text x="160" y="156" font-size="12" fill="#7A6244">Só vale tropa de jogador, não de monstro</text>
+      <text x="160" y="174" font-size="12" fill="#4B3722">Ataque junto: sozinho você vira alvo</text>
+    </g>
+  </symbol>
+
+  <symbol id="dg-vai-premios" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#F1E6D0"/>
+    <g transform="translate(28,92)">
+      <rect x="0" y="12" width="52" height="26" rx="4" fill="#C9B99A" stroke="#8A7458" stroke-width="2.5"/>
+      <path d="M0 14A26 15 0 0 1 52 14Z" fill="#D9C6A9" stroke="#8A7458" stroke-width="2.5"/>
+      <rect x="20" y="11" width="12" height="15" rx="3" fill="#EDE4D2" stroke="#8A7458" stroke-width="2"/></g>
+    <g transform="translate(128,74)">
+      <rect x="0" y="14" width="60" height="32" rx="4" fill="#9FC08A" stroke="#5C8143" stroke-width="2.5"/>
+      <path d="M0 16A30 17 0 0 1 60 16Z" fill="#BEDCA9" stroke="#5C8143" stroke-width="2.5"/>
+      <rect x="23" y="13" width="14" height="17" rx="3" fill="#DCEFD4" stroke="#5C8143" stroke-width="2"/></g>
+    <g transform="translate(228,52)">
+      <rect x="0" y="16" width="68" height="38" rx="4" fill="#C98F22" stroke="#7A5410" stroke-width="2.5"/>
+      <path d="M0 18A34 19 0 0 1 68 18Z" fill="#F0B63F" stroke="#7A5410" stroke-width="2.5"/>
+      <rect x="26" y="16" width="14" height="17" rx="3" fill="#F8D27A" stroke="#7A5410" stroke-width="2"/></g>
+    <g font-family="Trebuchet MS,sans-serif" font-weight="bold" text-anchor="middle">
+      <text x="160" y="28" font-size="14" fill="#4B3722">Mais pontos, baú melhor</text>
+      <text x="54" y="150" font-size="12" fill="#7A6244">poucos</text>
+      <text x="158" y="150" font-size="12" fill="#3E6B2E">médio</text>
+      <text x="262" y="150" font-size="12" fill="#7A5410">muitos</text>
+      <text x="160" y="172" font-size="12" fill="#4B3722">Tem prêmio seu e prêmio da aliança</text>
+    </g>
+  </symbol>
 </defs></svg>
 
 <div class="overlay" id="eventoOverlay">
@@ -1335,7 +1819,7 @@
     border:2px dashed var(--pill-dk);border-radius:10px;padding:8px 12px;font-size:.82rem;color:var(--ink-soft)}
   .eurow .nm{color:var(--ink)}
   .oficialbtn{margin-left:auto;cursor:pointer;font-family:inherit;font-weight:800;font-size:.8rem;
-    background:linear-gradient(180deg,var(--btn-1),var(--btn-2));border:2.5px solid var(--btn-edge);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));border:2.5px solid var(--btn-edge);
     border-radius:10px;padding:6px 12px;color:var(--ink);box-shadow:0 3px 0 var(--btn-edge)}
   .oficialbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
 
@@ -1383,6 +1867,38 @@
   .avisoform textarea{width:100%;border:3px solid var(--pill-dk);border-radius:11px;background:#fff;
     padding:10px;font-family:inherit;font-weight:700;font-size:.9rem;color:var(--ink);resize:vertical;min-height:56px;outline:none}
   .navbtn.hidden{display:none}
+
+  /* ---- Painel do Oficial ----
+     O que precisa de acao fica no topo com contador; o resto (publicar
+     aviso, convite, loja, eventos) fica recolhido para nao virar uma
+     rolagem unica de blocos soltos. */
+  .admintro{font-size:.86rem;font-weight:700;color:var(--ink-soft);
+    background:rgba(255,255,255,.4);border:2px dashed var(--pill-dk);
+    border-radius:11px;padding:10px 12px;margin-bottom:14px}
+  .admintro b{color:var(--ink)}
+  .admhd{display:flex;align-items:center;gap:8px;margin:16px 0 8px;
+    font-size:.95rem;font-weight:800;color:var(--ink)}
+  .admhd .ic{flex:none;font-size:1.05rem}
+  .admhd .tx{flex:1;min-width:0}
+  .badge{flex:none;min-width:28px;text-align:center;border-radius:999px;
+    padding:3px 9px;font-size:.8rem;font-weight:800;color:#fff;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#E8705A,var(--red));
+    border:2px solid #94301E;box-shadow:0 2px 0 #94301E}
+  .badge.zero{background:linear-gradient(180deg,#C4B49A,#A3927A);
+    border-color:#7E6E58;box-shadow:0 2px 0 #7E6E58}
+  .admbox{background:var(--panel-3);border-radius:13px;margin-bottom:10px}
+  .admbox>summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+    gap:8px;padding:12px;font-size:.92rem;font-weight:800;color:var(--ink)}
+  .admbox>summary::-webkit-details-marker{display:none}
+  .admbox>summary::after{content:"\25B8";margin-left:auto;font-size:1.05rem;
+    color:var(--ink-soft);transition:transform .15s}
+  .admbox[open]>summary::after{transform:rotate(90deg)}
+  .admbody{padding:0 12px 12px}
+  .admbody textarea{width:100%;border:3px solid var(--pill-dk);border-radius:11px;
+    background:#fff;padding:10px;font-family:inherit;font-weight:700;font-size:.9rem;
+    color:var(--ink);resize:vertical;min-height:56px;outline:none}
+  .admbody .gadd{margin:0 0 9px}
 
   /* ---- ativos no portal ---- */
   .pmember{display:flex;align-items:center;gap:9px;background:var(--panel-3);border-radius:11px;padding:7px 10px;
@@ -1443,7 +1959,7 @@
   .mcard2 .dot.on{background:var(--green-lt);box-shadow:0 0 6px var(--green-lt)}
   .promogrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
   .promobtn{cursor:pointer;font-family:inherit;font-weight:800;font-size:.9rem;padding:11px;border-radius:11px;
-    border:3px solid var(--btn-edge);background:linear-gradient(180deg,var(--btn-1),var(--btn-2));color:var(--ink);box-shadow:0 3px 0 var(--btn-edge)}
+    border:3px solid var(--btn-edge);background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));color:var(--ink);box-shadow:0 3px 0 var(--btn-edge)}
   .promobtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-edge)}
   .promobtn.sel{background:linear-gradient(180deg,var(--green-lt),var(--green));border-color:#33702F;color:#fff;
     -webkit-text-stroke:2px #2A5C26;paint-order:stroke fill;box-shadow:0 3px 0 #33702F}
@@ -1467,11 +1983,76 @@
     -webkit-text-stroke:1.6px #2A5C26;paint-order:stroke fill;border-radius:9px;padding:5px 10px;box-shadow:0 2px 0 #33702F}
   .gestrow{display:flex;align-items:center;gap:8px;background:#fff;border-radius:9px;padding:7px 10px;margin-bottom:6px}
   .gnome{flex:1;min-width:0;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  /* ---- cartão de pendência (solicitação de entrada e resgate) ----
+     .subm/.sh/.acts/.bok/.coins não tinham regra nenhuma: os cartões saíam
+     como texto solto, com botão branco do navegador e o ícone da moeda
+     esticado (svg sem tamanho vira 300x150). */
+  .subm{background:var(--panel-3);border:2.5px solid var(--pill-dk);border-radius:12px;
+    padding:11px;margin-bottom:9px;box-shadow:0 3px 0 rgba(0,0,0,.10)}
+  .subm .sh{display:flex;align-items:center;gap:9px}
+  .subm .sh h3{flex:1;min-width:0;font-size:.9rem;line-height:1.25}
+  .coins{flex:none;display:inline-flex;align-items:center;gap:4px;
+    background:rgba(0,0,0,.07);border-radius:8px;padding:4px 8px;
+    font-size:.85rem;font-variant-numeric:tabular-nums}
+  .coins svg{width:16px;height:16px;flex:none}
+  .acts{display:flex;gap:8px;margin-top:10px}
+  .bok{flex:1;cursor:pointer;font-family:inherit;font-weight:800;font-size:.86rem;
+    background:linear-gradient(180deg,var(--green-lt),var(--green));
+    border:2.5px solid #33702F;border-radius:10px;padding:9px;color:#fff;
+    -webkit-text-stroke:2px #2A5C26;paint-order:stroke fill;
+    box-shadow:0 3px 0 #33702F;transition:transform .1s,box-shadow .1s}
+  .bok:active{transform:translateY(2px);box-shadow:0 1px 0 #33702F}
+  .empty{text-align:center;color:var(--ink-soft);font-size:.86rem;font-weight:700;padding:14px 8px}
+  .empty div{font-size:1.7rem;margin-bottom:4px}
+  .perfilnc{flex:1;min-width:0}
+  .trorig{color:inherit;text-decoration:underline;cursor:pointer}
+  .field{display:block;font-size:.82rem;font-weight:800;color:var(--ink-soft);margin-bottom:6px}
+  .note{font-size:.8rem;font-weight:700;color:var(--ink-soft)}
+  /* aviso de secao ainda em construcao (loja e ranking) */
+  .embreve{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;
+    background:#FBEBCB;border:2.5px dashed var(--gold-dk);border-radius:12px;padding:11px 12px}
+  .embreve .eb-ic{flex:none;font-size:1.3rem;line-height:1.1}
+  .embreve .eb-tx{flex:1;min-width:0}
+  .embreve .eb-tx b{display:block;font-size:.92rem;color:#7A5410;margin-bottom:2px}
+  .embreve .eb-tx p{font-size:.8rem;font-weight:700;line-height:1.4;color:var(--ink-soft)}
   .gedit,.gdel{flex:none;cursor:pointer;border:none;background:rgba(0,0,0,.06);border-radius:8px;padding:5px 8px;font-size:.9rem}
+  .gtag{flex:none;font-size:.68rem;font-weight:800;border-radius:7px;padding:3px 7px;
+    background:rgba(0,0,0,.07);color:var(--ink-soft);white-space:nowrap}
+  .gtag.on{background:#DCEFD4;color:#3E6B2E;border:1.5px solid #5C8143}
   .resrow{display:flex;align-items:center;gap:9px;padding:6px 2px;border-bottom:1px solid rgba(0,0,0,.06)}
   .resnome{flex:1;min-width:0;font-size:.9rem;font-weight:700;display:flex;flex-direction:column;overflow:hidden}
   .resnome{white-space:nowrap;text-overflow:ellipsis}
   .resacum{font-size:.68rem;font-weight:600;color:var(--ink-soft)}
+  /* modo presenca: a linha inteira vira um botao de marcar */
+  #resultLista.modo-presenca .resin{display:none}
+  #resultLista.modo-pontos .presbtn{display:none}
+  #resultLista.modo-presenca .resrow{cursor:pointer}
+  #resultLista.modo-presenca .resrow.marcado{background:#DCEFD4;border-radius:9px}
+  .presbtn{flex:none;width:34px;height:34px;border-radius:10px;cursor:pointer;
+    border:2.5px solid var(--pill-dk);background:#fff;color:transparent;
+    font-size:1rem;font-weight:900;line-height:1;padding:0}
+  .presbtn.on{background:linear-gradient(180deg,var(--green-lt),var(--green));
+    border-color:#33702F;color:#fff}
+  /* seletor de colocação: toca nas setas em vez de digitar.
+     O campo do meio continua editável pra quando a posição for alta. */
+  .posbox{flex:none;display:flex;align-items:center;gap:3px}
+  .posdec,.posinc{flex:none;width:26px;height:33px;border-radius:8px;cursor:pointer;padding:0;
+    border:2px solid var(--pill-dk);color:var(--ink);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));
+    font-family:inherit;font-weight:900;font-size:1.05rem;line-height:1}
+  .posdec:active,.posinc:active{transform:translateY(1px)}
+  .posin{flex:none;width:40px;border:2px solid var(--pill-dk);border-radius:8px;
+    background:#fff;padding:7px 2px;font-family:inherit;font-weight:800;font-size:.88rem;
+    color:var(--ink);text-align:center;outline:none;-moz-appearance:textfield}
+  .posin::-webkit-outer-spin-button,.posin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .posin::placeholder{font-weight:800;color:#BFA57E}
+  #resultLista.modo-pontos .posbox{display:none}
+  .hojept{color:#3E6B2E}
+  .escrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    font-size:.82rem;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.07)}
+  .escrow:last-child{border-bottom:none}
+  .escrow span{color:var(--ink-soft);font-weight:700}
+  .escrow b{flex:none;color:var(--ink)}
   .rtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px}
   .rtab{flex:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:.8rem;padding:7px 12px;border-radius:11px;
     border:2.5px solid var(--pill-dk);background:var(--panel-3);color:var(--ink-soft);white-space:nowrap}
@@ -1877,6 +2458,115 @@
   "alvo fácil":["easy target","blanco fácil","쉬운 표적","活靶子","เป้าง่าย"],
   "ninguém segura":["unstoppable","imparable","막을 수 없다","没人挡得住","ไม่มีใครหยุดได้"],
 
+  /* --- rótulos dos diagramas: Urso --- */
+  "Duas chances na mesma semana":["Two chances in the same week","Dos oportunidades en la misma semana","같은 주에 두 번의 기회","同一周有两次机会","สองโอกาสในสัปดาห์เดียว"],
+  "ARMADILHA 1":["TRAP 1","TRAMPA 1","함정 1","陷阱 1","กับดัก 1"],
+  "ARMADILHA 2":["TRAP 2","TRAMPA 2","함정 2","陷阱 2","กับดัก 2"],
+  "horário A":["time A","horario A","시간 A","时段 A","เวลา A"],
+  "horário B":["time B","horario B","시간 B","时段 B","เวลา B"],
+  "Participe da que couber no seu dia":["Join whichever fits your day","Participa en la que te quede mejor","자기 일정에 맞는 쪽에 참여하세요","参加适合你时间的那场","เข้าร่วมรอบที่ตรงกับเวลาของคุณ"],
+  "A janela é curta":["The window is short","La ventana es corta","시간이 짧습니다","窗口很短","ช่วงเวลาสั้นมาก"],
+  "30 MINUTOS":["30 MINUTES","30 MINUTOS","30분","30 分钟","30 นาที"],
+  "acabou o tempo, acabou o dano":["time's up, damage stops","se acabó el tiempo, se acabó el daño","시간이 끝나면 피해도 끝","时间一到，伤害就停","หมดเวลา ดาเมจก็จบ"],
+  "Entre assim que abrir":["Join the moment it opens","Entra apenas abra","열리자마자 들어가세요","一开就进场","เข้าทันทีที่เปิด"],
+  "Só a liderança habilita":["Only leadership enables it","Solo el liderazgo lo habilita","운영진만 활성화할 수 있습니다","只有领导层能开启","เฉพาะผู้นำเท่านั้นที่เปิดได้"],
+  "R4 / LÍDER":["R4 / LEADER","R4 / LÍDER","R4 / 지도자","R4 / 盟主","R4 / หัวหน้า"],
+  "ARMADILHA ATIVA":["TRAP ACTIVE","TRAMPA ACTIVA","함정 활성화","陷阱已开启","กับดักพร้อมใช้"],
+  "Sem habilitar, ninguém ataca":["Without it enabled, nobody can attack","Sin habilitar, nadie ataca","활성화하지 않으면 아무도 공격할 수 없습니다","没开启就没人能打","ถ้าไม่เปิด ก็ไม่มีใครโจมตีได้"],
+  "Armadilha melhor = mais prêmio":["Better trap = better reward","Mejor trampa = mejor premio","함정이 좋을수록 보상도 좋아집니다","陷阱越好，奖励越好","กับดักดีขึ้น = รางวัลดีขึ้น"],
+  "Nv 1":["Lv 1","Nv 1","1레벨","1级","Lv 1"],
+  "Nv 2":["Lv 2","Nv 2","2레벨","2级","Lv 2"],
+  "Nv 3":["Lv 3","Nv 3","3레벨","3级","Lv 3"],
+  "A aliança sobe o nível doando recurso":["The alliance levels it up by donating resources","La alianza sube el nivel donando recursos","연맹이 자원을 기부해 레벨을 올립니다","联盟通过捐献资源来升级","พันธมิตรอัปเลเวลด้วยการบริจาคทรัพยากร"],
+  "Nível alto = mais dano para todos":["Higher level = more damage for everyone","Nivel alto = más daño para todos","레벨이 높을수록 모두의 피해가 커집니다","等级越高，所有人伤害越高","เลเวลสูง = ทุกคนทำดาเมจได้มากขึ้น"],
+  "Cada dano soma no total":["Every bit of damage adds to the total","Cada daño suma al total","모든 피해가 총합에 더해집니다","每一点伤害都计入总量","ดาเมจทุกครั้งรวมเข้ายอดรวม"],
+  "o dano de cada um":["each member's damage","el daño de cada uno","각자의 피해량","每个人的伤害","ดาเมจของแต่ละคน"],
+  "DANO":["DAMAGE","DAÑO","피해","伤害","ดาเมจ"],
+  "TOTAL":["TOTAL","TOTAL","합계","总计","รวม"],
+  "é ele que dá o prêmio":["this is what pays the reward","es lo que da el premio","보상은 여기서 결정됩니다","奖励由它决定","รางวัลมาจากยอดนี้"],
+  "Pouco dano também ajuda — bata mesmo assim":["Small damage helps too — hit anyway","Poco daño también ayuda — pega igual","적은 피해도 도움이 됩니다 — 그래도 치세요","伤害少也有用——照样打","ดาเมจน้อยก็ช่วยได้ — ตีไปเถอะ"],
+
+  /* --- rótulos dos diagramas: Salão dos Chefes --- */
+  "Um estágio por dia, 7 na semana":["One stage a day, 7 in the week","Una etapa por día, 7 en la semana","하루 한 단계, 주 7단계","一天一个阶段，一周七个","วันละด่าน รวม 7 ด่านต่อสัปดาห์"],
+  "o estágio 4 é o que mais rende":["stage 4 pays the most","la etapa 4 es la que más rinde","4단계가 가장 많이 줍니다","第4阶段收益最高","ด่าน 4 ให้คุ้มที่สุด"],
+  "Cada dia pede uma tarefa diferente":["Each day asks for a different task","Cada día pide una tarea distinta","날마다 요구하는 임무가 다릅니다","每天要求的任务不同","แต่ละวันขอภารกิจต่างกัน"],
+  "Bata a meta e leve o baú":["Hit the goal and take the chest","Alcanza la meta y llévate el cofre","목표를 채우고 상자를 받으세요","达成目标就拿宝箱","ทำถึงเป้าแล้วรับหีบ"],
+  "meta":["goal","meta","목표","目标","เป้า"],
+  "seus pontos":["your points","tus puntos","내 점수","你的分数","แต้มของคุณ"],
+  "Passar da meta rende baú melhor":["Going past the goal gives a better chest","Pasar la meta da un cofre mejor","목표를 넘기면 더 좋은 상자","超过目标能拿更好的宝箱","เกินเป้าได้หีบที่ดีกว่า"],
+  "Estágio 4: guarde os recursos":["Stage 4: save your resources","Etapa 4: guarda los recursos","4단계: 자원을 아껴두세요","第4阶段：先屯资源","ด่าน 4: เก็บทรัพยากรไว้"],
+  "coletar antes":["collecting early","recolectar antes","미리 수확하면","提前收取","เก็บก่อน"],
+  "não conta":["doesn't count","no cuenta","점수 없음","不算分","ไม่นับ"],
+  "coletar no dia":["collecting on the day","recolectar el día","당일에 수확하면","当天收取","เก็บวันนั้น"],
+  "vale pontos":["scores points","da puntos","점수 획득","可以得分","ได้แต้ม"],
+  "Deixe a fazenda cheia esperando o dia":["Leave the farms full waiting for the day","Deja la granja llena esperando el día","농장을 채워둔 채 그날을 기다리세요","让田地满着，等到那天","ปล่อยฟาร์มเต็มไว้รอวันนั้น"],
+  "Ranking entre as alianças":["Ranking among alliances","Clasificación entre alianzas","연맹 간 순위","联盟之间的排名","อันดับระหว่างพันธมิตร"],
+  "A soma dos pontos de todos vira posição":["Everyone's points add up into a position","La suma de los puntos de todos da la posición","모두의 점수 합이 순위가 됩니다","所有人的分数加起来决定名次","แต้มของทุกคนรวมกันเป็นอันดับ"],
+  "Posição melhor = baú melhor pra todos":["Better position = better chest for everyone","Mejor posición = mejor cofre para todos","순위가 높을수록 모두의 상자가 좋아집니다","名次越高，所有人的宝箱越好","อันดับดีขึ้น = หีบดีขึ้นสำหรับทุกคน"],
+
+  /* --- rótulos dos diagramas: Batalha do Santuário --- */
+  "A temporada tem fases":["The season has phases","La temporada tiene fases","시즌은 단계로 나뉩니다","赛季分阶段","ฤดูกาลแบ่งเป็นเฟส"],
+  "INSCRIÇÃO":["SIGN-UP","INSCRIPCIÓN","신청","报名","ลงทะเบียน"],
+  "BATALHAS":["BATTLES","BATALLAS","전투","战斗","การรบ"],
+  "FINAL":["FINAL","FINAL","결승","决赛","รอบชิง"],
+  "Cada fase abre em um dia diferente":["Each phase opens on a different day","Cada fase abre en un día distinto","각 단계는 다른 날에 열립니다","每个阶段在不同的日子开启","แต่ละเฟสเปิดคนละวัน"],
+  "Olhe a agenda para não perder a sua":["Check the schedule so you don't miss yours","Mira la agenda para no perder la tuya","일정을 확인해 놓치지 마세요","看好日程别错过","ดูตารางไว้จะได้ไม่พลาด"],
+  "A inscrição é da liderança":["Sign-up is up to the leadership","La inscripción es del liderazgo","신청은 운영진이 합니다","报名由领导层负责","การลงทะเบียนเป็นหน้าที่ผู้นำ"],
+  "demais cargos":["other ranks","demás rangos","그 외 직급","其他职位","ตำแหน่งอื่น"],
+  "inscreve a aliança":["signs the alliance up","inscribe a la alianza","연맹을 등록","为联盟报名","ลงทะเบียนให้พันธมิตร"],
+  "não precisa fazer nada":["nothing to do","no hace nada","할 일 없음","无需操作","ไม่ต้องทำอะไร"],
+  "Você só precisa aparecer no horário":["You just need to show up on time","Solo tienes que aparecer a la hora","시간에 맞춰 오기만 하면 됩니다","你只要准时出现","แค่มาให้ตรงเวลา"],
+  "O prêmio é o Pilar da Honra":["The prize is the Pillar of Honor","El premio es el Pilar del Honor","보상은 명예의 기둥입니다","奖励是荣誉之柱","รางวัลคือเสาแห่งเกียรติยศ"],
+  "Ele dá bônus para a aliança inteira":["It gives a bonus to the whole alliance","Da bono a toda la alianza","연맹 전체에 보너스를 줍니다","它为整个联盟提供加成","ให้โบนัสกับทั้งพันธมิตร"],
+
+  /* --- rótulos dos diagramas: Campeonato --- */
+  "Rodadas contra outras alianças":["Rounds against other alliances","Rondas contra otras alianzas","다른 연맹과의 라운드","与其他联盟的对局","รอบแข่งกับพันธมิตรอื่น"],
+  "rodada 2":["round 2","ronda 2","2라운드","第2轮","รอบ 2"],
+  "Toda rodada soma pontos, ganhando ou não":["Every round scores points, win or lose","Cada ronda suma puntos, ganes o no","이기든 지든 라운드마다 점수가 쌓입니다","无论输赢，每轮都有分","ทุกรอบได้แต้ม ไม่ว่าจะแพ้หรือชนะ"],
+  "Aparecer já vale — falta é que zera":["Showing up already counts — missing is what scores zero","Aparecer ya vale — faltar es lo que da cero","참여만 해도 점수 — 불참이 0점","出场就有分——缺席才是零","แค่มาก็ได้แต้ม — ขาดต่างหากที่ได้ศูนย์"],
+  "Estrelas medem o desempenho":["Stars measure performance","Las estrellas miden el desempeño","별이 성과를 나타냅니다","星星代表表现","ดาวใช้วัดผลงาน"],
+  "Cada objetivo cumprido acende uma estrela":["Each objective completed lights a star","Cada objetivo cumplido enciende una estrella","목표를 달성할 때마다 별이 켜집니다","每完成一个目标点亮一颗星","ทำเป้าสำเร็จจะติดดาวหนึ่งดวง"],
+  "Mais estrelas = recompensa melhor":["More stars = better reward","Más estrellas = mejor recompensa","별이 많을수록 보상이 좋아집니다","星星越多，奖励越好","ดาวยิ่งมาก รางวัลยิ่งดี"],
+  "Escolha por onde avançar":["Choose which way to push","Elige por dónde avanzar","어느 쪽으로 진격할지 고르세요","选择推进的方向","เลือกเส้นทางที่จะบุก"],
+  "rota A":["route A","ruta A","경로 A","路线 A","เส้นทาง A"],
+  "rota B":["route B","ruta B","경로 B","路线 B","เส้นทาง B"],
+  "Dá para trocar de rota durante o evento":["You can switch routes during the event","Se puede cambiar de ruta durante el evento","이벤트 중에 경로를 바꿀 수 있습니다","活动期间可以换路线","เปลี่ยนเส้นทางระหว่างอีเวนต์ได้"],
+
+  /* --- rótulos dos diagramas: Roleta --- */
+  "A moeda do evento gira a roleta":["The event currency spins the wheel","La moneda del evento gira la ruleta","이벤트 화폐로 룰렛을 돌립니다","用活动代币转轮盘","ใช้เหรียญอีเวนต์หมุนวงล้อ"],
+  "junte antes de girar":["stock up before spinning","junta antes de girar","돌리기 전에 모으세요","转之前先攒","สะสมก่อนหมุน"],
+  "Sem moeda não tem giro — guarde a sua":["No currency, no spin — save yours","Sin moneda no hay giro — guarda la tuya","화폐가 없으면 못 돌립니다 — 아껴두세요","没代币就转不了——省着用","ไม่มีเหรียญก็หมุนไม่ได้ — เก็บไว้"],
+  "Girar enche a barra de progresso":["Spinning fills the progress bar","Girar llena la barra de progreso","돌릴수록 진행 바가 찹니다","转动会填满进度条","การหมุนจะเติมแถบความคืบหน้า"],
+  "cada giro empurra a barra":["each spin pushes the bar","cada giro empuja la barra","한 번 돌릴 때마다 바가 오릅니다","每转一次进度就前进","หมุนแต่ละครั้งดันแถบขึ้น"],
+  "Os baús vêm mesmo sem sorte no giro":["The chests come even with bad luck","Los cofres llegan aunque no tengas suerte","운이 없어도 상자는 받습니다","就算运气差也能拿到宝箱","ถึงดวงไม่ดีก็ยังได้หีบ"],
+  "Tem limite de giros por dia":["There's a daily spin limit","Hay un límite de giros por día","하루 돌릴 수 있는 횟수가 정해져 있습니다","每天转动次数有限","มีลิมิตการหมุนต่อวัน"],
+  "HOJE":["TODAY","HOY","오늘","今天","วันนี้"],
+  "usados / disponíveis":["used / available","usados / disponibles","사용 / 남음","已用 / 可用","ใช้แล้ว / เหลือ"],
+  "Giro não usado não acumula — volte todo dia":["Unused spins don't carry over — come back daily","Los giros no usados no se acumulan — vuelve cada día","안 쓴 횟수는 이월되지 않습니다 — 매일 오세요","没用的次数不会累积——每天都来","หมุนที่ไม่ใช้ไม่ทบ — กลับมาทุกวัน"],
+
+  /* --- rótulos dos diagramas: Viking --- */
+  "Aqui você DEFENDE":["Here you DEFEND","Aquí tú DEFIENDES","여기서는 방어합니다","这里你要防守","ที่นี่คุณตั้งรับ"],
+  "DEFESA":["DEFENSE","DEFENSA","방어","防守","ตั้งรับ"],
+  "Deixe a tropa em casa e cure antes":["Keep troops home and heal beforehand","Deja la tropa en casa y cura antes","병력을 집에 두고 미리 치료하세요","把部队留在城里，提前治疗","เก็บทหารไว้ที่เมืองและรักษาก่อน"],
+  "Ligue o evento antes de começar":["Turn the event on before it starts","Activa el evento antes de empezar","시작 전에 이벤트를 켜세요","开始前先开启活动","เปิดอีเวนต์ก่อนเริ่ม"],
+  "DESLIGADO":["OFF","APAGADO","꺼짐","未开启","ปิด"],
+  "LIGADO":["ON","ENCENDIDO","켜짐","已开启","เปิด"],
+  "Desligado, o que você fizer não conta":["While it's off, nothing you do counts","Apagado, lo que hagas no cuenta","꺼져 있으면 무엇을 해도 반영되지 않습니다","没开启的话，做什么都不算","ถ้าปิดอยู่ ทำอะไรก็ไม่นับ"],
+  "Dois rankings ao mesmo tempo":["Two rankings at the same time","Dos clasificaciones al mismo tiempo","순위가 동시에 두 개","同时有两个排行榜","สองอันดับพร้อมกัน"],
+  "ALIANÇA":["ALLIANCE","ALIANZA","연맹","联盟","พันธมิตร"],
+  "O mesmo esforço pontua nos dois":["The same effort scores in both","El mismo esfuerzo puntúa en ambos","같은 노력이 양쪽 모두에 반영됩니다","同样的努力两边都算分","ความพยายามเดียวได้แต้มทั้งสองฝั่ง"],
+
+  /* --- rótulos dos diagramas: Vai com Tudo --- */
+  "Pontos por tropa inimiga morta":["Points for enemy troops killed","Puntos por tropa enemiga eliminada","적 병력을 처치하면 점수","击杀敌军部队得分","ได้แต้มจากการฆ่าทหารศัตรู"],
+  "+ pontos":["+ points","+ puntos","+ 점수","+ 分数","+ แต้ม"],
+  "Só vale tropa de jogador, não de monstro":["Only player troops count, not monsters","Solo cuenta tropa de jugador, no de monstruo","몬스터가 아닌 플레이어 병력만 인정됩니다","只算玩家部队，不算怪物","นับเฉพาะทหารผู้เล่น ไม่นับมอนสเตอร์"],
+  "Ataque junto: sozinho você vira alvo":["Attack together: alone you become the target","Ataca en grupo: solo te vuelves el blanco","함께 공격하세요: 혼자면 표적이 됩니다","一起进攻：单独行动会成为目标","โจมตีพร้อมกัน: อยู่คนเดียวจะกลายเป็นเป้า"],
+  "Mais pontos, baú melhor":["More points, better chest","Más puntos, mejor cofre","점수가 높을수록 상자가 좋아집니다","分数越高，宝箱越好","แต้มมากขึ้น หีบดีขึ้น"],
+  "poucos":["few","pocos","적음","少","น้อย"],
+  "médio":["medium","medio","보통","中等","ปานกลาง"],
+  "muitos":["many","muchos","많음","多","มาก"],
+  "Tem prêmio seu e prêmio da aliança":["There's your reward and the alliance's","Hay premio tuyo y premio de la alianza","개인 보상과 연맹 보상이 따로 있습니다","有个人奖励也有联盟奖励","มีรางวัลของคุณและของพันธมิตร"],
+
   /* --- títulos dos passos --- */
   "O que é o evento":["What this event is","Qué es el evento","이 이벤트란","这个活动是什么","อีเวนต์นี้คืออะไร"],
   "Monte a marcha certa":["Build the right march","Arma la marcha correcta","알맞은 부대 편성","编好正确的队伍","จัดทัพให้ถูก"],
@@ -1894,6 +2584,28 @@
   "O objetivo é o mapa":["The map is the objective","El objetivo es el mapa","목표는 지도 장악","目标是地图","เป้าหมายคือแผนที่"],
   "Teleporte a cada 12 minutos":["Teleport every 12 minutes","Teletransporte cada 12 minutos","12분마다 순간이동","每12分钟传送一次","เทเลพอร์ตทุก 12 นาที"],
   "Nunca avance sozinho":["Never push alone","Nunca avances solo","절대 혼자 나서지 마세요","绝不要单独推进","อย่าบุกคนเดียว"],
+  "Duas armadilhas, dois horários":["Two traps, two times","Dos trampas, dos horarios","함정 두 개, 시간 두 번","两个陷阱，两个时段","สองกับดัก สองเวลา"],
+  "Cada armadilha dura 30 minutos":["Each trap lasts 30 minutes","Cada trampa dura 30 minutos","각 함정은 30분 동안 열립니다","每个陷阱持续30分钟","กับดักแต่ละอันเปิด 30 นาที"],
+  "O que vale é o Dano Total da Aliança":["What counts is the alliance's total damage","Lo que vale es el daño total de la alianza","중요한 것은 연맹의 총 피해량입니다","算的是联盟的总伤害","สิ่งที่นับคือดาเมจรวมของพันธมิตร"],
+  "Alguém precisa habilitar antes":["Someone has to enable it first","Alguien tiene que habilitarla antes","누군가 먼저 활성화해야 합니다","必须有人先开启","ต้องมีคนเปิดก่อน"],
+  "Aprimore a armadilha":["Upgrade the trap","Mejora la trampa","함정을 강화하세요","升级陷阱","อัปเกรดกับดัก"],
+  "São 7 estágios na semana":["7 stages across the week","Son 7 etapas en la semana","한 주에 7단계","一周共7个阶段","มี 7 ด่านตลอดสัปดาห์"],
+  "Cada objetivo tem uma meta de pontos":["Each objective has a point goal","Cada objetivo tiene una meta de puntos","각 목표마다 점수 기준이 있습니다","每个目标都有分数要求","แต่ละเป้าหมายมีเกณฑ์แต้ม"],
+  "Estágio 4: Acúmulo de Recursos":["Stage 4: Resource Gathering","Etapa 4: Acumulación de Recursos","4단계: 자원 모으기","第4阶段：资源积累","ด่าน 4: สะสมทรัพยากร"],
+  "Classificação de Honra":["Honor Ranking","Clasificación de Honor","명예 순위","荣誉排行","อันดับเกียรติยศ"],
+  "Temporada dividida em fases":["The season is split into phases","Temporada dividida en fases","시즌은 여러 단계로 나뉩니다","赛季分为多个阶段","ฤดูกาลแบ่งเป็นเฟส"],
+  "Só R4 e Líder inscrevem":["Only R4 and the Leader sign up","Solo R4 y el Líder inscriben","R4와 지도자만 신청할 수 있습니다","只有R4和盟主能报名","เฉพาะ R4 และหัวหน้าเท่านั้นที่ลงทะเบียน"],
+  "É uma liga com rodadas":["It's a league with rounds","Es una liga con rondas","라운드로 진행되는 리그입니다","这是分轮次的联赛","เป็นลีกที่แข่งเป็นรอบ"],
+  "Estrelas mostram o desempenho":["Stars show how you're doing","Las estrellas muestran el desempeño","별이 성과를 보여줍니다","星星显示表现如何","ดาวบอกผลงาน"],
+  "Dá para mudar de rota":["You can change route","Se puede cambiar de ruta","경로를 바꿀 수 있습니다","可以更换路线","เปลี่ยนเส้นทางได้"],
+  "Giros com moeda do evento":["Spins cost event currency","Giros con la moneda del evento","이벤트 화폐로 돌립니다","用活动代币转动","หมุนด้วยเหรียญอีเวนต์"],
+  "Tem baú de progresso":["There's a progress chest","Hay cofre de progreso","진행 상자가 있습니다","有进度宝箱","มีหีบความคืบหน้า"],
+  "Tem limite por dia":["There's a daily limit","Hay límite por día","하루 제한이 있습니다","每天有上限","มีลิมิตต่อวัน"],
+  "É defesa, não ataque":["It's defense, not attack","Es defensa, no ataque","공격이 아니라 방어입니다","是防守，不是进攻","เป็นการตั้งรับ ไม่ใช่บุก"],
+  "Precisa habilitar antes":["It has to be enabled first","Hay que habilitarlo antes","먼저 활성화해야 합니다","必须先开启","ต้องเปิดก่อน"],
+  "Tem dois rankings":["There are two rankings","Hay dos clasificaciones","순위가 두 개 있습니다","有两个排行榜","มีสองอันดับ"],
+  "Pontua matando tropa inimiga":["You score by killing enemy troops","Puntúas eliminando tropa enemiga","적 병력을 처치해 점수를 얻습니다","击杀敌军部队得分","ทำแต้มด้วยการฆ่าทหารศัตรู"],
+  "Recompensas":["Rewards","Recompensas","보상","奖励","รางวัล"],
 
   /* --- textos dos passos --- */
   "Durante a semana toda a aliança ataca o Urso. Não é sobre matar: é sobre acumular DANO. Quanto mais dano você soma, melhor a recompensa.":["All week the alliance attacks the Bear. It's not about killing it: it's about stacking DAMAGE. The more damage you add up, the better your reward.","Durante toda la semana la alianza ataca al Oso. No se trata de matarlo: se trata de acumular DAÑO. Cuanto más daño sumes, mejor la recompensa.","일주일 내내 연맹이 곰을 공격합니다. 처치가 아니라 피해 누적이 핵심입니다. 피해를 많이 쌓을수록 보상이 좋아집니다.","整周联盟都在攻击熊。重点不是击杀，而是累积伤害。你累积的伤害越多，奖励越好。","ตลอดทั้งสัปดาห์พันธมิตรจะโจมตีหมี ไม่ได้เน้นฆ่า แต่เน้นสะสมดาเมจ ยิ่งสะสมมาก รางวัลยิ่งดี"],
@@ -1912,6 +2624,30 @@
   "Não é matar por matar: é CONTROLAR pontos. Cada ponto capturado vale pontuação contínua para a aliança.":["It's not about killing for the sake of it: it's about CONTROLLING points. Each captured point scores continuously for the alliance.","No se trata de matar por matar: se trata de CONTROLAR puntos. Cada punto capturado da puntuación continua a la alianza.","무작정 처치가 아니라 거점 장악이 핵심입니다. 점령한 거점은 연맹에 계속 점수를 줍니다.","不是为了杀而杀，而是要占点。每个占领的点都会持续为联盟得分。","ไม่ใช่ฆ่าเพื่อฆ่า แต่คือการยึดจุด ทุกจุดที่ยึดได้จะทำแต้มให้พันธมิตรตลอดเวลา"],
   "Você ganha um teleporte grátis a cada 12 min. Use para TOMAR POSIÇÃO junto da aliança, nunca para fugir à toa.":["You get a free teleport every 12 min. Use it to TAKE POSITION with the alliance, never to run away for nothing.","Recibes un teletransporte gratis cada 12 min. Úsalo para TOMAR POSICIÓN junto a la alianza, nunca para huir sin motivo.","12분마다 무료 순간이동이 주어집니다. 연맹과 함께 자리를 잡는 데 쓰고, 괜히 도망치는 데 쓰지 마세요.","每12分钟可获得一次免费传送。用它和联盟一起抢占位置，别拿来白白逃跑。","คุณจะได้เทเลพอร์ตฟรีทุก 12 นาที ใช้เพื่อยึดตำแหน่งพร้อมพันธมิตร อย่าใช้หนีเปล่าๆ"],
   "Sozinho você vira alvo fácil. Ande em bloco com a aliança e ataque no sinal do líder.":["Alone you're an easy target. Move as a group with the alliance and strike on the leader's call.","Solo eres un blanco fácil. Muévete en grupo con la alianza y ataca a la señal del líder.","혼자 다니면 쉬운 표적이 됩니다. 연맹과 뭉쳐 다니고 리더의 신호에 맞춰 공격하세요.","单独行动就是活靶子。和联盟抱团行动，听队长的信号再进攻。","อยู่คนเดียวจะกลายเป็นเป้าง่าย เคลื่อนที่เป็นกลุ่มกับพันธมิตรและโจมตีตามสัญญาณของหัวหน้า"],
+
+  "A [TOP] arma as duas armadilhas em horários diferentes de propósito, para que todo mundo consiga participar de pelo menos uma. Escolha a que cabe no seu dia — o portal já mostra o horário no seu fuso.":["[TOP] sets the two traps at different times on purpose, so everyone can join at least one. Pick the one that fits your day — the portal already shows the time in your zone.","La [TOP] pone las dos trampas en horarios distintos a propósito, para que todos puedan entrar al menos a una. Elige la que te quede mejor — el portal ya muestra la hora en tu zona.","[TOP]는 모두가 최소 한 번은 참여할 수 있도록 일부러 두 함정을 다른 시간에 엽니다. 자기 일정에 맞는 쪽을 고르세요 — 포털이 이미 현지 시간으로 보여줍니다.","[TOP] 特意把两个陷阱安排在不同时段，让每个人至少能参加一场。选适合你时间的那场——门户已按你的时区显示时间。","[TOP] ตั้งกับดักสองอันคนละเวลาโดยตั้งใจ เพื่อให้ทุกคนเข้าร่วมได้อย่างน้อยหนึ่งรอบ เลือกรอบที่ตรงกับเวลาของคุณ — พอร์ทัลแสดงเวลาตามโซนของคุณแล้ว"],
+  "A janela é curta. Chegue com a marcha montada e as tropas curadas ANTES de abrir: quem começa a se preparar na hora perde metade do tempo.":["The window is short. Show up with your march built and troops healed BEFORE it opens: anyone who starts preparing at the last second loses half the time.","La ventana es corta. Llega con la marcha armada y las tropas curadas ANTES de que abra: quien empieza a prepararse en el momento pierde la mitad del tiempo.","시간이 짧습니다. 열리기 전에 부대를 편성하고 병력을 치료해 두세요. 그때부터 준비하면 절반을 날립니다.","窗口很短。开启前就要编好队伍、治好部队：临时才开始准备的人会浪费一半时间。","ช่วงเวลาสั้น มาให้พร้อมทั้งกองทัพและทหารที่รักษาแล้วก่อนเปิด ใครเริ่มเตรียมตอนนั้นจะเสียเวลาไปครึ่งหนึ่ง"],
+  "Não é quem dá o golpe final. É a soma do dano de todos os membros dentro da janela. Por isso bater junto rende muito mais do que bater espalhado.":["It's not about landing the final blow. It's the sum of every member's damage inside the window. That's why hitting together pays far more than hitting scattered.","No se trata de dar el golpe final. Es la suma del daño de todos los miembros dentro de la ventana. Por eso pegar juntos rinde mucho más que pegar disperso.","마지막 일격이 중요한 게 아닙니다. 정해진 시간 안에 모든 구성원의 피해를 합산합니다. 그래서 흩어져 치는 것보다 함께 치는 편이 훨씬 낫습니다.","不是谁打出最后一击。而是窗口内所有成员伤害的总和。所以一起打远比分散打划算。","ไม่ได้อยู่ที่ใครฟันครั้งสุดท้าย แต่คือผลรวมดาเมจของสมาชิกทุกคนในช่วงเวลานั้น การตีพร้อมกันจึงคุ้มกว่าตีกระจัดกระจายมาก"],
+  "A armadilha tem pré-registro e precisa ser habilitada. Se ninguém habilitar a tempo, ela simplesmente não abre para a aliança.":["The trap has a pre-registration and must be enabled. If nobody enables it in time, it simply doesn't open for the alliance.","La trampa tiene prerregistro y hay que habilitarla. Si nadie la habilita a tiempo, simplemente no abre para la alianza.","함정은 사전 등록이 있어 활성화해야 합니다. 제때 아무도 켜지 않으면 연맹에 아예 열리지 않습니다.","陷阱需要预先登记并开启。如果没人及时开启，它就不会为联盟开放。","กับดักต้องลงทะเบียนล่วงหน้าและต้องเปิดใช้งาน ถ้าไม่มีใครเปิดทัน มันจะไม่เปิดให้พันธมิตรเลย"],
+  "A armadilha tem nível próprio. Subir o nível melhora as Recompensas de Dano para todos os participantes — vale investir junto.":["The trap has its own level. Raising it improves the Damage Rewards for everyone taking part — worth investing in together.","La trampa tiene su propio nivel. Subirlo mejora las Recompensas de Daño para todos los participantes — vale la pena invertir juntos.","함정에는 자체 레벨이 있습니다. 레벨을 올리면 참여자 전원의 피해 보상이 좋아집니다 — 함께 투자할 가치가 있습니다.","陷阱有自己的等级。提升等级会改善所有参与者的伤害奖励——值得一起投入。","กับดักมีเลเวลของตัวเอง การอัปเลเวลทำให้รางวัลดาเมจของผู้ร่วมทุกคนดีขึ้น — คุ้มที่จะลงทุนร่วมกัน"],
+  "O evento dura a semana toda e é dividido em 7 estágios (I a VII). Cada estágio abre um conjunto novo de objetivos — quem entra só no fim perde os anteriores.":["The event runs all week and is split into 7 stages (I to VII). Each stage opens a new set of objectives — joining only at the end means losing the earlier ones.","El evento dura toda la semana y se divide en 7 etapas (I a VII). Cada etapa abre un conjunto nuevo de objetivos — quien entra solo al final pierde los anteriores.","이벤트는 한 주 내내 진행되며 7단계(I~VII)로 나뉩니다. 단계마다 새로운 목표가 열리므로, 마지막에만 참여하면 앞선 것을 놓칩니다.","活动持续整周，分为7个阶段（I 到 VII）。每个阶段开启一组新目标——最后才参加就错过了前面的。","อีเวนต์กินเวลาทั้งสัปดาห์ แบ่งเป็น 7 ด่าน (I ถึง VII) แต่ละด่านเปิดเป้าหมายชุดใหม่ — ถ้าเข้าตอนท้ายก็พลาดของก่อนหน้า"],
+  "Dentro do estágio há vários objetivos, cada um com sua meta (ex.: 630.000 pontos). Ao bater a meta, aparece o botão Coletar — muita gente bate e esquece de coletar.":["Inside each stage there are several objectives, each with its own goal (e.g. 630,000 points). When you hit the goal a Collect button appears — plenty of people hit it and forget to collect.","Dentro de la etapa hay varios objetivos, cada uno con su meta (ej.: 630.000 puntos). Al alcanzar la meta aparece el botón Recoger — mucha gente la alcanza y olvida recoger.","각 단계 안에는 여러 목표가 있고 각각 기준치가 있습니다(예: 630,000점). 기준을 채우면 수령 버튼이 뜨는데, 채우고도 수령을 잊는 사람이 많습니다.","每个阶段里有多个目标，各有自己的分数要求（例如 630,000 分）。达标后会出现领取按钮——很多人达标了却忘了领。","ในแต่ละด่านมีหลายเป้าหมาย แต่ละอันมีเกณฑ์ของตัวเอง (เช่น 630,000 แต้ม) เมื่อถึงเกณฑ์จะมีปุ่มรับรางวัล — หลายคนถึงเกณฑ์แล้วลืมกดรับ"],
+  "Cada estágio pontua uma coisa diferente. O estágio 4, por exemplo, é Acúmulo de Recursos: junte comida, madeira, pedra e ferro para pontuar.":["Each stage scores something different. Stage 4, for instance, is Resource Gathering: collect food, wood, stone and iron to score.","Cada etapa puntúa algo distinto. La etapa 4, por ejemplo, es Acumulación de Recursos: junta comida, madera, piedra y hierro para puntuar.","단계마다 점수를 주는 항목이 다릅니다. 예를 들어 4단계는 자원 모으기입니다: 식량, 목재, 석재, 철을 모으면 점수가 됩니다.","每个阶段计分的内容不同。例如第4阶段是资源积累：收集粮食、木材、石料和铁来得分。","แต่ละด่านให้แต้มจากสิ่งที่ต่างกัน เช่น ด่าน 4 คือการสะสมทรัพยากร: เก็บอาหาร ไม้ หิน และเหล็กเพื่อทำแต้ม"],
+  "Além dos objetivos, existe um ranking. O prêmio de destaque da temporada é o Herói da Temporada, além de diamantes e acelerações.":["Beyond the objectives there's a ranking. The season's headline prize is the Season Hero, plus diamonds and speedups.","Además de los objetivos hay una clasificación. El premio destacado de la temporada es el Héroe de la Temporada, además de diamantes y aceleradores.","목표 외에 순위도 있습니다. 시즌의 대표 보상은 시즌 영웅이며, 다이아와 가속 아이템도 함께 나옵니다.","除了目标之外还有排行榜。赛季的重头奖励是赛季英雄，另外还有钻石和加速道具。","นอกจากเป้าหมายแล้วยังมีอันดับ รางวัลเด่นของฤดูกาลคือฮีโร่ประจำฤดูกาล พร้อมเพชรและไอเทมเร่ง"],
+  "A batalha corre por temporada, em fases (ex.: Temporada 1, Fase 6 de 8). Cada fase é uma disputa nova pelo controle dos Santuários.":["The battle runs by season, in phases (e.g. Season 1, Phase 6 of 8). Each phase is a fresh fight for control of the Sanctuaries.","La batalla corre por temporada, en fases (ej.: Temporada 1, Fase 6 de 8). Cada fase es una disputa nueva por el control de los Santuarios.","전투는 시즌 단위로 여러 단계에 걸쳐 진행됩니다(예: 시즌 1, 8단계 중 6단계). 각 단계는 성소 지배권을 두고 새로 벌이는 싸움입니다.","战斗按赛季进行，分阶段（例如第1赛季第6/8阶段）。每个阶段都是对圣所控制权的全新争夺。","การรบดำเนินเป็นฤดูกาลและแบ่งเป็นเฟส (เช่น ฤดูกาล 1 เฟส 6 จาก 8) แต่ละเฟสคือการชิงการควบคุมวิหารครั้งใหม่"],
+  "A inscrição é restrita ao Líder e a membros R4 ou acima, com prazo. Fique de olho no tempo de inscrição restante.":["Sign-up is limited to the Leader and R4+ members, and there's a deadline. Keep an eye on the remaining sign-up time.","La inscripción está limitada al Líder y a miembros R4 o superiores, con plazo. Vigila el tiempo de inscripción restante.","신청은 지도자와 R4 이상 구성원만 가능하며 기한이 있습니다. 남은 신청 시간을 확인하세요.","报名仅限盟主和R4及以上成员，并且有截止时间。注意剩余报名时间。","การลงทะเบียนจำกัดเฉพาะหัวหน้าและสมาชิก R4 ขึ้นไป และมีกำหนดเวลา คอยดูเวลาที่เหลือ"],
+  "Quem toma o controle dos Santuários grava o nome no Pilar da Honra, além das recompensas do evento.":["Whoever takes control of the Sanctuaries gets their name on the Pillar of Honor, on top of the event rewards.","Quien toma el control de los Santuarios graba su nombre en el Pilar del Honor, además de las recompensas del evento.","성소를 차지한 쪽은 이벤트 보상과 더불어 명예의 기둥에 이름을 새깁니다.","夺得圣所控制权的一方，除活动奖励外还会把名字刻在荣誉之柱上。","ผู้ที่ยึดวิหารได้จะได้จารึกชื่อบนเสาแห่งเกียรติยศ นอกเหนือจากรางวัลของอีเวนต์"],
+  "A aliança entra numa divisão (ex.: Ferro II) e enfrenta uma aliança adversária por rodada. Entre as rodadas há um tempo de preparação.":["The alliance enters a division (e.g. Iron II) and faces one rival alliance per round. Between rounds there's a preparation window.","La alianza entra en una división (ej.: Hierro II) y enfrenta a una alianza rival por ronda. Entre rondas hay un tiempo de preparación.","연맹은 특정 디비전(예: 아이언 II)에 배정되어 라운드마다 상대 연맹과 맞붙습니다. 라운드 사이에는 준비 시간이 있습니다.","联盟会进入一个分区（例如铁II），每轮对阵一个敌对联盟。轮次之间有准备时间。","พันธมิตรจะอยู่ในดิวิชัน (เช่น เหล็ก II) และเจอพันธมิตรคู่แข่งหนึ่งทีมต่อรอบ ระหว่างรอบจะมีเวลาเตรียมตัว"],
+  "As estrelas no topo indicam quantas a aliança conquistou na divisão atual. Subir de divisão depende delas.":["The stars at the top show how many the alliance has earned in the current division. Moving up a division depends on them.","Las estrellas de arriba indican cuántas ha conseguido la alianza en la división actual. Subir de división depende de ellas.","상단의 별은 현재 디비전에서 연맹이 획득한 수를 나타냅니다. 승격은 이 별에 달려 있습니다.","顶部的星星显示联盟在当前分区获得了多少。能否升区就看它们。","ดาวด้านบนบอกว่าพันธมิตรได้มาเท่าไรในดิวิชันปัจจุบัน การเลื่อนดิวิชันขึ้นอยู่กับดาวเหล่านี้"],
+  "O botão Mudar de Rota permite trocar a estratégia da aliança para a próxima rodada. Decisão de liderança — combine no chat antes.":["The Change Route button switches the alliance's strategy for the next round. It's a leadership call — agree in chat first.","El botón Cambiar de Ruta permite cambiar la estrategia de la alianza para la próxima ronda. Es decisión del liderazgo — acuérdenlo antes en el chat.","경로 변경 버튼으로 다음 라운드의 연맹 전략을 바꿀 수 있습니다. 운영진이 결정할 사안이니 먼저 채팅에서 합의하세요.","更换路线按钮可以改变联盟下一轮的策略。这是领导层的决定——先在聊天里商量好。","ปุ่มเปลี่ยนเส้นทางใช้เปลี่ยนกลยุทธ์ของพันธมิตรสำหรับรอบถัดไป เป็นการตัดสินใจของผู้นำ — ตกลงกันในแชทก่อน"],
+  "Você gira com a moeda do evento — 1 giro por 1 moeda, ou 10 giros por 9 (mais barato girar de 10 em 10 quando dá).":["You spin with the event currency — 1 spin for 1 coin, or 10 spins for 9 (spinning in tens is cheaper whenever you can).","Giras con la moneda del evento — 1 giro por 1 moneda, o 10 giros por 9 (girar de 10 en 10 sale más barato cuando se puede).","이벤트 화폐로 돌립니다 — 1회당 1개, 또는 10회에 9개(가능하면 10회씩 돌리는 쪽이 저렴합니다).","用活动代币转动——1个代币转1次，或9个转10次（能凑够时按10次转更划算）。","หมุนด้วยเหรียญอีเวนต์ — 1 เหรียญ 1 ครั้ง หรือ 9 เหรียญ 10 ครั้ง (ถ้าทำได้ หมุนทีละ 10 คุ้มกว่า)"],
+  "A cada tanto de giros o baú avança (ex.: 3/5). O prêmio do baú costuma valer mais que os giros avulsos, então vale completar.":["Every so many spins the chest advances (e.g. 3/5). The chest reward is usually worth more than the individual spins, so it pays to finish it.","Cada cierto número de giros el cofre avanza (ej.: 3/5). El premio del cofre suele valer más que los giros sueltos, así que vale la pena completarlo.","일정 횟수를 돌릴 때마다 상자가 채워집니다(예: 3/5). 상자 보상이 낱개 결과보다 값진 경우가 많으니 채우는 편이 좋습니다.","每转一定次数进度宝箱就前进（例如 3/5）。宝箱奖励通常比零散的转动更值，所以值得凑满。","ทุกๆ จำนวนการหมุน หีบจะคืบหน้า (เช่น 3/5) รางวัลจากหีบมักคุ้มกว่าผลหมุนรายครั้ง จึงควรทำให้ครบ"],
+  "Existe um número máximo de giros por dia. Se sobrar giro, você perde — confira o contador antes de o dia virar.":["There's a maximum number of spins per day. Leftover spins are lost — check the counter before the day rolls over.","Hay un número máximo de giros por día. Los giros que sobren se pierden — revisa el contador antes de que cambie el día.","하루에 돌릴 수 있는 횟수에 상한이 있습니다. 남은 횟수는 사라지니 날짜가 바뀌기 전에 확인하세요.","每天转动次数有上限。没用完的会作废——在跨日之前查一下计数器。","มีจำนวนการหมุนสูงสุดต่อวัน ถ้าเหลือก็จะหายไป — เช็กตัวนับก่อนขึ้นวันใหม่"],
+  "O objetivo é resistir ao ataque Viking e proteger sua cidade. Não é um evento de sair batendo — é de aguentar.":["The goal is to withstand the Viking attack and protect your city. This isn't an event for going out swinging — it's for holding on.","El objetivo es resistir el ataque Vikingo y proteger tu ciudad. No es un evento de salir a pegar — es de aguantar.","목표는 바이킹의 공격을 막아내고 도시를 지키는 것입니다. 나가서 치는 이벤트가 아니라 버티는 이벤트입니다.","目标是抵挡维京人的进攻、保护你的城市。这不是出门开打的活动——是硬扛的活动。","เป้าหมายคือต้านทานการโจมตีของไวกิ้งและปกป้องเมืองของคุณ ไม่ใช่อีเวนต์ที่ออกไปตี แต่เป็นอีเวนต์ที่ต้องทนให้ไหว"],
+  "Só o Líder e membros R4 ou acima conseguem habilitar o evento, e existe uma contagem regressiva para as pré-inscrições. Se ninguém habilitar a tempo, a aliança fica de fora.":["Only the Leader and R4+ members can enable the event, and there's a countdown for pre-registration. If nobody enables it in time, the alliance is left out.","Solo el Líder y los miembros R4 o superiores pueden habilitar el evento, y hay una cuenta regresiva para las preinscripciones. Si nadie lo habilita a tiempo, la alianza queda fuera.","지도자와 R4 이상 구성원만 이벤트를 켤 수 있고, 사전 등록에는 카운트다운이 있습니다. 제때 켜지 않으면 연맹은 참가하지 못합니다.","只有盟主和R4及以上成员能开启活动，预登记还有倒计时。没人及时开启，联盟就会被排除在外。","เฉพาะหัวหน้าและสมาชิก R4 ขึ้นไปที่เปิดอีเวนต์ได้ และมีการนับถอยหลังสำหรับลงทะเบียนล่วงหน้า ถ้าไม่มีใครเปิดทัน พันธมิตรจะไม่ได้เข้าร่วม"],
+  "O evento tem Classificação Individual e Classificação da Aliança. Ou seja: seu esforço conta pra você e para a [TOP] ao mesmo tempo.":["The event has an Individual Ranking and an Alliance Ranking. Meaning: your effort counts for you and for [TOP] at the same time.","El evento tiene Clasificación Individual y Clasificación de Alianza. O sea: tu esfuerzo cuenta para ti y para la [TOP] al mismo tiempo.","이벤트에는 개인 순위와 연맹 순위가 있습니다. 즉, 당신의 노력이 본인과 [TOP] 양쪽에 동시에 반영됩니다.","活动同时有个人排行和联盟排行。也就是说：你的努力同时算在你自己和 [TOP] 头上。","อีเวนต์มีทั้งอันดับส่วนบุคคลและอันดับพันธมิตร นั่นคือความพยายามของคุณนับให้ทั้งตัวคุณเองและ [TOP] พร้อมกัน"],
+  "O objetivo é simples: ganhe pontos eliminando Tropas inimigas durante o período do evento. Vale a pena guardar os ataques para quando ele abrir.":["The goal is simple: score points by wiping out enemy Troops during the event window. It's worth saving your attacks for when it opens.","El objetivo es simple: gana puntos eliminando Tropas enemigas durante el periodo del evento. Vale la pena guardar los ataques para cuando abra.","목표는 단순합니다: 이벤트 기간에 적 병력을 처치해 점수를 얻으세요. 공격은 이벤트가 열릴 때까지 아껴두는 편이 좋습니다.","目标很简单：在活动期间消灭敌军部队来得分。把进攻留到活动开启时再打更划算。","เป้าหมายง่ายๆ: ทำแต้มด้วยการกำจัดทหารศัตรูในช่วงอีเวนต์ ควรเก็บการโจมตีไว้ใช้ตอนอีเวนต์เปิด"],
+  "O evento paga em diamantes e acelerações (construção e pesquisa). Confira a aba de Recompensas no jogo antes de começar.":["The event pays out in diamonds and speedups (building and research). Check the Rewards tab in game before you start.","El evento paga en diamantes y aceleradores (construcción e investigación). Revisa la pestaña de Recompensas en el juego antes de empezar.","이벤트는 다이아와 가속 아이템(건설·연구)으로 보상합니다. 시작 전에 게임 내 보상 탭을 확인하세요.","活动奖励为钻石和加速道具（建造和研究）。开始前先看看游戏里的奖励页。","อีเวนต์จ่ายเป็นเพชรและไอเทมเร่ง (ก่อสร้างและวิจัย) ดูแท็บรางวัลในเกมก่อนเริ่ม"],
 
   /* --- interface do tutorial --- */
   "‹ Voltar":["‹ Back","‹ Atrás","‹ 이전","‹ 上一步","‹ ย้อน"],
@@ -2175,6 +2911,86 @@
         toast("📷 "+r.casados+" jogadores preenchidos do print.");
       }).catch(function(){ if(st){ st.style.color="var(--red)"; st.textContent="❌ Não consegui ler. Tente um print mais nítido."; } });
   }
+  /* ----- marcar presença -----
+     Sem integração com o jogo, contar pontuação exige print e OCR, que erra
+     demais. Marcar quem apareceu é um toque por membro e não depende de
+     leitura nenhuma: cada presença vale 1 ponto, e o ranking vira "quem
+     participa mais", que é o que a aliança quer premiar. */
+  var resultModo = "presenca";
+
+  /* Escala de colocação → pontos. Achatada de propósito: aparecer é o que mais
+     conta e a posição é um bônus pequeno. Se o 1º lugar valesse muito mais, os
+     mais fortes travariam o topo do ranking e os outros parariam de aparecer —
+     o contrário do que a aliança quer. Mexer aqui muda a legenda junto. */
+  var ESCALA_POS = [[1,5],[3,4],[5,3],[10,2]];
+  var PTS_PRESENCA = 1;
+
+  function ptsPorPosicao(pos){
+    pos = parseInt(pos, 10);
+    if(!pos || pos < 1) return PTS_PRESENCA;
+    for(var i = 0; i < ESCALA_POS.length; i++) if(pos <= ESCALA_POS[i][0]) return ESCALA_POS[i][1];
+    return PTS_PRESENCA;
+  }
+  function pintaEscala(){
+    var el = $("#escalaPos"); if(!el) return;
+    var linhas = [], antes = 0;
+    ESCALA_POS.forEach(function(f){
+      var lab = (antes + 1 === f[0]) ? (f[0]+"º lugar") : ("do "+(antes+1)+"º ao "+f[0]+"º");
+      linhas.push('<div class="escrow"><span>'+lab+'</span><b>'+f[1]+' pts</b></div>');
+      antes = f[0];
+    });
+    linhas.push('<div class="escrow"><span>Participou, sem posição</span><b>'+PTS_PRESENCA+' pt</b></div>');
+    linhas.push('<div class="escrow"><span>Não participou</span><b>0</b></div>');
+    el.innerHTML = linhas.join("");
+  }
+
+  function pintaLinha(row){
+    var b = row.querySelector(".presbtn"), p = row.querySelector(".posin"), lab = row.querySelector(".hojept");
+    if(!b || !lab) return;
+    if(!b.classList.contains("on")){ lab.textContent = ""; return; }
+    var pos = p ? p.value.trim() : "", pts = ptsPorPosicao(pos);
+    lab.textContent = " · hoje: " + pts + (pts === 1 ? " pt" : " pts") + (pos ? " ("+pos+"º)" : "");
+  }
+  function marcarLinha(row, forca){
+    var b = row.querySelector(".presbtn"); if(!b) return;
+    var novo = (forca === undefined) ? !b.classList.contains("on") : !!forca;
+    b.classList.toggle("on", novo);
+    b.setAttribute("aria-pressed", novo ? "true" : "false");
+    row.classList.toggle("marcado", novo);
+    /* desmarcou: a posição some junto, senão sobra número de quem não participou */
+    if(!novo){ var p = row.querySelector(".posin"); if(p) p.value = ""; }
+    pintaLinha(row);
+  }
+  function contaPresenca(){
+    var el = $("#presContagem"); if(!el) return;
+    if(resultModo !== "presenca"){ el.style.display = "none"; return; }
+    el.style.display = "";
+    var tot = document.querySelectorAll("#resultLista .presbtn").length;
+    var on  = document.querySelectorAll("#resultLista .presbtn.on").length;
+    el.textContent = on ? (on + " de " + tot + " marcados")
+                        : "Ninguém marcado ainda — toque no nome de quem apareceu.";
+  }
+  function setResultModo(m){
+    resultModo = m;
+    var lista = $("#resultLista");
+    if(lista){
+      lista.classList.toggle("modo-presenca", m === "presenca");
+      lista.classList.toggle("modo-pontos",  m === "pontos");
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#resultModos .rtab"), function(b){
+      b.classList.toggle("on", b.dataset.modo === m);
+    });
+    var pres = (m === "presenca");
+    $("#presAcoes").style.display  = pres ? "flex" : "none";
+    $("#escalaBox").style.display  = pres ? "" : "none";
+    $("#ocrBtn").style.display     = pres ? "none" : "";
+    $("#resultSub").textContent    = pres
+      ? "Toque em quem participou. A posição é opcional — só preencha a de quem ficou no topo."
+      : "Coloque os pontos de quem participou (deixe vazio = não pontuou).";
+    $("#resultSalvar").textContent = pres ? "Salvar presença" : "Salvar pontos";
+    contaPresenca();
+  }
+
   function abrirResultado(ev){
     if(!ev) return;
     resultEventoId = ev.id;
@@ -2184,36 +3000,63 @@
     $("#resultBusca").value = "";
     Promise.all([
       sbGet("top_membros?status=eq.ativo&select=id,nome,cargo,avatar,foto_url&order=nome"),
-      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,dia")
+      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,posicao,dia")
     ]).then(function(res){
-      var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {};
+      var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {}, posHoje = {};
       _resultMembros = membros;
       resultados.forEach(function(r){
         acum[r.membro_id] = (acum[r.membro_id]||0) + (r.pontos||0);
-        if(r.dia === resultDia) hoje[r.membro_id] = r.pontos;
+        if(r.dia === resultDia){ hoje[r.membro_id] = r.pontos; posHoje[r.membro_id] = r.posicao; }
       });
       host.innerHTML = membros.map(function(m){
         var v = (hoje[m.id] != null) ? hoje[m.id] : "";
-        return '<div class="resrow" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
+        var marc = (hoje[m.id] || 0) > 0;
+        var pos = (posHoje[m.id] != null) ? posHoje[m.id] : "";
+        return '<div class="resrow'+(marc?" marcado":"")+'" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
           '<span class="mav" style="width:32px;height:32px">'+avatarSVG(m)+'</span>'+
-          '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts</span></span>'+
+          '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts<span class="hojept"></span></span></span>'+
+          '<span class="posbox">'+
+            '<button class="posdec" type="button" aria-label="posição anterior">‹</button>'+
+            '<input class="posin" data-mid="'+m.id+'" type="number" inputmode="numeric" min="1" placeholder="–" value="'+pos+'">'+
+            '<button class="posinc" type="button" aria-label="próxima posição">›</button>'+
+          '</span>'+
+          '<button class="presbtn'+(marc?" on":"")+'" type="button" data-mid="'+m.id+'" aria-pressed="'+(marc?"true":"false")+'">✓</button>'+
           '<input class="resin" data-mid="'+m.id+'" type="number" inputmode="numeric" placeholder="hoje" value="'+v+'">'+
         '</div>';
       }).join("") || '<p class="empty">Nenhum membro ativo ainda.</p>';
+      pintaEscala();
+      Array.prototype.forEach.call(host.querySelectorAll(".resrow"), pintaLinha);
+      setResultModo(resultModo);
       $("#resultOverlay").classList.add("on");
     }).catch(function(){ toast("❌ Erro ao carregar."); });
   }
   function salvarResultado(){
     if(!resultEventoId) return;
     var itens = [];
-    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
-      var v = inp.value.trim();
-      itens.push({membro_id: inp.dataset.mid, pontos: (v === "" ? null : (parseInt(v,10)||0))});
-    });
+    if(resultModo === "presenca"){
+      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(row){
+        var b = row.querySelector(".presbtn"), p = row.querySelector(".posin");
+        if(!b) return;
+        if(!b.classList.contains("on")){ itens.push({membro_id: b.dataset.mid, pontos: null, posicao: null}); return; }
+        var pos = p ? p.value.trim() : "";
+        itens.push({membro_id: b.dataset.mid, pontos: ptsPorPosicao(pos), posicao: pos ? (parseInt(pos,10)||null) : null});
+      });
+    }else{
+      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
+        var v = inp.value.trim();
+        itens.push({membro_id: inp.dataset.mid, pontos: (v === "" ? null : (parseInt(v,10)||0))});
+      });
+    }
     var btn = $("#resultSalvar"); btn.disabled = true;
     admin("resultado", {evento_id:resultEventoId, dia:resultDia, itens:itens}).then(function(res){
       btn.disabled = false;
-      if(res && res.ok){ toast("✅ Pontos do dia lançados! Finalize o evento pra pagar as moedas."); $("#resultOverlay").classList.remove("on"); paintRanking(); paintMembros(); }
+      if(res && res.ok){
+        var msg = (resultModo === "presenca") ? "✅ Presença salva!" : "✅ Pontos do dia lançados!";
+        if(res.avisados) msg += " " + res.avisados + (res.avisados === 1 ? " membro avisado no celular." : " membros avisados no celular.");
+        else msg += " Finalize o evento pra pagar as moedas.";
+        toast(msg, 4500);
+        $("#resultOverlay").classList.remove("on"); paintRanking(); paintMembros();
+      }
       else toast("❌ Erro ao salvar.");
     }).catch(function(err){ btn.disabled = false; onAdminErr(err); });
   }
@@ -2225,7 +3068,7 @@
     loja: { tabela:"top_loja", titulo:"Prêmio", recarrega:function(){ carregarLoja(); },
       campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição",t:"text"},{k:"custo",l:"Custo (moedas)",t:"number"},{k:"icone",l:"Ícone",t:"icone"}] },
     evento: { tabela:"top_eventos", titulo:"Evento", recarrega:function(){ paintEventos(); },
-      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"avisar_min",l:"🔔 Avisar quantos minutos antes (0 = não avisa)",t:"number"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
+      campos:[{k:"titulo",l:"Título",t:"text"},{k:"descricao",l:"Descrição curta",t:"text"},{k:"categoria",l:"Categoria",t:"cat"},{k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},{k:"hora",l:"Hora (ex.: 21:00)",t:"text"},{k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},{k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},{k:"avisar_min",l:"🔔 Notificar antes de começar (só funciona com a hora preenchida)",t:"aviso"},{k:"avisar_alvo",l:"📲 Quem recebe o aviso",t:"alvo"},{k:"tipo",l:"Cor/Tipo",t:"tipo"},{k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},{k:"premio_2",l:"🥈 Prêmio 2º lugar (moedas)",t:"number"},{k:"premio_3",l:"🥉 Prêmio 3º lugar (moedas)",t:"number"},{k:"moedas_fixas",l:"🪙 Participação (demais que pontuaram)",t:"number"},{k:"inicio",l:"Início (só temporário)",t:"date"},{k:"fim",l:"Fim (só temporário)",t:"date"},{k:"tutorial",l:"Dicas / estratégia (tutorial)",t:"textarea"}] }
   };
   function campoSelect(k, val, opts){
     return '<select class="rin" data-k="'+k+'">'+opts.map(function(o){
@@ -2243,6 +3086,10 @@
       if(c.t==="icone") return lbl + campoSelect(c.k, v||"i-flag", ICONES);
       if(c.t==="tipo")  return lbl + campoSelect(c.k, v||"ally", [["daily","Diário"],["ally","Aliança"],["war","Guerra"]]);
       if(c.t==="cat")   return lbl + campoSelect(c.k, v||"semanal", [["semanal","Semanal (recorrente)"],["temporario","Temporário"]]);
+      if(c.t==="aviso") return lbl + campoSelect(c.k, (v===""?"0":String(v)),
+        [["0","Não avisar"],["5","5 minutos antes"],["10","10 minutos antes"],["15","15 minutos antes"],
+         ["20","20 minutos antes"],["30","30 minutos antes"],["45","45 minutos antes"],["60","1 hora antes"]]);
+      if(c.t==="alvo")  return lbl + campoSelect(c.k, v||"todos", [["todos","Todos os membros"],["oficiais","Só os oficiais"]]);
       if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
       if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
@@ -2257,7 +3104,7 @@
     def.campos.forEach(function(c){
       var el = document.querySelector('#editCampos [data-k="'+c.k+'"]');
       var v = el ? el.value : "";
-      if(c.t==="number") body[c.k] = parseInt(v,10)||0;
+      if(c.t==="number" || c.t==="aviso") body[c.k] = parseInt(v,10)||0;
       else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
@@ -2279,7 +3126,14 @@
       rows = rows || []; var host = $("#"+hostId); if(!host) return;
       _gestCache[tipoKey] = {}; rows.forEach(function(r){ _gestCache[tipoKey][r.id] = r; });
       host.innerHTML = rows.map(function(r){
-        return '<div class="gestrow"><span class="gnome">'+esc(r.titulo)+'</span>'+
+        /* nos eventos, mostra de relance se o aviso esta ligado — sem isso
+           nao da pra saber qual evento avisa sem abrir um por um */
+        var sino = "";
+        if(tipoKey === "evento"){
+          if(r.avisar_min > 0) sino = '<span class="gtag on">🔔 '+r.avisar_min+' min</span>';
+          else if(r.hora_utc)  sino = '<span class="gtag">🔕 sem aviso</span>';
+        }
+        return '<div class="gestrow"><span class="gnome">'+esc(r.titulo)+'</span>'+sino+
           '<button class="gedit" data-edit="'+tipoKey+'" data-id="'+r.id+'">✏️</button>'+
           '<button class="gdel" data-del="'+tipoKey+'" data-id="'+r.id+'">🗑️</button></div>';
       }).join("") || '<p class="empty" style="padding:10px">Vazio.</p>';
@@ -2290,10 +3144,27 @@
     gestaoLista("top_loja?select=*&order=ordem", "gestLoja", "loja");
     gestaoLista("top_eventos?select=*&order=ordem", "gestEventos", "evento");
   }
+  /* pendencias do Painel do Oficial: contador em cada fila + resumo no topo */
+  var _admPend = {r0:0, resg:0};
+  function admBadge(id, n){
+    var b = $("#"+id); if(!b) return;
+    b.textContent = n;
+    if(n) b.classList.remove("zero"); else b.classList.add("zero");
+  }
+  function admResumo(){
+    var el = $("#adminResumo"); if(!el) return;
+    var a = _admPend.r0, b = _admPend.resg, p = [];
+    if(!a && !b){ el.innerHTML = "✅ <b>Tudo em dia.</b> Nada esperando por você."; return; }
+    if(a) p.push("<b>"+a+"</b> "+(a === 1 ? "entrada para aprovar" : "entradas para aprovar"));
+    if(b) p.push("<b>"+b+"</b> "+(b === 1 ? "resgate para entregar" : "resgates para entregar"));
+    el.innerHTML = "👋 Você tem " + p.join(" e ") + ".";
+  }
+
   function paintResgates(){
     if(!ME || !ME.is_oficial) return;
     sbGet("top_resgates?status=eq.pendente&select=id,item_titulo,custo,criado_em,top_membros(nome)&order=criado_em").then(function(rows){
       rows = rows || []; var host = $("#adminResgates"); if(!host) return;
+      _admPend.resg = rows.length; admBadge("badgeResg", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>📦</div>Nenhum resgate pra entregar.</div>'; return; }
       host.innerHTML = rows.map(function(r){
         var nome = (r.top_membros && r.top_membros.nome) || "Membro";
@@ -2685,6 +3556,7 @@
     if(!ME || !ME.is_oficial) return;
     sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
       rows = rows||[]; var host = $("#adminR0"); if(!host) return;
+      _admPend.r0 = rows.length; admBadge("badgeR0", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>👌</div>Nenhuma solicitação pendente.</div>'; return; }
       host.innerHTML = rows.map(function(m){
         return '<div class="subm" data-r0="'+m.id+'">'+
@@ -3518,6 +4390,46 @@
   });
   $("#resultFechar").addEventListener("click", function(){ $("#resultOverlay").classList.remove("on"); });
   $("#resultSalvar").addEventListener("click", salvarResultado);
+  $("#resultModos").addEventListener("click", function(e){
+    var b = e.target.closest("[data-modo]"); if(b) setResultModo(b.dataset.modo);
+  });
+  $("#resultLista").addEventListener("click", function(e){
+    var seta = e.target.closest(".posinc, .posdec");
+    if(seta){
+      var lin = seta.closest(".resrow"), campo = lin && lin.querySelector(".posin");
+      if(campo){
+        var n = (parseInt(campo.value, 10) || 0) + (seta.classList.contains("posinc") ? 1 : -1);
+        if(n < 1) n = 0;                       /* voltou do 1º: fica sem posição, mas presente */
+        campo.value = n ? n : "";
+        if(n) marcarLinha(lin, true); else pintaLinha(lin);
+        contaPresenca();
+      }
+      return;
+    }
+    if(resultModo !== "presenca") return;
+    if(e.target.closest(".posin")) return;   /* mexer na posição não alterna a linha */
+    var row = e.target.closest(".resrow"); if(!row) return;
+    marcarLinha(row); contaPresenca();
+  });
+  $("#resultLista").addEventListener("input", function(e){
+    var p = e.target.closest(".posin"); if(!p) return;
+    var row = p.closest(".resrow"); if(!row) return;
+    /* digitou posição = participou, não precisa marcar o ✓ também */
+    if(p.value.trim() !== "") marcarLinha(row, true);
+    else pintaLinha(row);
+    contaPresenca();
+  });
+  $("#presTodos").addEventListener("click", function(){
+    /* respeita a busca: marca só quem está visível na lista */
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){
+      if(r.style.display !== "none") marcarLinha(r, true);
+    });
+    contaPresenca();
+  });
+  $("#presLimpar").addEventListener("click", function(){
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){ marcarLinha(r, false); });
+    contaPresenca();
+  });
   $("#ocrFile").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) lerPrint(f); e.target.value = ""; });
   $("#eventoFechar").addEventListener("click", function(){ $("#eventoOverlay").classList.remove("on"); });
   document.addEventListener("click", function(e){
