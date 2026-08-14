@@ -1002,13 +1002,22 @@
 <div class="overlay" id="resultOverlay">
   <div class="modal">
     <h2 id="resultTitulo">Lançar pontos</h2>
-    <p class="sub">Coloque os pontos de quem participou (deixe vazio = não pontuou).</p>
+    <div class="rtabs" id="resultModos" style="margin:9px 0 6px">
+      <button class="rtab on" data-modo="presenca" type="button">✅ Marcar presença</button>
+      <button class="rtab" data-modo="pontos" type="button">🔢 Lançar pontos</button>
+    </div>
+    <p class="sub" id="resultSub">Toque em quem participou. Cada presença vale 1 ponto.</p>
+    <div id="presAcoes" style="display:flex;gap:8px;margin:8px 0">
+      <button class="bcancel" id="presTodos" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Marcar todos</button>
+      <button class="bcancel" id="presLimpar" type="button" style="flex:1;border-radius:10px;padding:9px;font-size:.8rem">Limpar</button>
+    </div>
     <label class="bigbtn" id="ocrBtn" style="cursor:pointer">📷 Ler print (preenche sozinho)
       <input type="file" accept="image/*" id="ocrFile" style="display:none">
     </label>
     <p class="note" id="ocrStatus" style="display:none;margin:6px 0 0"></p>
     <div class="search" style="margin:10px 0"><input id="resultBusca" type="search" placeholder="Buscar membro"><span>🔍</span></div>
-    <div id="resultLista" style="max-height:48vh;overflow-y:auto"></div>
+    <p class="note" id="presContagem" style="margin:0 0 6px"></p>
+    <div id="resultLista" class="modo-presenca" style="max-height:44vh;overflow-y:auto"></div>
     <div class="mrow">
       <button class="bcancel" id="resultFechar">Cancelar</button>
       <button class="bsend" id="resultSalvar">Salvar pontos</button>
@@ -2010,6 +2019,16 @@
   .resnome{flex:1;min-width:0;font-size:.9rem;font-weight:700;display:flex;flex-direction:column;overflow:hidden}
   .resnome{white-space:nowrap;text-overflow:ellipsis}
   .resacum{font-size:.68rem;font-weight:600;color:var(--ink-soft)}
+  /* modo presenca: a linha inteira vira um botao de marcar */
+  #resultLista.modo-presenca .resin{display:none}
+  #resultLista.modo-pontos .presbtn{display:none}
+  #resultLista.modo-presenca .resrow{cursor:pointer}
+  #resultLista.modo-presenca .resrow.marcado{background:#DCEFD4;border-radius:9px}
+  .presbtn{flex:none;width:34px;height:34px;border-radius:10px;cursor:pointer;
+    border:2.5px solid var(--pill-dk);background:#fff;color:transparent;
+    font-size:1rem;font-weight:900;line-height:1;padding:0}
+  .presbtn.on{background:linear-gradient(180deg,var(--green-lt),var(--green));
+    border-color:#33702F;color:#fff}
   .rtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px}
   .rtab{flex:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:.8rem;padding:7px 12px;border-radius:11px;
     border:2.5px solid var(--pill-dk);background:var(--panel-3);color:var(--ink-soft);white-space:nowrap}
@@ -2868,6 +2887,49 @@
         toast("📷 "+r.casados+" jogadores preenchidos do print.");
       }).catch(function(){ if(st){ st.style.color="var(--red)"; st.textContent="❌ Não consegui ler. Tente um print mais nítido."; } });
   }
+  /* ----- marcar presença -----
+     Sem integração com o jogo, contar pontuação exige print e OCR, que erra
+     demais. Marcar quem apareceu é um toque por membro e não depende de
+     leitura nenhuma: cada presença vale 1 ponto, e o ranking vira "quem
+     participa mais", que é o que a aliança quer premiar. */
+  var resultModo = "presenca";
+
+  function marcarLinha(row, forca){
+    var b = row.querySelector(".presbtn"); if(!b) return;
+    var novo = (forca === undefined) ? !b.classList.contains("on") : !!forca;
+    b.classList.toggle("on", novo);
+    b.setAttribute("aria-pressed", novo ? "true" : "false");
+    row.classList.toggle("marcado", novo);
+  }
+  function contaPresenca(){
+    var el = $("#presContagem"); if(!el) return;
+    if(resultModo !== "presenca"){ el.style.display = "none"; return; }
+    el.style.display = "";
+    var tot = document.querySelectorAll("#resultLista .presbtn").length;
+    var on  = document.querySelectorAll("#resultLista .presbtn.on").length;
+    el.textContent = on ? (on + " de " + tot + " marcados")
+                        : "Ninguém marcado ainda — toque no nome de quem apareceu.";
+  }
+  function setResultModo(m){
+    resultModo = m;
+    var lista = $("#resultLista");
+    if(lista){
+      lista.classList.toggle("modo-presenca", m === "presenca");
+      lista.classList.toggle("modo-pontos",  m === "pontos");
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#resultModos .rtab"), function(b){
+      b.classList.toggle("on", b.dataset.modo === m);
+    });
+    var pres = (m === "presenca");
+    $("#presAcoes").style.display = pres ? "flex" : "none";
+    $("#ocrBtn").style.display    = pres ? "none" : "";
+    $("#resultSub").textContent   = pres
+      ? "Toque em quem participou. Cada presença vale 1 ponto."
+      : "Coloque os pontos de quem participou (deixe vazio = não pontuou).";
+    $("#resultSalvar").textContent = pres ? "Salvar presença" : "Salvar pontos";
+    contaPresenca();
+  }
+
   function abrirResultado(ev){
     if(!ev) return;
     resultEventoId = ev.id;
@@ -2887,26 +2949,41 @@
       });
       host.innerHTML = membros.map(function(m){
         var v = (hoje[m.id] != null) ? hoje[m.id] : "";
-        return '<div class="resrow" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
+        var marc = (hoje[m.id] || 0) > 0;
+        return '<div class="resrow'+(marc?" marcado":"")+'" data-name="'+esc((m.nome||"").toLowerCase())+'">'+
           '<span class="mav" style="width:32px;height:32px">'+avatarSVG(m)+'</span>'+
           '<span class="resnome">'+esc(m.nome)+'<span class="resacum">acumulado: '+fmt(acum[m.id]||0)+' pts</span></span>'+
+          '<button class="presbtn'+(marc?" on":"")+'" type="button" data-mid="'+m.id+'" aria-pressed="'+(marc?"true":"false")+'">✓</button>'+
           '<input class="resin" data-mid="'+m.id+'" type="number" inputmode="numeric" placeholder="hoje" value="'+v+'">'+
         '</div>';
       }).join("") || '<p class="empty">Nenhum membro ativo ainda.</p>';
+      setResultModo(resultModo);
       $("#resultOverlay").classList.add("on");
     }).catch(function(){ toast("❌ Erro ao carregar."); });
   }
   function salvarResultado(){
     if(!resultEventoId) return;
     var itens = [];
-    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
-      var v = inp.value.trim();
-      itens.push({membro_id: inp.dataset.mid, pontos: (v === "" ? null : (parseInt(v,10)||0))});
-    });
+    if(resultModo === "presenca"){
+      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .presbtn"), function(b){
+        itens.push({membro_id: b.dataset.mid, pontos: b.classList.contains("on") ? 1 : null});
+      });
+    }else{
+      Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resin"), function(inp){
+        var v = inp.value.trim();
+        itens.push({membro_id: inp.dataset.mid, pontos: (v === "" ? null : (parseInt(v,10)||0))});
+      });
+    }
     var btn = $("#resultSalvar"); btn.disabled = true;
     admin("resultado", {evento_id:resultEventoId, dia:resultDia, itens:itens}).then(function(res){
       btn.disabled = false;
-      if(res && res.ok){ toast("✅ Pontos do dia lançados! Finalize o evento pra pagar as moedas."); $("#resultOverlay").classList.remove("on"); paintRanking(); paintMembros(); }
+      if(res && res.ok){
+        var msg = (resultModo === "presenca") ? "✅ Presença salva!" : "✅ Pontos do dia lançados!";
+        if(res.avisados) msg += " " + res.avisados + (res.avisados === 1 ? " membro avisado no celular." : " membros avisados no celular.");
+        else msg += " Finalize o evento pra pagar as moedas.";
+        toast(msg, 4500);
+        $("#resultOverlay").classList.remove("on"); paintRanking(); paintMembros();
+      }
       else toast("❌ Erro ao salvar.");
     }).catch(function(err){ btn.disabled = false; onAdminErr(err); });
   }
@@ -4240,6 +4317,25 @@
   });
   $("#resultFechar").addEventListener("click", function(){ $("#resultOverlay").classList.remove("on"); });
   $("#resultSalvar").addEventListener("click", salvarResultado);
+  $("#resultModos").addEventListener("click", function(e){
+    var b = e.target.closest("[data-modo]"); if(b) setResultModo(b.dataset.modo);
+  });
+  $("#resultLista").addEventListener("click", function(e){
+    if(resultModo !== "presenca") return;
+    var row = e.target.closest(".resrow"); if(!row) return;
+    marcarLinha(row); contaPresenca();
+  });
+  $("#presTodos").addEventListener("click", function(){
+    /* respeita a busca: marca só quem está visível na lista */
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){
+      if(r.style.display !== "none") marcarLinha(r, true);
+    });
+    contaPresenca();
+  });
+  $("#presLimpar").addEventListener("click", function(){
+    Array.prototype.forEach.call(document.querySelectorAll("#resultLista .resrow"), function(r){ marcarLinha(r, false); });
+    contaPresenca();
+  });
   $("#ocrFile").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) lerPrint(f); e.target.value = ""; });
   $("#eventoFechar").addEventListener("click", function(){ $("#eventoOverlay").classList.remove("on"); });
   document.addEventListener("click", function(e){
