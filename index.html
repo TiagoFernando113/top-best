@@ -665,6 +665,44 @@
   </div>
 </div>
 
+<!-- ============ CASA DO JOGADOR ============ -->
+<div class="casa" id="casa">
+  <div class="casa-topo">
+    <div class="casa-eu">
+      <div class="casa-av" id="casaAvatar"></div>
+      <div style="min-width:0">
+        <div class="casa-nome" id="casaNome">—</div>
+        <div class="casa-sub" id="casaSub"></div>
+      </div>
+    </div>
+    <div class="casa-acoes">
+      <button id="casaPerfil">👤 Meu perfil</button>
+      <button id="casaNotif">🔔 Notificações</button>
+      <button id="casaInstalar" style="display:none">📲 Instalar app</button>
+      <button id="casaSairConta">🚪 Sair da conta</button>
+    </div>
+  </div>
+
+  <div class="casa-wrap">
+    <h2 class="casa-tt">Minhas alianças</h2>
+    <div id="casaAliancas"></div>
+    <div style="display:flex;gap:7px;margin-top:2px">
+      <button class="bigbtn" id="casaEntrarCod" style="flex:1">⚔️ Entrar com código</button>
+      <button class="bigbtn green" id="casaCriar" style="flex:1">🏰 Criar aliança</button>
+    </div>
+
+    <h2 class="casa-tt">🌍 Chat global</h2>
+    <p class="land-sub" style="margin:-6px 0 8px">Conversa entre alianças de todos os servidores.</p>
+    <div class="casa-chat">
+      <div class="casa-msgs" id="casaMsgs"><p class="empty">Carregando…</p></div>
+      <form class="casa-envia" id="casaForm">
+        <input id="casaTexto" type="text" maxlength="400" placeholder="Falar com todo mundo…" autocomplete="off">
+        <button type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <header class="topbar">
   <button class="backbtn" id="backBtn" aria-label="Voltar">
     <svg viewBox="0 0 40 26"><path d="M14 2L2 13l12 11v-6h24V8H14V2z" fill="#6ECFCF" stroke="#2C7A7A" stroke-width="2.5" stroke-linejoin="round"/></svg>
@@ -2437,6 +2475,52 @@
     background:var(--panel-3);border:3px solid var(--red);color:var(--ink);
     font-size:.83rem;font-weight:800;text-align:center}
   @media(min-width:520px){ .land-hero h1{font-size:1.9rem} }
+
+  /* ---- casa do jogador ----
+     Entre o login e a aliança falta um lugar que seja da pessoa, e não de uma
+     aliança: quem joga em duas precisa escolher, e quem sai de uma precisa ter
+     para onde voltar sem cair na porta da rua. */
+  /* o estado do corpo tem nome próprio: chamar os dois de "casa" fazia
+     .casa{display:none} valer para o próprio body e apagar a tela inteira */
+  .casa{display:none;min-height:100dvh;padding:0 0 26px}
+  body.na-casa .casa{display:block}
+  body.na-casa .topbar, body.na-casa .shell, body.na-casa .bottomnav, body.na-casa .land{display:none}
+  body.na-casa{background:var(--bg-page)}
+  .casa-topo{background:linear-gradient(180deg,var(--bg-top),var(--bg-top-2));
+    padding:18px 16px 20px;border-bottom:4px solid var(--outline)}
+  .casa-eu{max-width:460px;margin:0 auto;display:flex;gap:12px;align-items:center}
+  .casa-av{width:62px;height:62px;flex:none;border-radius:15px;overflow:hidden;
+    border:3px solid var(--pill-dk);background:var(--panel-3)}
+  .casa-av>*{width:100%;height:100%;object-fit:cover;display:block}
+  .casa-nome{font-size:1.16rem;font-weight:900;color:#F7EFDD;line-height:1.2;
+    word-break:break-word;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .casa-sub{font-size:.78rem;color:#D9C6A4;font-weight:700;margin-top:3px}
+  .casa-acoes{max-width:460px;margin:12px auto 0;display:flex;gap:7px;flex-wrap:wrap}
+  .casa-acoes button{flex:1 1 46%;border:0;border-bottom:3px solid var(--btn-edge);
+    background:linear-gradient(180deg,var(--btn-face-1),var(--btn-face-2));color:var(--ink);
+    font-family:inherit;font-weight:800;border-radius:11px;padding:9px 8px;cursor:pointer;font-size:.8rem}
+  .casa-wrap{max-width:460px;margin:0 auto;padding:0 16px}
+  .casa-tt{font-size:1.04rem;color:var(--ink);margin:20px 0 8px;font-weight:800}
+  .casa-alc{display:flex;gap:11px;align-items:center;width:100%;text-align:left;
+    background:var(--panel);border:3px solid var(--pill-dk);border-radius:14px;
+    padding:10px 12px;margin-bottom:9px;cursor:pointer;font-family:inherit;
+    box-shadow:0 3px 0 var(--pill-dk)}
+  .casa-alc.atual{border-color:var(--green);box-shadow:0 3px 0 var(--green)}
+  .casa-alc .bn{flex:none}
+  .casa-alc b{display:block;font-size:.95rem;color:var(--ink)}
+  .casa-alc span{font-size:.76rem;color:var(--ink-soft);font-weight:700}
+  .casa-chat{background:var(--panel-3);border:3px solid var(--pill-dk);border-radius:14px;padding:10px}
+  .casa-msgs{max-height:270px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+  .casa-msg{background:var(--panel);border-radius:10px;padding:7px 9px}
+  .casa-msg .q{font-size:.73rem;font-weight:800;color:var(--teal-dk)}
+  .casa-msg .q .sg{color:var(--ink-soft)}
+  .casa-msg .t{font-size:.84rem;color:var(--ink);font-weight:600;word-break:break-word}
+  .casa-envia{display:flex;gap:7px;margin-top:8px}
+  .casa-envia input{flex:1;min-width:0;border:2px solid var(--pill-dk);border-radius:9px;
+    background:#fff;padding:9px 10px;font-family:inherit;font-weight:700;font-size:.84rem;
+    color:var(--ink);outline:none}
+  .casa-envia button{flex:none;border:0;border-bottom:3px solid #2C7A7A;background:var(--teal);
+    color:#fff;font-family:inherit;font-weight:800;border-radius:9px;padding:9px 14px;cursor:pointer}
   /* a configuração da aliança tem quatro assuntos diferentes numa tela só;
      sem separar, vira uma pilha de campos em que ninguém acha nada */
   .cfgsec{border:2px solid var(--pill-dk);border-radius:12px;padding:10px 11px 12px;margin-top:12px}
@@ -2847,7 +2931,7 @@
             ME = m;
             $("#escolhaOverlay").classList.remove("on");
             $("#loginOverlay").classList.remove("on");
-            entrar();
+            mostrarCasa();
           }).catch(function(){ b.disabled = false; toast("❌ Sem conexão."); });
       });
     });
@@ -3214,11 +3298,14 @@
                 || "Não deu para sair.";
         return erroCaixa("#sairMsg", m);
       }
-      /* A conta antiga ficou sem aparelho e sem senha, então recarregar cai na
-         tela inicial sozinho — nada de estado velho sobrando na tela. */
+      /* Sair de uma aliança não é sair do site: se a conta ainda tem outra,
+         a pessoa volta para a casa dela em vez de cair na porta da rua. */
       localStorage.removeItem("top.ocode");
-      ME = null;
-      location.reload();
+      $("#sairOverlay").classList.remove("on");
+      return sbRpc("membro_por_aparelho", {p_device: deviceId()}).then(function(m){
+        if(m && m.id){ ME = m; mostrarCasa(); }
+        else { ME = null; location.reload(); }
+      }).catch(function(){ ME = null; location.reload(); });
     }).catch(function(){
       bt.disabled = false;
       erroCaixa("#sairMsg", "Sem conexão com o servidor.");
@@ -3277,6 +3364,88 @@
     });
   }
 
+  /* ------- casa do jogador ------- */
+  /* Entre o login e a aliança faltava um lugar da pessoa: quem joga em duas
+     precisa escolher, e quem sai de uma precisa ter para onde voltar. */
+  var _casaPoll = null;
+  function mostrarCasa(){
+    document.body.classList.remove("fora");
+    document.body.classList.add("na-casa");
+    carregaCasa();
+    chatGlobalCarregar();
+    clearInterval(_casaPoll);
+    _casaPoll = setInterval(function(){
+      if(document.body.classList.contains("na-casa") && !document.hidden) chatGlobalCarregar();
+    }, 10000);
+  }
+  function fecharCasa(){
+    document.body.classList.remove("na-casa");
+    clearInterval(_casaPoll); _casaPoll = null;
+  }
+  function carregaCasa(){
+    if(!ME || !ME.id) return;
+    $("#casaAvatar").innerHTML = avatarSVG(ME);
+    $("#casaNome").textContent = ME.nome || "—";
+    return sbRpc("minhas_aliancas", {p_membro:ME.id, p_device:deviceId()}).then(function(r){
+      if(!r || !r.aliancas) return;
+      var partes = [];
+      if(r.jogo_id) partes.push("ID " + r.jogo_id);
+      if(r.poder)   partes.push("Poder " + Number(r.poder).toLocaleString("pt-BR"));
+      partes.push(r.aliancas.length + (r.aliancas.length === 1 ? " aliança" : " alianças"));
+      $("#casaSub").textContent = partes.join(" · ");
+
+      var host = $("#casaAliancas");
+      if(!r.aliancas.length){
+        host.innerHTML = '<p class="empty">Você ainda não está em nenhuma aliança.</p>';
+        return;
+      }
+      host.innerHTML = r.aliancas.map(function(a){
+        return '<button type="button" class="casa-alc'+(a.atual?" atual":"")+'" data-id="'+a.membro_id+'">'
+          + bannerSVG(bnDaAlianca(a), 44)
+          + '<div style="min-width:0"><b>'+esc(a.tag)+' '+esc(a.nome_alianca)+'</b>'
+          + '<span>'+esc(a.cargo||"")+(a.servidor?" · Servidor "+esc(a.servidor):"")
+          + " · "+fmt(a.pontos||0)+" pts</span></div>"
+          + '<span style="margin-left:auto;font-size:1.1rem">▸</span></button>';
+      }).join("");
+      Array.prototype.forEach.call(host.querySelectorAll(".casa-alc"), function(b){
+        b.addEventListener("click", function(){ abrirAlianca(b.getAttribute("data-id")); });
+      });
+    }).catch(function(){});
+  }
+  function abrirAlianca(membroId){
+    if(ME && ME.id === membroId){ fecharCasa(); entrar(); return; }
+    // trocar de aliança move o aparelho; sem senha em mãos, a prova é ele
+    sbRpc("membro_escolher_aparelho", {p_membro:membroId, p_device:deviceId()})
+      .then(function(m){
+        if(!m || !m.id) return toast("❌ Não deu para abrir essa aliança.");
+        ME = m; fecharCasa(); entrar();
+      }).catch(function(){ toast("❌ Sem conexão."); });
+  }
+
+  function chatGlobalCarregar(){
+    return sbGet("chat_global?select=id,nome,tag,texto,criado_em&order=id.desc&limit=40")
+      .then(function(rows){
+        var host = $("#casaMsgs"); if(!host) return;
+        rows = (rows||[]).slice().reverse();
+        if(!rows.length){ host.innerHTML = '<p class="empty">Ninguém falou ainda. Comece você.</p>'; return; }
+        var perto = (host.scrollTop + host.clientHeight) >= (host.scrollHeight - 40);
+        host.innerHTML = rows.map(function(m){
+          return '<div class="casa-msg"><div class="q">'+esc(m.nome||"")
+            + (m.tag ? ' <span class="sg">'+esc(m.tag)+'</span>' : '')
+            + '</div><div class="t">'+esc(m.texto||"")+'</div></div>';
+        }).join("");
+        if(perto) host.scrollTop = host.scrollHeight;   // só acompanha quem já estava no fim
+      }).catch(function(){});
+  }
+  function chatGlobalEnviar(){
+    var el = $("#casaTexto"), t = el.value.trim();
+    if(!t || !ME || !ME.id) return;
+    el.value = "";
+    return sbPost("chat_global?select=id", {membro_id:ME.id, texto:t})
+      .then(function(){ return chatGlobalCarregar(); })
+      .catch(function(){ toast("❌ Não deu para enviar."); });
+  }
+
   /* ------- entrar / página de entrada ------- */
   function mostrarGate(msg){
     document.body.classList.add("fora");
@@ -3290,6 +3459,7 @@
   }
   function entrar(){
     document.body.classList.remove("fora");   // agora se sabe de quem é a casca
+    document.body.classList.remove("na-casa");
     $("#regOverlay").classList.remove("on");
     try{ if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } }catch(e){}
     S.coins = ME.moedas || 0;
@@ -4926,7 +5096,7 @@
   }
   function iniciarNuvem(){
     getMembro().then(function(m){
-      if(m && m.tem_senha){ ME = m; entrar(); return; }    // aparelho já registrado
+      if(m && m.tem_senha){ ME = m; mostrarCasa(); return; }   // aparelho já registrado
       var tk = tokenDaUrl();
       if(tk){
         return validarConvite(tk).then(function(ok){
@@ -5061,7 +5231,13 @@
     var b = e.target.closest('[data-go]');
     if(b && !b.classList.contains('dragging') && !justDragged) go(b.dataset.go);
   });
-  $('#backBtn').addEventListener('click', function(){ if(cur !== 'inicio') go('inicio'); });
+  /* A seta é o caminho de volta em todo o site: dentro da aliança leva ao
+     início dela, e do início leva à casa do jogador — o mesmo gesto, um
+     nível acima de cada vez. */
+  $('#backBtn').addEventListener('click', function(){
+    if(cur !== 'inicio') go('inicio');
+    else if(ME && ME.id) mostrarCasa();
+  });
   $('#bellBtn').addEventListener('click', function(){ toast('📌 Sworland Showdown — leia o aviso da Maelle!'); });
 
   /* ---------------- moedas ---------------- */
@@ -5477,7 +5653,7 @@
       btn.disabled = false;
       // "escolher" quer dizer que a conta está em mais de uma aliança: a
       // tela de escolha já abriu, e entrar() só roda depois que ela responder
-      if(ok === true){ $("#loginOverlay").classList.remove("on"); entrar(); }
+      if(ok === true){ $("#loginOverlay").classList.remove("on"); mostrarCasa(); }
       else if(ok !== "escolher") loginErro("Nome ou senha incorretos.");
     }).catch(function(){ btn.disabled = false; loginErro("Erro de conexão."); });
   });
@@ -5493,7 +5669,7 @@
     var bt = $("#landEntrar"); bt.disabled = true;
     fazerLogin(nome, senha).then(function(ok){
       bt.disabled = false;
-      if(ok === true) entrar();
+      if(ok === true) mostrarCasa();
       else if(ok !== "escolher") falha("Nome ou senha incorretos.");
     }).catch(function(){ bt.disabled = false; falha("Sem conexão com o servidor."); });
   });
@@ -5544,6 +5720,20 @@
   });
   $("#liderCancel").addEventListener("click", function(){ $("#liderOverlay").classList.remove("on"); });
   $("#liderConfirmar").addEventListener("click", confirmarPassarLideranca);
+  /* ---- casa do jogador ---- */
+  $("#casaPerfil").addEventListener("click", abrirPerfil);
+  $("#casaNotif").addEventListener("click", function(){ $("#notifBtn").click(); });
+  $("#casaCriar").addEventListener("click", abrirNovaAlianca);
+  $("#casaEntrarCod").addEventListener("click", function(){ $("#entrarOverlay").classList.add("on"); });
+  $("#casaForm").addEventListener("submit", function(e){ e.preventDefault(); chatGlobalEnviar(); });
+  $("#casaSairConta").addEventListener("click", function(){
+    if(!confirm("Sair da conta neste aparelho? Você continua na aliança — só vai precisar entrar com nome e senha de novo.")) return;
+    // solta o aparelho da conta; a linha e a aliança ficam intactas
+    sbRpc("membro_soltar_aparelho", {p_membro:ME.id, p_device:deviceId()})
+      .then(function(){ ME = null; location.reload(); })
+      .catch(function(){ toast("❌ Sem conexão."); });
+  });
+
   $("#admBannerSalvar").addEventListener("click", salvarEstandarte);
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
   $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
