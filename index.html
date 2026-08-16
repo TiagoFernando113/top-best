@@ -606,8 +606,8 @@
 <div class="land" id="land">
   <div class="land-topo">
     <form id="landForm" autocomplete="on">
-      <p class="tt">Já tem conta? Entre aqui.</p>
-      <input id="landNome" type="text" placeholder="Seu nome" autocomplete="username">
+      <p class="tt">Já tem conta? Entre pelo nome ou pelo ID do jogo.</p>
+      <input id="landNome" type="text" placeholder="Nome ou ID do jogo" autocomplete="username">
       <input id="landSenha" type="password" placeholder="Senha" autocomplete="current-password">
       <button type="submit" id="landEntrar">Entrar</button>
       <p class="erro" id="landErro" style="display:none"></p>
@@ -620,7 +620,7 @@
       <image href="emblemas/aguia.png" x="20" y="22" width="60" height="60"/>
     </svg>
     <h1 class="stroked">Portal das Alianças</h1>
-    <p>O quadro de avisos da sua aliança no <b>Whiteout Survival</b> e no <b>Kingshot</b> — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
+    <p>O quadro de avisos da sua aliança no <b>Kingshot</b> — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
     <div class="land-cta">
       <button class="bigbtn green" id="landNova">🏰 Criar a minha aliança</button>
       <button class="bigbtn" id="landMembro">⚔️ Entrar com o código da aliança</button>
@@ -966,11 +966,7 @@
     <h2 style="text-align:center">🏰 Criar sua aliança</h2>
     <p class="sub" style="text-align:center">Você entra como <b>R5</b>, o líder.</p>
 
-    <p class="rlab" style="margin-top:14px">De qual jogo é a aliança</p>
-    <div class="bntiras" id="novaJogos" style="padding-top:2px"></div>
-    <p class="note" id="novaJogoAviso" style="display:none;margin-top:2px"></p>
-
-    <p class="rlab" style="margin-top:10px">Nome da aliança</p>
+    <p class="rlab" style="margin-top:14px">Nome da aliança</p>
     <input class="reginput" id="novaNome" type="text" placeholder="Ex.: Best" maxlength="40" autocomplete="off" style="margin-top:0">
     <div style="display:flex;gap:8px">
       <div style="flex:1">
@@ -1213,8 +1209,8 @@
   <div class="modal">
     <div style="font-size:2.4rem;text-align:center">🛡️</div>
     <h2 style="text-align:center;margin-top:4px">Entrar na aliança</h2>
-    <p class="sub" style="text-align:center">Use o nome e a senha que você cadastrou.</p>
-    <input class="reginput" id="loginNome" type="text" placeholder="Seu nome no jogo" autocomplete="off">
+    <p class="sub" style="text-align:center">Use o nome (ou o ID do jogo) e a senha que você cadastrou.</p>
+    <input class="reginput" id="loginNome" type="text" placeholder="Seu nome ou o ID do jogo" autocomplete="off">
     <input class="reginput" id="loginSenha" type="password" placeholder="Sua senha">
     <p class="note" id="loginMsg" style="display:none;color:var(--red);margin-top:8px"></p>
     <button class="bigbtn green" id="loginEntrar" style="margin-top:12px">Entrar</button>
@@ -2814,10 +2810,16 @@
      A mesma conta pode estar em mais de uma aliança. Quando está, o banco
      devolve a lista em vez de escolher no lugar da pessoa. */
   var _loginHash = null;
-  function fazerLogin(nome, senha){
-    return hashSenha(nome, senha).then(function(hash){
-      _loginHash = hash;
-      return sbRpc("membro_login", {p_nome:nome, p_senha:hash, p_device:deviceId()});
+  /* Dá para entrar pelo nome ou pelo ID do jogo. Como a senha é embaralhada
+     com o nome dentro, o ID sozinho não fecha a conta: o servidor troca o que
+     foi digitado pelo nome de verdade, e só então a senha é calculada. */
+  function fazerLogin(texto, senha){
+    return sbRpc("conta_nome", {p_texto: texto}).then(function(r){
+      var nome = (r && r.nome) ? r.nome : texto;
+      return hashSenha(nome, senha).then(function(hash){
+        _loginHash = hash;
+        return sbRpc("membro_login", {p_nome:nome, p_senha:hash, p_device:deviceId()});
+      });
     }).then(function(m){
       if(m && m.escolher){ abrirEscolhaAlianca(m.escolher); return "escolher"; }
       if(!m || !m.id) return false;
@@ -2939,35 +2941,8 @@
     var pv = $("#"+pre+"Banner"); if(pv) pv.innerHTML = bannerSVG(bn, 104);
   }
 
-  /* O catálogo é por jogo: Kingshot tem os eventos dele, e receber "Fúria dos
-     Césares" lá dentro só confundiria. */
-  var JOGOS = [["whiteout","❄️ Whiteout Survival"], ["kingshot","👑 Kingshot"]];
-  var novoJogo = "whiteout";
-  function montaEscolhaJogo(){
-    var el = $("#novaJogos"); if(!el) return;
-    el.innerHTML = "";
-    JOGOS.forEach(function(j){
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "bigbtn" + (novoJogo === j[0] ? " green" : "");
-      b.style.cssText = "margin:0 6px 0 0;width:auto;padding:9px 13px;font-size:.82rem;flex:none";
-      b.textContent = j[1];
-      b.addEventListener("click", function(){ novoJogo = j[0]; montaEscolhaJogo(); });
-      el.appendChild(b);
-    });
-    /* Dizer antes o que a aliança vai receber. Escolher Kingshot e cair numa
-       agenda vazia sem explicação pareceria site quebrado. */
-    var av = $("#novaJogoAviso");
-    if(novoJogo === "kingshot"){
-      av.textContent = "Os tutoriais do Kingshot ainda estão sendo escritos. Sua aliança começa com a agenda em branco — dá para criar os eventos à mão no painel.";
-      av.style.display = "block";
-    } else av.style.display = "none";
-  }
   function abrirNovaAlianca(){
     $("#novaOverlay").classList.add("on");
-<<<<<<< Updated upstream
-    montaEscolhaJogo();
-=======
     /* Quem já entrou não inventa outro nome e outra senha: a conta que ele
        tem passa a valer também na aliança nova. */
     var temConta = !!(ME && ME.id);
@@ -2977,7 +2952,6 @@
       av.innerHTML = "Você entra como <b>" + esc(ME.nome) + "</b>, com a senha que já usa.";
       av.style.display = "block";
     } else av.style.display = "none";
->>>>>>> Stashed changes
     montaSeletorBanner("nova", novaBn);
   }
   function erroCaixa(alvo, txt){
@@ -3007,11 +2981,7 @@
       return sbRpc("alianca_criar", {p_tag:tag, p_nome:nome, p_servidor:srv,
                                      p_device:deviceId(), p_lider:lider, p_senha:hash,
                                      p_forma:novaBn.forma, p_cor:novaBn.cor, p_emblema:novaBn.emblema,
-<<<<<<< Updated upstream
-                                     p_jogo:novoJogo});
-=======
                                      p_dono: temConta ? ME.id : null});
->>>>>>> Stashed changes
     }).then(function(r){
       if(!r || r.erro){
         bt.disabled = false;
