@@ -816,6 +816,8 @@
         <div class="admbody">
           <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
           <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
+          <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
+          <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
           <div id="admCodOficialWrap" style="display:none">
             <p class="rlab" style="margin-top:12px">Código de oficial — só R4 e R5</p>
             <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
@@ -981,7 +983,8 @@
 <div class="overlay" id="regOverlay">
   <div class="modal">
     <h2 id="regTitle">Criar seu acesso</h2>
-    <p class="sub">Bem-vindo à <b>[TOP] Best</b>! Escolha seu avatar e crie sua senha.</p>
+    <p class="sub" id="regSub">Escolha seu avatar e crie sua senha.</p>
+    <div id="regAlianca" style="display:none"></div>
     <input class="reginput" id="regNome" type="text" placeholder="Seu nome no jogo" maxlength="40" autocomplete="off">
     <input class="reginput" id="regSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60">
     <p class="rlab" style="margin-top:12px">Escolha seu avatar</p>
@@ -2490,20 +2493,10 @@
       return m && m.id ? m : null;
     });
   }
-  function garantirMembro(existing, autorizar, extra){
-    if(existing){
-      var patch = {};
-      if(autorizar && !existing.autorizado) patch.autorizado = true;
-      if(extra) for(var k in extra) patch[k] = extra[k];
-      if(!Object.keys(patch).length) return Promise.resolve(existing);
-      return sbPatch("top_membros?id=eq."+existing.id+"&select="+COLS_MEMBRO, patch).then(function(x){ return x[0]; });
-    }
-    var nome = (extra && extra.nome ? String(extra.nome).trim() : "") || (localStorage.getItem("top.nome")||"").trim() || "Governador";
-    localStorage.setItem("top.nome", nome);
-    var body = {device_id:deviceId(), nome:nome, autorizado:!!autorizar};
-    if(extra) for(var j in extra) body[j] = extra[j];
-    return sbPost("top_membros?select="+COLS_MEMBRO, body).then(function(x){ return x[0]; });
-  }
+  /* garantirMembro() foi removida: ninguém a chamava, e ela criava membro sem
+     dizer a aliança — exatamente o caminho que caía no padrão da tabela e
+     colocava um desconhecido dentro da [TOP] Best. Entrar agora é sempre por
+     um destes: criar aliança, código de acesso ou convite. */
 
   /* ------- avatares ------- */
   /* Avatares em arquivos soltos, não colados aqui dentro.
@@ -2586,8 +2579,15 @@
 
   /* ------- convite / registro / login ------- */
   var conviteToken = null;
+  var conviteAlianca = null;
+  /* O convite era uma lista aberta: dava pra pedir todos os tokens não usados
+     e entrar com um deles. Agora o site só pergunta por um token que já tem
+     na mão, e a resposta é o cartão da aliança — nunca a lista. */
   function validarConvite(tk){
-    return sbGet("top_convites?token=eq."+enc(tk)+"&usado=eq.false&select=token").then(function(r){ return !!(r&&r.length); });
+    return sbRpc("convite_alianca", {p_token: tk}).then(function(a){
+      conviteAlianca = (a && a.tag) ? a : null;
+      return !!conviteAlianca;
+    });
   }
   function hashSenha(nome, senha){
     var txt = "topbest::" + (nome||"").toLowerCase().trim() + "::" + senha;
@@ -2603,19 +2603,25 @@
       {method:"POST", headers:sbHead({"Content-Type":file.type||"image/jpeg","x-upsert":"true"}), body:file})
       .then(function(r){ if(!r.ok) throw new Error("upload"); return SB_URL+"/storage/v1/object/public/"+bucket+"/"+path; });
   }
-  function vincularConvite(){
-    if(!conviteToken) return Promise.resolve();
-    return sbPatch("top_convites?token=eq."+enc(conviteToken), {membro_id:ME.id}).catch(function(){});
-  }
+  /* Queimar o convite e criar o membro viraram um passo só. Como dois passos
+     do navegador, o convite podia ser gasto e o cadastro falhar logo depois,
+     deixando a pessoa de fora com o convite já perdido. E o membro nascia sem
+     aliança dita, caindo no padrão — que era sempre a [TOP] Best. */
   function registrar(nome, senha, avatar){
-    // queima o convite de forma atômica (só o 1º clique ganha)
-    return sbPatch("top_convites?token=eq."+enc(conviteToken)+"&usado=eq.false",
-        {usado:true, usado_em:new Date().toISOString()}).then(function(rows){
-      if(!Array.isArray(rows) || !rows.length) return {ok:false, msg:"Este convite já foi usado. Peça outro a um oficial."};
-      return hashSenha(nome, senha).then(function(hash){
-        // novo membro entra como R0 pendente (defaults do servidor); só colunas seguras
-        return sbPost("top_membros?select="+COLS_MEMBRO, {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
-          .then(function(x){ if(!Array.isArray(x)||!x.length) throw {reg:true}; ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
+    return hashSenha(nome, senha).then(function(hash){
+      return sbRpc("convite_usar", {p_token:conviteToken, p_device:deviceId(),
+                                    p_nome:nome, p_senha:hash, p_avatar:avatar});
+    }).then(function(r){
+      if(!r || r.erro){
+        var m = { convite:"Este convite já foi usado. Peça outro a um oficial.",
+                  nome_usado:"Já existe alguém com esse nome nessa aliança.",
+                  nome:"Escreva seu nome no jogo.",
+                  senha:"Crie uma senha." }[r && r.erro] || "Não deu para entrar.";
+        return {ok:false, msg:m};
+      }
+      return getMembro().then(function(m){
+        if(!m) return {ok:false, msg:"Entrou, mas não carreguei seu perfil. Recarregue a página."};
+        ME = m; return {ok:true, novo:true};
       });
     });
   }
@@ -2658,6 +2664,16 @@
     regAvatarSel = "av1";
     $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.add("on");
+    // mostrar de qual aliança é o convite: o link pode ter passado por várias mãos
+    var cx = $("#regAlianca"), a = conviteAlianca;
+    if(a && a.tag){
+      cx.className = "bnchapa";
+      cx.style.display = "flex";
+      cx.innerHTML = bannerSVG(bnDaAlianca(a), 44)
+        + '<div><b>'+esc(a.tag)+' '+esc(a.nome)+'</b>'
+        + (a.servidor ? '<div class="note" style="margin:2px 0 0">Servidor '+esc(a.servidor)+'</div>' : '')
+        + '</div>';
+    } else { cx.style.display = "none"; }
     renderAvatarGrid("#regAvatares", "av1", function(id){ regAvatarSel = id; });
   }
 
@@ -4411,11 +4427,15 @@
   }
 
   /* ------- admin ------- */
+  /* O token vem do servidor, junto com a aliança de quem gerou. Antes o
+     navegador escolhia o token e a aliança ficava no padrão da tabela — o
+     convite de qualquer aliança levava para dentro da [TOP] Best. */
   function gerarConvite(){
-    var tk = "c"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-    return sbPost("top_convites", {token:tk, criado_por: ME.id}).then(function(){
-      return location.origin + location.pathname + "#c=" + tk;
-    });
+    return sbRpc("convite_criar", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        if(!r || !r.token) throw new Error(r && r.erro || "convite");
+        return location.origin + location.pathname + "#c=" + r.token;
+      });
   }
   function parsePoder(txt){
     if(!txt) return 0;
@@ -4493,6 +4513,19 @@
     }).catch(function(){ toast("❌ Erro ao salvar."); });
   }
 
+  /* O endereço do site é público, então ele precisa levar a pessoa direto ao
+     lugar certo. Além do convite (#c=token), que continua valendo, dá pra
+     mandar #entrar para quem já tem conta, #criar para uma aliança nova e
+     #codigo=XXXXXX com o código já preenchido — assim o oficial manda um link
+     em vez de explicar onde clicar. */
+  function destinoDaUrl(){
+    var h = location.hash || "";
+    var cod = h.match(/[#&]codigo=([A-Za-z0-9]+)/);
+    if(cod) return {tela:"codigo", valor:cod[1].toUpperCase()};
+    if(/[#&]entrar\b/.test(h)) return {tela:"entrar"};
+    if(/[#&]criar\b/.test(h))  return {tela:"criar"};
+    return null;
+  }
   function iniciarNuvem(){
     getMembro().then(function(m){
       if(m && m.tem_senha){ ME = m; entrar(); return; }    // aparelho já registrado
@@ -4504,6 +4537,17 @@
         });
       }
       mostrarGate();
+      var d = destinoDaUrl();
+      if(!d) return;
+      if(d.tela === "entrar") return loginPrompt();
+      if(d.tela === "criar")  return abrirNovaAlianca();
+      if(d.tela === "codigo"){
+        $("#gateOverlay").classList.remove("on");
+        $("#entrarOverlay").classList.add("on");
+        var cx = $("#entrarCodigo");
+        cx.value = d.valor;
+        cx.dispatchEvent(new Event("input"));
+      }
     }).catch(function(){
       mostrarGate("Sem conexão com o servidor. Verifique a internet e recarregue.");
     });
@@ -5086,6 +5130,14 @@
   $("#liderConfirmar").addEventListener("click", confirmarPassarLideranca);
   $("#admBannerSalvar").addEventListener("click", salvarEstandarte);
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
+  $("#admLinkEntrar").addEventListener("click", function(){
+    var cod = $("#admCodAcesso").textContent.trim();
+    if(!cod || cod.charAt(0) === "·") return toast("Código ainda carregando.");
+    var url = location.origin + location.pathname + "#codigo=" + cod;
+    var pronto = function(){ toast("🔗 Link copiado!"); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(pronto, function(){ prompt("Copie o link:", url); });
+    else prompt("Copie o link:", url);
+  });
 
   var _er = $("#eurow"); if(_er) _er.addEventListener("click", function(e){ if(e.target.closest("#oficialBtn")) return; abrirPerfil(); });
   var _pb = $("#profileBtn"); if(_pb) _pb.addEventListener("click", abrirPerfil);
