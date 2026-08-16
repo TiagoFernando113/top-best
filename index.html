@@ -611,7 +611,7 @@
       <image href="emblemas/aguia.png" x="20" y="22" width="60" height="60"/>
     </svg>
     <h1 class="stroked">Portal das Alianças</h1>
-    <p>O quadro de avisos da sua aliança no <b>Whiteout Survival</b> e no <b>Kingshot</b> — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
+    <p>O quadro de avisos da sua aliança no <b>Kingshot</b> — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
     <div class="land-cta">
       <button class="bigbtn green" id="landNova">🏰 Criar a minha aliança</button>
       <button class="bigbtn" id="landMembro">⚔️ Entrar com o código da aliança</button>
@@ -957,11 +957,7 @@
     <h2 style="text-align:center">🏰 Criar sua aliança</h2>
     <p class="sub" style="text-align:center">Você entra como <b>R5</b>, o líder.</p>
 
-    <p class="rlab" style="margin-top:14px">De qual jogo é a aliança</p>
-    <div class="bntiras" id="novaJogos" style="padding-top:2px"></div>
-    <p class="note" id="novaJogoAviso" style="display:none;margin-top:2px"></p>
-
-    <p class="rlab" style="margin-top:10px">Nome da aliança</p>
+    <p class="rlab" style="margin-top:14px">Nome da aliança</p>
     <input class="reginput" id="novaNome" type="text" placeholder="Ex.: Best" maxlength="40" autocomplete="off" style="margin-top:0">
     <div style="display:flex;gap:8px">
       <div style="flex:1">
@@ -2873,33 +2869,8 @@
     var pv = $("#"+pre+"Banner"); if(pv) pv.innerHTML = bannerSVG(bn, 104);
   }
 
-  /* O catálogo é por jogo: Kingshot tem os eventos dele, e receber "Fúria dos
-     Césares" lá dentro só confundiria. */
-  var JOGOS = [["whiteout","❄️ Whiteout Survival"], ["kingshot","👑 Kingshot"]];
-  var novoJogo = "whiteout";
-  function montaEscolhaJogo(){
-    var el = $("#novaJogos"); if(!el) return;
-    el.innerHTML = "";
-    JOGOS.forEach(function(j){
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "bigbtn" + (novoJogo === j[0] ? " green" : "");
-      b.style.cssText = "margin:0 6px 0 0;width:auto;padding:9px 13px;font-size:.82rem;flex:none";
-      b.textContent = j[1];
-      b.addEventListener("click", function(){ novoJogo = j[0]; montaEscolhaJogo(); });
-      el.appendChild(b);
-    });
-    /* Dizer antes o que a aliança vai receber. Escolher Kingshot e cair numa
-       agenda vazia sem explicação pareceria site quebrado. */
-    var av = $("#novaJogoAviso");
-    if(novoJogo === "kingshot"){
-      av.textContent = "Os tutoriais do Kingshot ainda estão sendo escritos. Sua aliança começa com a agenda em branco — dá para criar os eventos à mão no painel.";
-      av.style.display = "block";
-    } else av.style.display = "none";
-  }
   function abrirNovaAlianca(){
     $("#novaOverlay").classList.add("on");
-    montaEscolhaJogo();
     montaSeletorBanner("nova", novaBn);
   }
   function erroCaixa(alvo, txt){
@@ -2920,8 +2891,7 @@
     return hashSenha(lider, s1).then(function(hash){
       return sbRpc("alianca_criar", {p_tag:tag, p_nome:nome, p_servidor:srv,
                                      p_device:deviceId(), p_lider:lider, p_senha:hash,
-                                     p_forma:novaBn.forma, p_cor:novaBn.cor, p_emblema:novaBn.emblema,
-                                     p_jogo:novoJogo});
+                                     p_forma:novaBn.forma, p_cor:novaBn.cor, p_emblema:novaBn.emblema});
     }).then(function(r){
       if(!r || r.erro){
         bt.disabled = false;
