@@ -13,7 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
-<body>
+<body class="fora">
 <style>
   :root{
     --bg-page:#C2A67F;
@@ -2310,6 +2310,14 @@
     border-radius:9px;padding:8px 11px;cursor:pointer;font-size:.8rem}
   .bnchapa{display:flex;align-items:center;gap:10px}
   .bnchapa .bn{flex:none}
+  /* Antes de entrar, o site inteiro ficava montado atrás do login — com o
+     nome, o poder e o aviso fixado de UMA aliança. Quem chegasse pelo link
+     público via a [TOP] Best por trás do próprio cadastro. A casca só aparece
+     depois que se sabe de quem ela é. */
+  body.fora .topbar,
+  body.fora .shell,
+  body.fora .bottomnav{display:none}
+  body.fora{background:var(--bg,#2A2018)}
   /* a configuração da aliança tem quatro assuntos diferentes numa tela só;
      sem separar, vira uma pilha de campos em que ninguém acha nada */
   .cfgsec{border:2px solid var(--pill-dk);border-radius:12px;padding:10px 11px 12px;margin-top:12px}
@@ -3034,6 +3042,7 @@
 
   /* ------- entrar / gate ------- */
   function mostrarGate(msg){
+    document.body.classList.add("fora");
     var semRede = !!msg && /conexão/i.test(msg);
     $("#gateMsg").textContent = msg || "Crie a sua aliança ou entre numa que já existe.";
     // sem servidor não adianta oferecer cadastro: os dois caminhos falhariam
@@ -3041,6 +3050,7 @@
     $("#gateOverlay").classList.add("on");
   }
   function entrar(){
+    document.body.classList.remove("fora");   // agora se sabe de quem é a casca
     $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.remove("on");
     try{ if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } }catch(e){}
@@ -5203,7 +5213,12 @@
     $("#loginOverlay").classList.add("on");
   }
   function loginErro(m){ var el = $("#loginMsg"); el.textContent = m; el.style.display = "block"; }
-  $("#loginFechar").addEventListener("click", function(){ $("#loginOverlay").classList.remove("on"); });
+  /* Cancelar precisa ter para onde voltar: quem chega pelo link de login
+     direto não tem nada atrás, e fechar deixava a tela vazia. */
+  $("#loginFechar").addEventListener("click", function(){
+    $("#loginOverlay").classList.remove("on");
+    if(!ME) mostrarGate();
+  });
   $("#loginEntrar").addEventListener("click", function(){
     var nome = $("#loginNome").value.trim(), senha = $("#loginSenha").value;
     if(!nome || !senha){ loginErro("Preencha nome e senha."); return; }
