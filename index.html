@@ -1009,11 +1009,18 @@
 <!-- ============ SAIR DA ALIANÇA ============ -->
 <div class="overlay" id="sairOverlay">
   <div class="modal">
-    <h2 style="text-align:center">🚪 Sair da aliança</h2>
+    <h2 style="text-align:center" id="sairTitulo">🚪 Sair da aliança</h2>
     <div class="bnprev" id="sairBanner"></div>
     <p class="sub" style="text-align:center" id="sairNome"></p>
-    <p class="note" style="margin-top:12px">Depois de sair você pode entrar em outra aliança com o código dela, ou voltar para esta se um oficial te passar o código de novo.</p>
-    <p class="note" style="margin-top:8px">Seus pontos e o histórico ficam com a aliança — quem entra em uma nova começa do zero, como no jogo.</p>
+    <div id="sairTextoSair">
+      <p class="note" style="margin-top:12px">Depois de sair você pode entrar em outra aliança com o código dela, ou voltar para esta se um oficial te passar o código de novo.</p>
+      <p class="note" style="margin-top:8px">Seus pontos e o histórico ficam com a aliança — quem entra em uma nova começa do zero, como no jogo.</p>
+    </div>
+    <div id="sairTextoDissolver" style="display:none">
+      <p class="note" style="margin-top:12px">Você é o líder e está sozinho. Sair não dá: a aliança não pode ficar sem R5. O que dá é <b>dissolver</b>.</p>
+      <p class="note" style="margin-top:8px;color:var(--red)"><b>Dissolver apaga a aliança do servidor</b> — o estandarte, a agenda, os tutoriais que você escreveu, a loja, o chat e os códigos. Não tem como desfazer.</p>
+    </div>
+    <p class="note" id="sairTextoPassar" style="display:none;margin-top:12px">Você é o líder. Para sair, passe a liderança para um R4 primeiro — a aliança não pode ficar sem R5.</p>
     <p class="rlab" style="margin-top:14px">Sua senha, para confirmar</p>
     <input class="reginput" id="sairSenha" type="password" placeholder="Sua senha" maxlength="60" autocomplete="current-password" style="margin-top:0">
     <p class="note" id="sairMsg" style="display:none;color:var(--red);margin-top:8px"></p>
@@ -2974,11 +2981,38 @@
   }
 
   /* ------- sair da aliança ------- */
+  /* Três situações, três telas: membro comum sai; R5 com gente tem que passar
+     o cargo antes; R5 sozinho dissolve, e aí a aliança some do servidor. */
+  var _sairModo = "sair";
+  function ajustaTelaSair(){
+    var r5 = ME && ME.cargo === "R5";
+    if(!r5) _sairModo = "sair";
+    $("#sairTextoSair").style.display      = (_sairModo === "sair") ? "block" : "none";
+    $("#sairTextoDissolver").style.display = (_sairModo === "dissolver") ? "block" : "none";
+    $("#sairTextoPassar").style.display    = (_sairModo === "passar") ? "block" : "none";
+    $("#sairTitulo").textContent = (_sairModo === "dissolver") ? "💥 Dissolver a aliança" : "🚪 Sair da aliança";
+    var bt = $("#sairConfirmar");
+    bt.textContent = (_sairModo === "dissolver") ? "Dissolver para sempre"
+                   : (_sairModo === "passar")    ? "Passar a liderança"
+                   : "Sair da aliança";
+    $("#sairSenha").parentNode.querySelector(".rlab").style.display = (_sairModo === "passar") ? "none" : "";
+    $("#sairSenha").style.display = (_sairModo === "passar") ? "none" : "";
+  }
   function abrirSair(){
     erroCaixa("#sairMsg", "");
     $("#sairSenha").value = "";
+    _sairModo = "sair";
     $("#perfilOverlay").classList.remove("on");
     $("#sairOverlay").classList.add("on");
+    // o R5 precisa saber de cara qual dos dois caminhos é o dele
+    if(ME && ME.cargo === "R5"){
+      sbGet("top_membros?status=neq.saiu"+daMinha()+"&id=neq."+enc(ME.id)+"&select=id&limit=1")
+        .then(function(r){
+          _sairModo = (r && r.length) ? "passar" : "dissolver";
+          ajustaTelaSair();
+        }).catch(function(){ _sairModo = "passar"; ajustaTelaSair(); });
+    }
+    ajustaTelaSair();
     // mostrar de qual aliança se está saindo: quem joga em mais de uma se perde
     sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
       .then(function(r){
@@ -2988,17 +3022,27 @@
       }).catch(function(){});
   }
   function confirmarSair(){
+    // o R5 com gente na aliança não sai por aqui: o caminho dele é passar o cargo
+    if(_sairModo === "passar"){
+      $("#sairOverlay").classList.remove("on");
+      return abrirPassarLideranca();
+    }
     var senha = $("#sairSenha").value;
     if(!senha) return erroCaixa("#sairMsg", "Digite sua senha para confirmar.");
+    if(_sairModo === "dissolver" &&
+       !confirm("Dissolver apaga a aliança e tudo que está nela, para sempre. Confirmar?")) return;
     erroCaixa("#sairMsg", "");
     var bt = $("#sairConfirmar"); bt.disabled = true;
     return hashSenha(ME.nome, senha).then(function(hash){
-      return sbRpc("membro_sair", {p_membro:ME.id, p_senha:hash, p_device:deviceId()});
+      return (_sairModo === "dissolver")
+        ? sbRpc("alianca_dissolver", {p_membro:ME.id, p_senha:hash, p_device:deviceId()})
+        : sbRpc("membro_sair",       {p_membro:ME.id, p_senha:hash, p_device:deviceId()});
     }).then(function(r){
       bt.disabled = false;
       if(!r || r.erro){
         var m = { sem_permissao:"Senha errada.",
                   ja_saiu:"Você já não está nesta aliança.",
+                  tem_gente:"Ainda tem gente na aliança. Só dá para dissolver quando você estiver sozinho.",
                   r5_precisa_passar:"Você é o R5. Passe a liderança para um R4 antes de sair." }[r && r.erro]
                 || "Não deu para sair.";
         return erroCaixa("#sairMsg", m);
