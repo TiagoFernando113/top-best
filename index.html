@@ -1006,6 +1006,24 @@
   </div>
 </div>
 
+<!-- ============ SAIR DA ALIANÇA ============ -->
+<div class="overlay" id="sairOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">🚪 Sair da aliança</h2>
+    <div class="bnprev" id="sairBanner"></div>
+    <p class="sub" style="text-align:center" id="sairNome"></p>
+    <p class="note" style="margin-top:12px">Depois de sair você pode entrar em outra aliança com o código dela, ou voltar para esta se um oficial te passar o código de novo.</p>
+    <p class="note" style="margin-top:8px">Seus pontos e o histórico ficam com a aliança — quem entra em uma nova começa do zero, como no jogo.</p>
+    <p class="rlab" style="margin-top:14px">Sua senha, para confirmar</p>
+    <input class="reginput" id="sairSenha" type="password" placeholder="Sua senha" maxlength="60" autocomplete="current-password" style="margin-top:0">
+    <p class="note" id="sairMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <div class="mrow" style="margin-top:12px">
+      <button class="bcancel" id="sairCancel">Ficar</button>
+      <button class="bsend" id="sairConfirmar" style="background:var(--red)">Sair da aliança</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ REGISTRO ============ -->
 <div class="overlay" id="regOverlay">
   <div class="modal">
@@ -1037,6 +1055,7 @@
     <input class="reginput" id="perfilSenha" type="password" placeholder="Nova senha — deixe vazio pra manter" style="margin-top:0" autocomplete="new-password">
     <button class="bigbtn" id="notifBtn" style="margin-top:12px">🔔 Ativar notificações</button>
     <button class="bigbtn" id="instalarBtn" style="display:none;margin-top:10px">📲 Instalar como app</button>
+    <button class="bigbtn red" id="sairAliancaBtn" style="margin-top:10px">🚪 Sair da aliança</button>
     <div class="mrow">
       <button class="bcancel" id="perfilFechar">Fechar</button>
       <button class="bsend" id="perfilSalvar">Salvar</button>
@@ -2920,6 +2939,47 @@
       }).catch(function(){ bt.disabled = false; toast("❌ Sem conexão."); });
   }
 
+  /* ------- sair da aliança ------- */
+  function abrirSair(){
+    erroCaixa("#sairMsg", "");
+    $("#sairSenha").value = "";
+    $("#perfilOverlay").classList.remove("on");
+    $("#sairOverlay").classList.add("on");
+    // mostrar de qual aliança se está saindo: quem joga em mais de uma se perde
+    sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
+      .then(function(r){
+        var a = (r||[])[0]; if(!a) return;
+        $("#sairBanner").innerHTML = bannerSVG(bnDaAlianca(a), 76);
+        $("#sairNome").innerHTML = "<b>"+esc(a.tag)+" "+esc(a.nome)+"</b>";
+      }).catch(function(){});
+  }
+  function confirmarSair(){
+    var senha = $("#sairSenha").value;
+    if(!senha) return erroCaixa("#sairMsg", "Digite sua senha para confirmar.");
+    erroCaixa("#sairMsg", "");
+    var bt = $("#sairConfirmar"); bt.disabled = true;
+    return hashSenha(ME.nome, senha).then(function(hash){
+      return sbRpc("membro_sair", {p_membro:ME.id, p_senha:hash, p_device:deviceId()});
+    }).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro){
+        var m = { sem_permissao:"Senha errada.",
+                  ja_saiu:"Você já não está nesta aliança.",
+                  r5_precisa_passar:"Você é o R5. Passe a liderança para um R4 antes de sair." }[r && r.erro]
+                || "Não deu para sair.";
+        return erroCaixa("#sairMsg", m);
+      }
+      /* A conta antiga ficou sem aparelho e sem senha, então recarregar cai na
+         tela inicial sozinho — nada de estado velho sobrando na tela. */
+      localStorage.removeItem("top.ocode");
+      ME = null;
+      location.reload();
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#sairMsg", "Sem conexão com o servidor.");
+    });
+  }
+
   /* ------- passar liderança ------- */
   var liderEscolhido = null;
   function abrirPassarLideranca(){
@@ -4260,7 +4320,7 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
+    return sbGet("top_membros?status=neq.saiu&select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
@@ -4870,7 +4930,7 @@
   }
   function renderRankingSel(){
     if(rankSel === "geral"){
-      return sbGet("top_membros?pontos=gt.0&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
+      return sbGet("top_membros?pontos=gt.0&status=neq.saiu&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
         rankRender((rows||[]).map(function(m){ return {nome:m.nome, foto_url:m.foto_url, avatar:m.avatar, pts:m.pontos}; }));
       });
     }
@@ -5209,6 +5269,9 @@
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
   $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
   $("#admNovoCodigo").addEventListener("click", gerarNovoCodigo);
+  $("#sairAliancaBtn").addEventListener("click", abrirSair);
+  $("#sairCancel").addEventListener("click", function(){ $("#sairOverlay").classList.remove("on"); });
+  $("#sairConfirmar").addEventListener("click", confirmarSair);
   $("#admLinkEntrar").addEventListener("click", function(){
     var cod = $("#admCodAcesso").textContent.trim();
     if(!cod || cod.charAt(0) === "·") return toast("Código ainda carregando.");
