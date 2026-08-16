@@ -3182,6 +3182,15 @@
         var hj = horarioLocal(ev);
         var quandoDia  = hj ? hj.dia  : esc(ev.dia||"");
         var quandoHora = hj ? hj.hora : esc(ev.hora||"");
+        /* Aliança nova recebe o tutorial, mas o horário é combinação dela.
+           Sem este aviso o cartão aparece com a data em branco e parece
+           quebrado, em vez de parecer "falta você marcar". */
+        var semHora = !hj && !ev.dia && !ev.hora;
+        if(semHora){ quandoDia = "—"; quandoHora = ""; }
+        var marcarHtml = semHora
+          ? '<p style="font-size:.74rem;color:var(--gold-dk);font-weight:800;margin-top:2px">🕒 '
+            + (ofi ? "Sem horário — toque para marcar" : "Horário ainda não marcado") + '</p>'
+          : '';
         var faltaHtml  = hj ? '<p style="font-size:.74rem;color:var(--teal-dk);font-weight:800;margin-top:2px">⏳ '+esc(hj.falta)+' · '+esc(hj.utc)+' UTC</p>' : '';
         var periodo = (ev.categoria==="temporario" && (ev.inicio||ev.fim)) ? '<p style="font-size:.74rem;color:var(--ink-soft);font-weight:700">🗓️ '+esc(ev.inicio||"")+(ev.fim?" → "+esc(ev.fim):"")+'</p>' : '';
         var premio = [];
@@ -3192,7 +3201,7 @@
         var premioHtml = premio.length ? '<p style="font-size:.74rem;color:var(--gold-dk);font-weight:800;margin-top:2px">'+premio.join(" · ")+'</p>' : '';
         return '<button class="ev '+tipo+'" data-evento="'+ev.id+'" style="width:100%;text-align:left;font-family:inherit;cursor:pointer">'+
           '<div class="when"><div class="day">'+quandoDia+'</div><div class="time">'+quandoHora+'</div></div>'+
-          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+periodo+faltaHtml+premioHtml+
+          '<div style="flex:1"><h3>'+esc(ev.titulo)+'</h3><p>'+esc(ev.descricao||"")+'</p>'+periodo+faltaHtml+marcarHtml+premioHtml+
           '<p style="font-size:.74rem;color:var(--teal-dk);font-weight:800;margin-top:4px">📖 Toque para dicas'+(ofi?' · lançar pontos':'')+' ▸</p>'+
           '</div></button>';
       }
