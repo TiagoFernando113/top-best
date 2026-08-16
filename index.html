@@ -1775,6 +1775,25 @@
     </g>
   </symbol>
 
+  <!-- ============ ESTANDARTE DA ALIANÇA ============
+       Montado, não enviado: forma + cor + insígnia. Sem upload, sem recorte,
+       sem arquivo no storage, e o resultado nunca sai torto. São 6 formas x
+       6 cores x 6 insígnias = 216 estandartes possíveis, e tudo isso pesa
+       menos que uma foto.
+
+       As formas ficam em SVG porque precisam trocar de cor. As insígnias são
+       as do próprio jogo, recortadas com fundo transparente, em emblemas/*.png
+       — desenhar cópias à mão dava águia com cara de folha e touro com cara
+       de coração, e o jogador reconhece a diferença na hora. -->
+
+  <!-- formas: o caminho é sempre 0 0 100 124, mudando só o pé do estandarte -->
+  <symbol id="bnf-escudo" viewBox="0 0 100 124"><path d="M6 6h88v74l-40 31a7 7 0 01-8 0L6 80z"/></symbol>
+  <symbol id="bnf-ponta"  viewBox="0 0 100 124"><path d="M6 6h88v80L50 118 6 86z"/></symbol>
+  <symbol id="bnf-cauda"  viewBox="0 0 100 124"><path d="M6 6h88v100H62L50 86 38 106H6z"/></symbol>
+  <symbol id="bnf-arco"   viewBox="0 0 100 124"><path d="M6 6h88v88a17 17 0 01-31 7L50 86 37 101a17 17 0 01-31-7z"/></symbol>
+  <symbol id="bnf-degrau" viewBox="0 0 100 124"><path d="M6 6h88v80H76v18l-26 14-26-14V86H6z"/></symbol>
+  <symbol id="bnf-reto"   viewBox="0 0 100 124"><path d="M6 6h88v100H6z"/></symbol>
+
   <!-- ===== Fúria dos Césares ===== -->
   <symbol id="dg-cesar-prazo" viewBox="0 0 320 180">
     <rect width="320" height="180" fill="#F1E6D0"/>
@@ -2277,6 +2296,14 @@
   }
   function sbPost(path, body){ return sbSend("POST", path, body); }
   function sbPatch(path, body){ return sbSend("PATCH", path, body); }
+  /* Chamadas que precisam conferir uma senha ou mexer em cargo rodam como
+     função no banco, não como consulta daqui: o navegador manda o que sabe e
+     recebe só a resposta, sem nunca ler a coluna que guarda o segredo. */
+  function sbRpc(fn, body){
+    return fetch(SB_URL+"/rest/v1/rpc/"+fn, {method:"POST",
+      headers:sbHead({"Content-Type":"application/json"}),
+      body:JSON.stringify(body||{})}).then(function(r){ return r.json(); });
+  }
   function sbDel(path){
     return fetch(SB_URL+"/rest/v1/"+path, {method:"DELETE", headers:sbHead()})
       .then(function(r){ return r.ok; });
@@ -2297,8 +2324,18 @@
     var m = h.match(/[#&]c=([A-Za-z0-9]+)/);
     return m ? m[1] : null;
   }
+  /* As colunas que o navegador pode ver de um membro. senha_hash e device_id
+     ficaram de fora de propósito: quem lê o hash de um R5 entra como ele, e
+     quem lê o device_id entra sem nem precisar de senha. Por isso nada aqui
+     pede "select=*" — o banco recusa, e é para recusar mesmo. */
+  var COLS_MEMBRO = "id,alianca_id,nome,cargo,is_oficial,super_admin,status,autorizado,"
+    + "avatar,foto_url,pode_avatar,perfil_print_url,moedas,pontos,abates,poder,"
+    + "castelo,reino,jogo_id,player_id,criado_em,visto_em,tem_senha";
+
   function getMembro(){
-    return sbGet("top_membros?device_id=eq."+enc(deviceId())+"&select=*").then(function(r){ return (r&&r[0])||null; });
+    return sbRpc("membro_por_aparelho", {p_device: deviceId()}).then(function(m){
+      return m && m.id ? m : null;
+    });
   }
   function garantirMembro(existing, autorizar, extra){
     if(existing){
@@ -2306,13 +2343,13 @@
       if(autorizar && !existing.autorizado) patch.autorizado = true;
       if(extra) for(var k in extra) patch[k] = extra[k];
       if(!Object.keys(patch).length) return Promise.resolve(existing);
-      return sbPatch("top_membros?id=eq."+existing.id, patch).then(function(x){ return x[0]; });
+      return sbPatch("top_membros?id=eq."+existing.id+"&select="+COLS_MEMBRO, patch).then(function(x){ return x[0]; });
     }
     var nome = (extra && extra.nome ? String(extra.nome).trim() : "") || (localStorage.getItem("top.nome")||"").trim() || "Governador";
     localStorage.setItem("top.nome", nome);
     var body = {device_id:deviceId(), nome:nome, autorizado:!!autorizar};
     if(extra) for(var j in extra) body[j] = extra[j];
-    return sbPost("top_membros", body).then(function(x){ return x[0]; });
+    return sbPost("top_membros?select="+COLS_MEMBRO, body).then(function(x){ return x[0]; });
   }
 
   /* ------- avatares ------- */
@@ -2352,6 +2389,48 @@
     return avMarkup(id);
   }
 
+  /* ------- estandarte da aliança ------- */
+  /* Três escolhas guardadas em três colunas (banner_forma/cor/emblema), com
+     CHECK no banco. Se um valor inválido chegar aqui, o banco recusa antes
+     de gravar e o desenho abaixo cai no padrão em vez de sair quebrado. */
+  var BN_FORMAS = ["escudo","ponta","cauda","arco","degrau","reto"];
+  var BN_CORES  = {
+    azul:     ["#5BA3DC","#2E6FA8"],
+    roxo:     ["#9B7BD4","#6A4EA3"],
+    dourado:  ["#F0B63F","#B07F14"],
+    laranja:  ["#F0943F","#B8641C"],
+    verde:    ["#5FB55A","#357A32"],
+    vermelho: ["#E06B5E","#A33A2E"]
+  };
+  var BN_CORES_ORD = Object.keys(BN_CORES);
+  var BN_EMB = ["aguia","cervo","touro","torre","garras","flor"];
+  var BN_PADRAO = { forma:"escudo", cor:"azul", emblema:"torre" };
+
+  function bnNorm(b){
+    b = b || {};
+    return {
+      forma:   BN_FORMAS.indexOf(b.forma) >= 0 ? b.forma : BN_PADRAO.forma,
+      cor:     BN_CORES[b.cor] ? b.cor : BN_PADRAO.cor,
+      emblema: BN_EMB.indexOf(b.emblema) >= 0 ? b.emblema : BN_PADRAO.emblema
+    };
+  }
+  function bnDaAlianca(a){
+    a = a || {};
+    return bnNorm({ forma:a.banner_forma, cor:a.banner_cor, emblema:a.banner_emblema });
+  }
+  /* A sombra é o mesmo caminho 6px abaixo: dá o degrau de baixo do estandarte
+     do jogo sem precisar de um segundo desenho pra cada forma. */
+  function bannerSVG(b, px){
+    b = bnNorm(b); px = px || 64;
+    var par = BN_CORES[b.cor];
+    return '<svg class="bn" viewBox="0 0 100 130" width="'+px+'" height="'+Math.round(px*1.3)+'" aria-hidden="true">'
+      + '<use href="#bnf-'+b.forma+'" x="0" y="6" width="100" height="124" fill="'+par[1]+'"/>'
+      + '<use href="#bnf-'+b.forma+'" x="0" y="0" width="100" height="124" fill="'+par[0]+'"/>'
+      + '<image href="emblemas/'+b.emblema+'.png" x="20" y="22" width="60" height="60"'
+      + ' loading="lazy" decoding="async"/>'
+      + '</svg>';
+  }
+
   /* ------- convite / registro / login ------- */
   var conviteToken = null;
   function validarConvite(tk){
@@ -2382,19 +2461,20 @@
       if(!Array.isArray(rows) || !rows.length) return {ok:false, msg:"Este convite já foi usado. Peça outro a um oficial."};
       return hashSenha(nome, senha).then(function(hash){
         // novo membro entra como R0 pendente (defaults do servidor); só colunas seguras
-        return sbPost("top_membros", {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
+        return sbPost("top_membros?select="+COLS_MEMBRO, {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
           .then(function(x){ if(!Array.isArray(x)||!x.length) throw {reg:true}; ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
       });
     });
   }
+  /* A conferência da senha acontece no banco. Antes era aqui: o site
+     perguntava "existe alguém com este nome e este hash?", e para perguntar
+     isso precisava poder ler o hash de todo mundo. */
   function fazerLogin(nome, senha){
     return hashSenha(nome, senha).then(function(hash){
-      return sbGet("top_membros?nome=ilike."+enc(nome)+"&senha_hash=eq."+hash+"&select=*").then(function(r){
-        var m = (r||[])[0];
-        if(!m) return false;
-        return sbPatch("top_membros?id=eq."+m.id, {device_id:deviceId(), visto_em:new Date().toISOString()})
-          .then(function(x){ ME = x[0]; return true; });
-      });
+      return sbRpc("membro_login", {p_nome:nome, p_senha:hash, p_device:deviceId()});
+    }).then(function(m){
+      if(!m || !m.id) return false;
+      ME = m; return true;
     });
   }
 
@@ -3699,7 +3779,7 @@
   }
   function heartbeat(){
     if(!ME) return;
-    sbPatch("top_membros?id=eq."+ME.id, {visto_em:new Date().toISOString()}).catch(function(){});
+    sbPatch("top_membros?id=eq."+ME.id+"&select=id", {visto_em:new Date().toISOString()}).catch(function(){});
   }
   var RANK_NOME = {R5:"Líder", R4:"Colonel", R3:"Major", R2:"Captain", R1:"Lieutenant", R0:"Solicitações"};
   var _membrosCache = {}, promoAlvo = null;
@@ -4016,8 +4096,15 @@
     var upSenha = novaS ? hashSenha(ME.nome, novaS) : Promise.resolve(null);
     return Promise.all([upFoto, upSenha]).then(function(res){
       if(res[0]) patch.foto_url = res[0];
-      if(res[1]) patch.senha_hash = res[1];
-      return sbPatch("top_membros?id=eq."+ME.id, patch).then(function(x){
+      // a senha não entra no patch: ela passa por uma função que confere quem
+      // está pedindo a troca, porque a coluna do hash não é mais gravável daqui
+      var trocaSenha = res[1]
+        ? sbRpc("membro_trocar_senha", {p_id:ME.id, p_atual:null, p_nova:res[1], p_device:deviceId()})
+        : Promise.resolve(null);
+      return trocaSenha.then(function(rs){
+        if(rs && rs.erro) throw new Error(rs.erro);
+        return sbPatch("top_membros?id=eq."+ME.id+"&select="+COLS_MEMBRO, patch);
+      }).then(function(x){
         ME = x[0];
         $("#euNome").innerHTML = '<span class="euav">'+avatarSVG(ME)+'</span>'+nomeComCargo();
         setTopAvatar();
@@ -4032,7 +4119,7 @@
 
   function iniciarNuvem(){
     getMembro().then(function(m){
-      if(m && m.senha_hash){ ME = m; entrar(); return; }   // aparelho já registrado
+      if(m && m.tem_senha){ ME = m; entrar(); return; }    // aparelho já registrado
       var tk = tokenDaUrl();
       if(tk){
         return validarConvite(tk).then(function(ok){
