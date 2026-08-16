@@ -814,26 +814,51 @@
       <details class="admbox" id="admAlianca">
         <summary><span class="ic">🏰</span>Minha aliança</summary>
         <div class="admbody">
-          <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
-          <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
-          <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
-          <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
-          <div id="admCodOficialWrap" style="display:none">
-            <p class="rlab" style="margin-top:12px">Código de oficial — só R4 e R5</p>
-            <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
+          <div class="cfgsec">
+            <div class="cfghd">🏳️ Estandarte</div>
+            <div class="bnprev" id="admBanner"></div>
+            <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
+            <p class="rlab">Cor</p><div class="bntiras" id="admCores"></div>
+            <p class="rlab">Insígnia</p><div class="bntiras" id="admEmblemas"></div>
+            <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
           </div>
 
-          <p class="rlab" style="margin-top:14px">Estandarte</p>
-          <div class="bnprev" id="admBanner"></div>
-          <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
-          <p class="rlab">Cor</p><div class="bntiras" id="admCores"></div>
-          <p class="rlab">Insígnia</p><div class="bntiras" id="admEmblemas"></div>
-          <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
+          <div class="cfgsec">
+            <div class="cfghd">📝 Identidade</div>
+            <p class="rlab">Nome da aliança</p>
+            <input class="reginput" id="admNome" type="text" maxlength="40" autocomplete="off" style="margin-top:0">
+            <div style="display:flex;gap:8px">
+              <div style="flex:1">
+                <p class="rlab" style="margin-top:10px">Sigla</p>
+                <input class="reginput" id="admTag" type="text" maxlength="8" autocomplete="off" style="margin-top:0">
+              </div>
+              <div style="flex:1">
+                <p class="rlab" style="margin-top:10px">Servidor</p>
+                <input class="reginput" id="admServidor" type="text" maxlength="10" autocomplete="off" style="margin-top:0">
+              </div>
+            </div>
+            <p class="note" id="admIdentMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+            <button class="bigbtn green" id="admIdentSalvar" style="margin-top:10px">Salvar identidade</button>
+          </div>
 
-          <div id="admLiderWrap" style="display:none">
-            <p class="rlab" style="margin-top:16px">Liderança</p>
+          <div class="cfgsec">
+            <div class="cfghd">🔑 Entrada de novos membros</div>
+            <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
+            <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
+            <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
+            <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
+            <button class="bigbtn red" id="admNovoCodigo" style="margin-top:10px">♻️ Gerar um código novo</button>
+            <p class="note" style="margin-top:6px">Use se o código cair em lugar errado. O antigo para de valer na hora, e quem já entrou continua dentro.</p>
+            <div id="admCodOficialWrap" style="display:none">
+              <p class="rlab" style="margin-top:14px">Código de oficial — só R4 e R5</p>
+              <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
+            </div>
+          </div>
+
+          <div class="cfgsec" id="admLiderWrap" style="display:none">
+            <div class="cfghd">👑 Liderança</div>
             <p class="note" style="margin:0 0 8px">Você é o R5. Ninguém pode tirar você daqui — só você, passando o cargo a um R4.</p>
-            <button class="bigbtn" id="admPassarLideranca">👑 Passar a liderança</button>
+            <button class="bigbtn" id="admPassarLideranca">Passar a liderança</button>
           </div>
         </div>
       </details>
@@ -2264,6 +2289,11 @@
     border-radius:9px;padding:8px 11px;cursor:pointer;font-size:.8rem}
   .bnchapa{display:flex;align-items:center;gap:10px}
   .bnchapa .bn{flex:none}
+  /* a configuração da aliança tem quatro assuntos diferentes numa tela só;
+     sem separar, vira uma pilha de campos em que ninguém acha nada */
+  .cfgsec{border:2px solid var(--pill-dk);border-radius:12px;padding:10px 11px 12px;margin-top:12px}
+  .cfgsec:first-child{margin-top:2px}
+  .cfghd{font-weight:800;font-size:.9rem;color:var(--ink);margin-bottom:8px}
   .pmember .av2{overflow:hidden;border:2px solid #2B5D96}
   .pmember .av2>*{width:100%;height:100%;border-radius:7px}
   .euav{width:26px;height:26px;border-radius:7px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:7px}
@@ -2814,14 +2844,48 @@
   }
   function carregaEstandarte(){
     if(!ME || !ME.alianca_id) return Promise.resolve(null);
-    return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
+    return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,servidor,banner_forma,banner_cor,banner_emblema")
       .then(function(r){
         var a = (r||[])[0]; if(!a) return null;
         admBn = bnDaAlianca(a);
         pintaEstandarteNoTopo(a);
         if($("#admFormas")) montaSeletorBanner("adm", admBn);
+        if($("#admNome")){
+          $("#admNome").value = a.nome || "";
+          $("#admTag").value = a.tag || "";
+          $("#admServidor").value = a.servidor || "";
+        }
         return a;
       }).catch(function(){ return null; });
+  }
+  function salvarIdentidade(){
+    var nome = $("#admNome").value.trim(), tag = $("#admTag").value.trim(), srv = $("#admServidor").value.trim();
+    if(!nome || !tag) return erroCaixa("#admIdentMsg", "O nome e a sigla não podem ficar vazios.");
+    erroCaixa("#admIdentMsg", "");
+    var bt = $("#admIdentSalvar"); bt.disabled = true;
+    return sbRpc("alianca_editar", {p_membro:ME.id, p_senha:null, p_device:deviceId(),
+                                    p_nome:nome, p_tag:tag, p_servidor:srv})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || r.erro){
+          return erroCaixa("#admIdentMsg", r && r.erro === "existe"
+            ? "Já existe outra aliança com essa sigla nesse servidor."
+            : "Não deu para salvar.");
+        }
+        toast("📝 Identidade salva!");
+        return carregaEstandarte();
+      }).catch(function(){ bt.disabled = false; erroCaixa("#admIdentMsg", "Sem conexão."); });
+  }
+  function gerarNovoCodigo(){
+    if(!confirm("Gerar um código novo? O código de agora para de valer na hora, e quem ainda não entrou vai precisar do novo. Quem já está na aliança continua dentro.")) return;
+    var bt = $("#admNovoCodigo"); bt.disabled = true;
+    return sbRpc("alianca_novo_codigo", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || !r.codigo_acesso){ toast("❌ Não deu para gerar."); return; }
+        $("#admCodAcesso").textContent = r.codigo_acesso;
+        toast("♻️ Código novo em uso!");
+      }).catch(function(){ bt.disabled = false; toast("❌ Sem conexão."); });
   }
   /* O estandarte fica onde o jogo põe: junto do nome da aliança. */
   function pintaEstandarteNoTopo(a){
@@ -5130,6 +5194,8 @@
   $("#liderConfirmar").addEventListener("click", confirmarPassarLideranca);
   $("#admBannerSalvar").addEventListener("click", salvarEstandarte);
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
+  $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
+  $("#admNovoCodigo").addEventListener("click", gerarNovoCodigo);
   $("#admLinkEntrar").addEventListener("click", function(){
     var cod = $("#admCodAcesso").textContent.trim();
     if(!cod || cod.charAt(0) === "·") return toast("Código ainda carregando.");
