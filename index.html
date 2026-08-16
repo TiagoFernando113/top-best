@@ -602,6 +602,60 @@
   </defs>
 </svg>
 
+<!-- ============ PÁGINA DE ENTRADA ============ -->
+<div class="land" id="land">
+  <div class="land-hero">
+    <svg class="bn" viewBox="0 0 100 130" width="86" aria-hidden="true">
+      <use href="#bnf-cauda" y="6" width="100" height="124" fill="#B07F14"/>
+      <use href="#bnf-cauda" width="100" height="124" fill="#F0B63F"/>
+      <image href="emblemas/aguia.png" x="20" y="22" width="60" height="60"/>
+    </svg>
+    <h1 class="stroked">Portal das Alianças</h1>
+    <p>O quadro de avisos da sua aliança no Whiteout Survival — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
+    <div class="land-cta">
+      <button class="bigbtn green" id="landNova">🏰 Criar a minha aliança</button>
+      <button class="bigbtn" id="landMembro">⚔️ Entrar com o código da aliança</button>
+      <a href="#entrar" class="land-entrar" id="landLogin">Já tenho conta — entrar com senha</a>
+    </div>
+  </div>
+
+  <p class="land-aviso" id="landAviso" style="display:none"></p>
+
+  <div class="land-wrap">
+    <h2 class="land-tt">O que a aliança ganha</h2>
+    <p class="land-sub">Tudo o que o chat do jogo não dá conta de organizar.</p>
+    <div class="land-grid">
+      <div class="land-card"><div class="ic">🗓️</div><h3>Agenda no seu fuso</h3>
+        <p>O oficial marca uma vez em UTC. Cada membro vê no horário do próprio relógio, e quanto falta.</p></div>
+      <div class="land-card"><div class="ic">🔔</div><h3>Aviso no celular</h3>
+        <p>Toca antes do evento, no tempo que o oficial escolher. Dá para avisar só quem confirmou presença.</p></div>
+      <div class="land-card"><div class="ic">📖</div><h3>Tutorial de cada evento</h3>
+        <p>Passo a passo com desenhos: Urso, Fúria dos Césares, Fortaleza, Canyon e os outros.</p></div>
+      <div class="land-card"><div class="ic">🏆</div><h3>Ranking por participação</h3>
+        <p>O oficial lança só a posição e o site calcula os pontos. Quem aparece, sobe.</p></div>
+      <div class="land-card"><div class="ic">💬</div><h3>Chat que traduz</h3>
+        <p>Aliança de vários países conversa junto — cada um lê no idioma dele.</p></div>
+      <div class="land-card"><div class="ic">🏳️</div><h3>A cara da aliança</h3>
+        <p>Estandarte montado como no jogo: base, cor e insígnia. E os dados são só seus.</p></div>
+    </div>
+
+    <h2 class="land-tt">Como começa</h2>
+    <p class="land-sub">Leva um minuto e não precisa instalar nada.</p>
+    <div class="land-passo"><div class="land-num">1</div>
+      <div><b>O líder cria a aliança</b><span>Nome, sigla e estandarte. Quem cria entra como R5.</span></div></div>
+    <div class="land-passo"><div class="land-num">2</div>
+      <div><b>Manda o código no chat</b><span>Quem abrir o link escolhe o próprio nome e senha, e já entra.</span></div></div>
+    <div class="land-passo"><div class="land-num">3</div>
+      <div><b>Marca os horários</b><span>A agenda já vem com os eventos e os tutoriais prontos — falta só combinar a hora.</span></div></div>
+
+    <p class="land-rodape">
+      Feito por jogadores, para alianças de qualquer servidor.<br>
+      Não é um site oficial da Century Games.<br>
+      <a href="#" id="gateOficial" style="color:var(--teal-dk);font-weight:800;text-decoration:none">Tenho um código de oficial</a>
+    </p>
+  </div>
+</div>
+
 <header class="topbar">
   <button class="backbtn" id="backBtn" aria-label="Voltar">
     <svg viewBox="0 0 40 26"><path d="M14 2L2 13l12 11v-6h24V8H14V2z" fill="#6ECFCF" stroke="#2C7A7A" stroke-width="2.5" stroke-linejoin="round"/></svg>
@@ -896,19 +950,6 @@
 
 
 <!-- ============ GATE DE ACESSO ============ -->
-<div class="overlay on" id="gateOverlay">
-  <div class="modal" style="text-align:center">
-    <div style="font-size:2.6rem">🛡️</div>
-    <h2 style="margin-top:6px" id="gateTitulo">Portal das Alianças</h2>
-    <p class="sub" id="gateMsg">Verificando seu acesso…</p>
-    <div id="gateEscolha" style="display:none">
-      <button class="bigbtn green" id="gateNovaAlianca" style="margin-top:6px">🏰 Sou uma aliança</button>
-      <button class="bigbtn" id="gateSouMembro" style="margin-top:10px">⚔️ Sou um membro</button>
-    </div>
-    <button class="bigbtn" id="gateOficial" style="margin-top:10px">🔑 Sou oficial</button>
-    <p class="reglink" style="margin-top:14px"><a href="#" id="gateLogin">Já tenho conta — entrar com senha</a></p>
-  </div>
-</div>
 
 <!-- ============ CRIAR ALIANÇA ============ -->
 <div class="overlay" id="novaOverlay">
@@ -2324,7 +2365,45 @@
   body.fora .topbar,
   body.fora .shell,
   body.fora .bottomnav{display:none}
-  body.fora{background:var(--bg,#2A2018)}
+  body.fora{background:var(--bg-page)}
+
+  /* ---- página de entrada ----
+     Quem chega pelo link público não sabe o que é isto. Uma caixa de login
+     sozinha não conta nada: a pessoa precisa ver para que serve antes de
+     decidir criar aliança ou pedir o código a alguém. */
+  .land{display:none;min-height:100dvh;padding:0 0 28px}
+  body.fora .land{display:block}
+  .land-hero{background:linear-gradient(180deg,var(--bg-top),var(--bg-top-2));
+    padding:26px 18px 30px;text-align:center;border-bottom:4px solid var(--outline)}
+  .land-hero .bn{filter:drop-shadow(0 5px 10px rgba(0,0,0,.4))}
+  .land-hero h1{font-size:1.62rem;color:#F7EFDD;margin:12px 0 0;line-height:1.15}
+  .land-hero p{margin:8px auto 0;max-width:34ch;color:#E2D2B4;font-size:.92rem;font-weight:700;line-height:1.45}
+  .land-cta{max-width:420px;margin:18px auto 0;padding:0 4px}
+  .land-cta .bigbtn{margin-top:9px}
+  .land-entrar{display:block;text-align:center;margin-top:13px;font-size:.86rem;
+    color:var(--teal-lt);font-weight:800;text-decoration:none}
+  .land-wrap{max-width:460px;margin:0 auto;padding:0 16px}
+  .land-tt{font-size:1.06rem;color:var(--ink);margin:26px 0 2px;font-weight:800}
+  .land-sub{font-size:.84rem;color:var(--ink-soft);font-weight:700;margin:0 0 12px}
+  .land-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .land-card{background:var(--panel);border:3px solid var(--pill-dk);border-radius:14px;
+    padding:12px 11px;box-shadow:0 3px 0 var(--pill-dk)}
+  .land-card .ic{font-size:1.45rem;line-height:1}
+  .land-card h3{font-size:.92rem;margin:6px 0 3px;color:var(--ink)}
+  .land-card p{font-size:.78rem;color:var(--ink-soft);font-weight:700;margin:0;line-height:1.4}
+  .land-passo{display:flex;gap:11px;align-items:flex-start;background:var(--panel-3);
+    border:3px solid var(--pill-dk);border-radius:13px;padding:11px 12px;margin-top:9px}
+  .land-num{flex:none;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+    background:linear-gradient(180deg,var(--gold-lt),var(--gold));border:2px solid var(--gold-dk);
+    font-weight:900;color:var(--ink);font-size:.85rem}
+  .land-passo b{display:block;font-size:.88rem;color:var(--ink)}
+  .land-passo span{font-size:.78rem;color:var(--ink-soft);font-weight:700;line-height:1.4}
+  .land-rodape{text-align:center;font-size:.76rem;color:var(--ink-soft);font-weight:700;
+    margin-top:26px;line-height:1.5}
+  .land-aviso{max-width:460px;margin:14px auto 0;padding:11px 13px;border-radius:12px;
+    background:var(--panel-3);border:3px solid var(--red);color:var(--ink);
+    font-size:.83rem;font-weight:800;text-align:center}
+  @media(min-width:520px){ .land-hero h1{font-size:1.9rem} }
   /* a configuração da aliança tem quatro assuntos diferentes numa tela só;
      sem separar, vira uma pilha de campos em que ninguém acha nada */
   .cfgsec{border:2px solid var(--pill-dk);border-radius:12px;padding:10px 11px 12px;margin-top:12px}
@@ -2741,7 +2820,6 @@
   function abrirRegistro(tk){
     conviteToken = tk;
     regAvatarSel = "av1";
-    $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.add("on");
     // mostrar de qual aliança é o convite: o link pode ter passado por várias mãos
     var cx = $("#regAlianca"), a = conviteAlianca;
@@ -2792,7 +2870,6 @@
   }
 
   function abrirNovaAlianca(){
-    $("#gateOverlay").classList.remove("on");
     $("#novaOverlay").classList.add("on");
     montaSeletorBanner("nova", novaBn);
   }
@@ -3110,18 +3187,19 @@
     });
   }
 
-  /* ------- entrar / gate ------- */
+  /* ------- entrar / página de entrada ------- */
   function mostrarGate(msg){
     document.body.classList.add("fora");
-    var semRede = !!msg && /conexão/i.test(msg);
-    $("#gateMsg").textContent = msg || "Crie a sua aliança ou entre numa que já existe.";
+    var av = $("#landAviso");
+    if(msg){ av.textContent = msg; av.style.display = "block"; }
+    else av.style.display = "none";
     // sem servidor não adianta oferecer cadastro: os dois caminhos falhariam
-    $("#gateEscolha").style.display = semRede ? "none" : "block";
-    $("#gateOverlay").classList.add("on");
+    var semRede = !!msg && /conexão/i.test(msg);
+    $("#landNova").style.display = semRede ? "none" : "";
+    $("#landMembro").style.display = semRede ? "none" : "";
   }
   function entrar(){
     document.body.classList.remove("fora");   // agora se sabe de quem é a casca
-    $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.remove("on");
     try{ if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } }catch(e){}
     S.coins = ME.moedas || 0;
@@ -4772,7 +4850,6 @@
       if(d.tela === "entrar") return loginPrompt();
       if(d.tela === "criar")  return abrirNovaAlianca();
       if(d.tela === "codigo"){
-        $("#gateOverlay").classList.remove("on");
         $("#entrarOverlay").classList.add("on");
         var cx = $("#entrarCodigo");
         cx.value = d.valor;
@@ -5312,19 +5389,16 @@
       else loginErro("Nome ou senha incorretos.");
     }).catch(function(){ btn.disabled = false; loginErro("Erro de conexão."); });
   });
-  var _gl = $("#gateLogin"); if(_gl) _gl.addEventListener("click", loginPrompt);
+  var _gl = $("#landLogin"); if(_gl) _gl.addEventListener("click", function(e){ e.preventDefault(); loginPrompt(); });
   var _rl = $("#regLogin"); if(_rl) _rl.addEventListener("click", loginPrompt);
 
   /* ---- criar aliança / entrar com código ---- */
-  $("#gateNovaAlianca").addEventListener("click", abrirNovaAlianca);
-  $("#gateSouMembro").addEventListener("click", function(){
-    $("#gateOverlay").classList.remove("on");
+  $("#landNova").addEventListener("click", abrirNovaAlianca);
+  $("#landMembro").addEventListener("click", function(){
     $("#entrarOverlay").classList.add("on");
   });
-  function voltarAoGate(qual){
-    $(qual).classList.remove("on");
-    $("#gateOverlay").classList.add("on");
-  }
+  /* fechar o cadastro revela a página de entrada, que está sempre por baixo */
+  function voltarAoGate(qual){ $(qual).classList.remove("on"); }
   $("#novaVoltar").addEventListener("click", function(){ voltarAoGate("#novaOverlay"); });
   $("#entrarVoltar").addEventListener("click", function(){ voltarAoGate("#entrarOverlay"); });
   $("#novaCriar").addEventListener("click", criarAlianca);
