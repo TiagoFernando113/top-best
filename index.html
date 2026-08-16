@@ -814,7 +814,7 @@
       <details class="admbox" id="admAlianca">
         <summary><span class="ic">🏰</span>Minha aliança</summary>
         <div class="admbody">
-          <div class="cfgsec">
+          <div class="cfgsec" id="admBannerWrap" style="display:none">
             <div class="cfghd">🏳️ Estandarte</div>
             <div class="bnprev" id="admBanner"></div>
             <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
@@ -823,7 +823,7 @@
             <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
           </div>
 
-          <div class="cfgsec">
+          <div class="cfgsec" id="admIdentWrap" style="display:none">
             <div class="cfghd">📝 Identidade</div>
             <p class="rlab">Nome da aliança</p>
             <input class="reginput" id="admNome" type="text" maxlength="40" autocomplete="off" style="margin-top:0">
@@ -847,8 +847,10 @@
             <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
             <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
             <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
-            <button class="bigbtn red" id="admNovoCodigo" style="margin-top:10px">♻️ Gerar um código novo</button>
-            <p class="note" style="margin-top:6px">Use se o código cair em lugar errado. O antigo para de valer na hora, e quem já entrou continua dentro.</p>
+            <div id="admNovoCodigoWrap" style="display:none">
+              <button class="bigbtn red" id="admNovoCodigo" style="margin-top:10px">♻️ Gerar um código novo</button>
+              <p class="note" style="margin-top:6px">Use se o código cair em lugar errado. O antigo para de valer na hora, e quem já entrou continua dentro.</p>
+            </div>
             <div id="admCodOficialWrap" style="display:none">
               <p class="rlab" style="margin-top:14px">Código de oficial — só R4 e R5</p>
               <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
@@ -2668,6 +2670,10 @@
   }
 
   function ehOficial(m){ return !!(m && (m.is_oficial || m.cargo === "R4" || m.cargo === "R5")); }
+  /* Quem manda na aliança em si: o R5, e a conta de desenvolvedor. Esconder
+     aqui é só cortesia — quem chamar a função direto leva "sem_permissao",
+     porque o banco confere de novo. */
+  function ehLider(m){ return !!(m && (m.cargo === "R5" || m.super_admin)); }
   function virarOficial(codigo, nome){
     localStorage.setItem("top.ocode", String(codigo).trim());
     return admin("virar", {device_id:deviceId(), nome:nome}).then(function(res){
@@ -2838,7 +2844,14 @@
           $("#admCodOficial").textContent = r.codigo_oficial;
           $("#admCodOficialWrap").style.display = "block";
         }
-        $("#admLiderWrap").style.display = (ME.cargo === "R5") ? "block" : "none";
+        /* Mudar a cara, o nome ou o código da aliança é decisão de quem
+           lidera. Ver o código e convidar continuam com o R4, porque é ele
+           que recruta no dia a dia. */
+        var lider = ehLider(ME) ? "block" : "none";
+        $("#admBannerWrap").style.display     = lider;
+        $("#admIdentWrap").style.display      = lider;
+        $("#admNovoCodigoWrap").style.display = lider;
+        $("#admLiderWrap").style.display      = (ME.cargo === "R5") ? "block" : "none";
         return r;
       }).catch(function(){ return null; });
   }
