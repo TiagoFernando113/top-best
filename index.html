@@ -625,19 +625,22 @@
     <div class="panel">
       <div class="r0banner" id="r0banner"><svg class="icn"><use href="#i-hourglass"/></svg> Seu perfil ainda não foi inserido — você entrou como <b>novo jogador (R0)</b>. Um oficial vai revisar e completar seus dados.</div>
       <div class="ah">
-        <svg class="crest" viewBox="0 0 88 100" aria-label="Brasão [TOP]">
-          <path d="M6 8h76v52c0 22-18 32-38 40C24 92 6 82 6 60V8z" fill="#3E7EC4" stroke="#EAF2FB" stroke-width="4" stroke-linejoin="round"/>
-          <path d="M11 13h66v46c0 19-15 28-33 35C29 87 11 78 11 59V13z" fill="none" stroke="#2B5D96" stroke-width="2"/>
-          <g fill="#F7FBFF">
-            <path d="M56 30 Q42 26 34 37 Q28 45 30 55 L18 53 Q14 53 16 57 L30 61
-                     Q28 71 36 79 Q46 87 58 82 Q50 77 48 69 Q59 73 66 65
-                     Q57 65 53 59 Q66 59 70 47 Q66 51 58 49 Q68 43 68 33
-                     Q62 39 56 39 Z"/>
-          </g>
-          <circle cx="52" cy="44" r="3.2" fill="#3E7EC4"/>
-        </svg>
+        <!-- o estandarte é montado pela aliança; até carregar fica o brasão padrão -->
+        <div class="crest" id="aliancaBrasao">
+          <svg viewBox="0 0 88 100" aria-label="Brasão da aliança" style="width:100%;height:100%">
+            <path d="M6 8h76v52c0 22-18 32-38 40C24 92 6 82 6 60V8z" fill="#3E7EC4" stroke="#EAF2FB" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M11 13h66v46c0 19-15 28-33 35C29 87 11 78 11 59V13z" fill="none" stroke="#2B5D96" stroke-width="2"/>
+            <g fill="#F7FBFF">
+              <path d="M56 30 Q42 26 34 37 Q28 45 30 55 L18 53 Q14 53 16 57 L30 61
+                       Q28 71 36 79 Q46 87 58 82 Q50 77 48 69 Q59 73 66 65
+                       Q57 65 53 59 Q66 59 70 47 Q66 51 58 49 Q68 43 68 33
+                       Q62 39 56 39 Z"/>
+            </g>
+            <circle cx="52" cy="44" r="3.2" fill="#3E7EC4"/>
+          </svg>
+        </div>
         <div class="ah-right">
-          <div class="ah-name stroked">[TOP]Best</div>
+          <div class="ah-name stroked" id="aliancaNome">[TOP]Best</div>
           <div class="infobox">
             <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-crown"/></svg></span>Líder da Aliança:<span class="val">LOGAN<span class="sup">Top</span></span></div>
             <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-power"/></svg></span>Poder:<span class="val">1.526.376.571</span></div>
@@ -808,6 +811,33 @@
         </div>
       </details>
 
+      <details class="admbox" id="admAlianca">
+        <summary><span class="ic">🏰</span>Minha aliança</summary>
+        <div class="admbody">
+          <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
+          <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
+          <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
+          <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
+          <div id="admCodOficialWrap" style="display:none">
+            <p class="rlab" style="margin-top:12px">Código de oficial — só R4 e R5</p>
+            <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
+          </div>
+
+          <p class="rlab" style="margin-top:14px">Estandarte</p>
+          <div class="bnprev" id="admBanner"></div>
+          <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
+          <p class="rlab">Cor</p><div class="bntiras" id="admCores"></div>
+          <p class="rlab">Insígnia</p><div class="bntiras" id="admEmblemas"></div>
+          <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
+
+          <div id="admLiderWrap" style="display:none">
+            <p class="rlab" style="margin-top:16px">Liderança</p>
+            <p class="note" style="margin:0 0 8px">Você é o R5. Ninguém pode tirar você daqui — só você, passando o cargo a um R4.</p>
+            <button class="bigbtn" id="admPassarLideranca">👑 Passar a liderança</button>
+          </div>
+        </div>
+      </details>
+
       <details class="admbox">
         <summary><span class="ic">🎁</span>Itens da loja</summary>
         <div class="admbody">
@@ -842,10 +872,110 @@
 <div class="overlay on" id="gateOverlay">
   <div class="modal" style="text-align:center">
     <div style="font-size:2.6rem">🛡️</div>
-    <h2 style="margin-top:6px">Acesso restrito</h2>
+    <h2 style="margin-top:6px" id="gateTitulo">Portal das Alianças</h2>
     <p class="sub" id="gateMsg">Verificando seu acesso…</p>
-    <button class="bigbtn" id="gateOficial" style="margin-top:6px">🔑 Sou oficial</button>
+    <div id="gateEscolha" style="display:none">
+      <button class="bigbtn green" id="gateNovaAlianca" style="margin-top:6px">🏰 Sou uma aliança</button>
+      <button class="bigbtn" id="gateSouMembro" style="margin-top:10px">⚔️ Sou um membro</button>
+    </div>
+    <button class="bigbtn" id="gateOficial" style="margin-top:10px">🔑 Sou oficial</button>
     <p class="reglink" style="margin-top:14px"><a href="#" id="gateLogin">Já tenho conta — entrar com senha</a></p>
+  </div>
+</div>
+
+<!-- ============ CRIAR ALIANÇA ============ -->
+<div class="overlay" id="novaOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">🏰 Criar sua aliança</h2>
+    <p class="sub" style="text-align:center">Você entra como <b>R5</b>, o líder.</p>
+
+    <p class="rlab" style="margin-top:14px">Nome da aliança</p>
+    <input class="reginput" id="novaNome" type="text" placeholder="Ex.: Best" maxlength="40" autocomplete="off" style="margin-top:0">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">
+        <p class="rlab" style="margin-top:10px">Sigla</p>
+        <input class="reginput" id="novaTag" type="text" placeholder="TOP" maxlength="6" autocomplete="off" style="margin-top:0;text-transform:uppercase">
+      </div>
+      <div style="flex:1">
+        <p class="rlab" style="margin-top:10px">Servidor</p>
+        <input class="reginput" id="novaServidor" type="text" placeholder="Ex.: 1234" maxlength="10" autocomplete="off" style="margin-top:0">
+      </div>
+    </div>
+
+    <p class="rlab" style="margin-top:14px">Estandarte</p>
+    <div class="bnprev" id="novaBanner"></div>
+    <p class="rlab" style="margin-top:6px">Base</p>
+    <div class="bntiras" id="novaFormas"></div>
+    <p class="rlab">Cor</p>
+    <div class="bntiras" id="novaCores"></div>
+    <p class="rlab">Insígnia</p>
+    <div class="bntiras" id="novaEmblemas"></div>
+
+    <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
+    <input class="reginput" id="novaLider" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+    <input class="reginput" id="novaSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
+    <input class="reginput" id="novaSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
+
+    <p class="note" id="novaMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <button class="bigbtn green" id="novaCriar" style="margin-top:14px">🏰 Criar aliança</button>
+    <button class="bcancel" id="novaVoltar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Voltar</button>
+  </div>
+</div>
+
+<!-- ============ ALIANÇA CRIADA: OS DOIS CÓDIGOS ============ -->
+<div class="overlay" id="codigosOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">✅ Aliança criada</h2>
+    <div class="bnprev" id="codigosBanner"></div>
+    <p class="sub" style="text-align:center" id="codigosNome"></p>
+
+    <p class="rlab" style="margin-top:14px">Código de acesso — para os membros entrarem</p>
+    <div class="bncod"><b id="codAcesso">······</b><button data-cop="codAcesso">Copiar</button></div>
+
+    <p class="rlab" style="margin-top:14px">Código de oficial — só para R4 e R5</p>
+    <div class="bncod"><b id="codOficial">······</b><button data-cop="codOficial">Copiar</button></div>
+
+    <p class="note" style="margin-top:12px">Guarde os dois agora. O de oficial dá poder de administrar a aliança — não passe para quem não é da sua liderança.</p>
+    <button class="bigbtn green" id="codigosEntrar" style="margin-top:14px">Entrar na minha aliança</button>
+  </div>
+</div>
+
+<!-- ============ ENTRAR NUMA ALIANÇA ============ -->
+<div class="overlay" id="entrarOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">⚔️ Entrar numa aliança</h2>
+    <p class="sub" style="text-align:center">Peça o código de acesso a um oficial da sua aliança.</p>
+
+    <p class="rlab" style="margin-top:14px">Código de acesso</p>
+    <input class="reginput" id="entrarCodigo" type="text" placeholder="XXXXXX" maxlength="8" autocomplete="off"
+           style="margin-top:0;text-transform:uppercase;letter-spacing:.16em;text-align:center;font-size:1.15rem">
+    <div id="entrarAchou" style="display:none;margin-top:10px"></div>
+
+    <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
+    <input class="reginput" id="entrarNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+    <input class="reginput" id="entrarSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
+    <input class="reginput" id="entrarSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
+
+    <p class="note" id="entrarMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <button class="bigbtn green" id="entrarSend" style="margin-top:14px">⚔️ Entrar na aliança</button>
+    <button class="bcancel" id="entrarVoltar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Voltar</button>
+  </div>
+</div>
+
+<!-- ============ PASSAR LIDERANÇA (só R5) ============ -->
+<div class="overlay" id="liderOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">👑 Passar a liderança</h2>
+    <p class="sub" style="text-align:center">Só um R4 pode receber o R5. Você desce para R4 na mesma hora.</p>
+    <p class="rlab" style="margin-top:14px">Quem vira o novo líder</p>
+    <div id="liderLista"></div>
+    <p class="rlab" style="margin-top:14px">Sua senha, para confirmar</p>
+    <input class="reginput" id="liderSenha" type="password" placeholder="Sua senha" maxlength="60" autocomplete="current-password" style="margin-top:0">
+    <p class="note" id="liderMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <div class="mrow" style="margin-top:12px">
+      <button class="bcancel" id="liderCancel">Cancelar</button>
+      <button class="bsend" id="liderConfirmar">Passar o cargo</button>
+    </div>
   </div>
 </div>
 
@@ -853,7 +983,8 @@
 <div class="overlay" id="regOverlay">
   <div class="modal">
     <h2 id="regTitle">Criar seu acesso</h2>
-    <p class="sub">Bem-vindo à <b>[TOP] Best</b>! Escolha seu avatar e crie sua senha.</p>
+    <p class="sub" id="regSub">Escolha seu avatar e crie sua senha.</p>
+    <div id="regAlianca" style="display:none"></div>
     <input class="reginput" id="regNome" type="text" placeholder="Seu nome no jogo" maxlength="40" autocomplete="off">
     <input class="reginput" id="regSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60">
     <p class="rlab" style="margin-top:12px">Escolha seu avatar</p>
@@ -2108,6 +2239,31 @@
   .avopt{padding:2px}
   .avopt>svg,.avopt>img{width:100%;height:100%;border-radius:8px;object-fit:cover;display:block}
   .avsvg{width:100%;height:100%;display:block}
+
+  /* ---- estandarte ---- */
+  /* O jogo mostra o estandarte inteiro enquanto a pessoa escolhe as partes,
+     e é isso que faz a escolha ter graça. As tiras rolam de lado porque em
+     tela de celular seis opções em grade viram seis quadradinhos ilegíveis. */
+  .bnprev{display:grid;place-items:center;padding:10px 0 4px}
+  .bnprev .bn{filter:drop-shadow(0 4px 8px rgba(0,0,0,.28))}
+  .bntiras{display:flex;gap:7px;overflow-x:auto;padding:7px 2px 9px;scrollbar-width:none}
+  .bntiras::-webkit-scrollbar{display:none}
+  .bnopt{flex:none;width:56px;height:56px;border-radius:11px;border:3px solid var(--pill-dk);
+    background:var(--panel-3);display:grid;place-items:center;cursor:pointer;padding:3px;font-family:inherit}
+  .bnopt.sel{border-color:var(--green);background:linear-gradient(180deg,var(--gold-lt),var(--gold));
+    box-shadow:inset 0 0 0 2px var(--green)}
+  .bnopt svg,.bnopt img{display:block;max-width:100%;max-height:100%}
+  .bnopt img{width:34px;height:34px;object-fit:contain}
+  /* a insígnia é branca: sobre o azulejo claro ela sumiria sem este fundo */
+  .bnopt.emb{background:var(--pill-dk)}
+  .bnopt.emb.sel{background:linear-gradient(180deg,#6A8CB8,#41648F)}
+  .bncod{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;
+    border:3px solid var(--pill-dk);border-radius:11px;background:var(--panel-3);padding:10px 12px}
+  .bncod b{font-size:1.15rem;letter-spacing:.16em;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .bncod button{border:0;background:var(--teal-dk);color:#fff;font-family:inherit;font-weight:800;
+    border-radius:9px;padding:8px 11px;cursor:pointer;font-size:.8rem}
+  .bnchapa{display:flex;align-items:center;gap:10px}
+  .bnchapa .bn{flex:none}
   .pmember .av2{overflow:hidden;border:2px solid #2B5D96}
   .pmember .av2>*{width:100%;height:100%;border-radius:7px}
   .euav{width:26px;height:26px;border-radius:7px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:7px}
@@ -2337,20 +2493,10 @@
       return m && m.id ? m : null;
     });
   }
-  function garantirMembro(existing, autorizar, extra){
-    if(existing){
-      var patch = {};
-      if(autorizar && !existing.autorizado) patch.autorizado = true;
-      if(extra) for(var k in extra) patch[k] = extra[k];
-      if(!Object.keys(patch).length) return Promise.resolve(existing);
-      return sbPatch("top_membros?id=eq."+existing.id+"&select="+COLS_MEMBRO, patch).then(function(x){ return x[0]; });
-    }
-    var nome = (extra && extra.nome ? String(extra.nome).trim() : "") || (localStorage.getItem("top.nome")||"").trim() || "Governador";
-    localStorage.setItem("top.nome", nome);
-    var body = {device_id:deviceId(), nome:nome, autorizado:!!autorizar};
-    if(extra) for(var j in extra) body[j] = extra[j];
-    return sbPost("top_membros?select="+COLS_MEMBRO, body).then(function(x){ return x[0]; });
-  }
+  /* garantirMembro() foi removida: ninguém a chamava, e ela criava membro sem
+     dizer a aliança — exatamente o caminho que caía no padrão da tabela e
+     colocava um desconhecido dentro da [TOP] Best. Entrar agora é sempre por
+     um destes: criar aliança, código de acesso ou convite. */
 
   /* ------- avatares ------- */
   /* Avatares em arquivos soltos, não colados aqui dentro.
@@ -2433,8 +2579,15 @@
 
   /* ------- convite / registro / login ------- */
   var conviteToken = null;
+  var conviteAlianca = null;
+  /* O convite era uma lista aberta: dava pra pedir todos os tokens não usados
+     e entrar com um deles. Agora o site só pergunta por um token que já tem
+     na mão, e a resposta é o cartão da aliança — nunca a lista. */
   function validarConvite(tk){
-    return sbGet("top_convites?token=eq."+enc(tk)+"&usado=eq.false&select=token").then(function(r){ return !!(r&&r.length); });
+    return sbRpc("convite_alianca", {p_token: tk}).then(function(a){
+      conviteAlianca = (a && a.tag) ? a : null;
+      return !!conviteAlianca;
+    });
   }
   function hashSenha(nome, senha){
     var txt = "topbest::" + (nome||"").toLowerCase().trim() + "::" + senha;
@@ -2450,19 +2603,25 @@
       {method:"POST", headers:sbHead({"Content-Type":file.type||"image/jpeg","x-upsert":"true"}), body:file})
       .then(function(r){ if(!r.ok) throw new Error("upload"); return SB_URL+"/storage/v1/object/public/"+bucket+"/"+path; });
   }
-  function vincularConvite(){
-    if(!conviteToken) return Promise.resolve();
-    return sbPatch("top_convites?token=eq."+enc(conviteToken), {membro_id:ME.id}).catch(function(){});
-  }
+  /* Queimar o convite e criar o membro viraram um passo só. Como dois passos
+     do navegador, o convite podia ser gasto e o cadastro falhar logo depois,
+     deixando a pessoa de fora com o convite já perdido. E o membro nascia sem
+     aliança dita, caindo no padrão — que era sempre a [TOP] Best. */
   function registrar(nome, senha, avatar){
-    // queima o convite de forma atômica (só o 1º clique ganha)
-    return sbPatch("top_convites?token=eq."+enc(conviteToken)+"&usado=eq.false",
-        {usado:true, usado_em:new Date().toISOString()}).then(function(rows){
-      if(!Array.isArray(rows) || !rows.length) return {ok:false, msg:"Este convite já foi usado. Peça outro a um oficial."};
-      return hashSenha(nome, senha).then(function(hash){
-        // novo membro entra como R0 pendente (defaults do servidor); só colunas seguras
-        return sbPost("top_membros?select="+COLS_MEMBRO, {device_id:deviceId(), nome:nome, senha_hash:hash, avatar:avatar})
-          .then(function(x){ if(!Array.isArray(x)||!x.length) throw {reg:true}; ME = x[0]; return vincularConvite().then(function(){ return {ok:true, novo:true}; }); });
+    return hashSenha(nome, senha).then(function(hash){
+      return sbRpc("convite_usar", {p_token:conviteToken, p_device:deviceId(),
+                                    p_nome:nome, p_senha:hash, p_avatar:avatar});
+    }).then(function(r){
+      if(!r || r.erro){
+        var m = { convite:"Este convite já foi usado. Peça outro a um oficial.",
+                  nome_usado:"Já existe alguém com esse nome nessa aliança.",
+                  nome:"Escreva seu nome no jogo.",
+                  senha:"Crie uma senha." }[r && r.erro] || "Não deu para entrar.";
+        return {ok:false, msg:m};
+      }
+      return getMembro().then(function(m){
+        if(!m) return {ok:false, msg:"Entrou, mas não carreguei seu perfil. Recarregue a página."};
+        ME = m; return {ok:true, novo:true};
       });
     });
   }
@@ -2505,12 +2664,243 @@
     regAvatarSel = "av1";
     $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.add("on");
+    // mostrar de qual aliança é o convite: o link pode ter passado por várias mãos
+    var cx = $("#regAlianca"), a = conviteAlianca;
+    if(a && a.tag){
+      cx.className = "bnchapa";
+      cx.style.display = "flex";
+      cx.innerHTML = bannerSVG(bnDaAlianca(a), 44)
+        + '<div><b>'+esc(a.tag)+' '+esc(a.nome)+'</b>'
+        + (a.servidor ? '<div class="note" style="margin:2px 0 0">Servidor '+esc(a.servidor)+'</div>' : '')
+        + '</div>';
+    } else { cx.style.display = "none"; }
     renderAvatarGrid("#regAvatares", "av1", function(id){ regAvatarSel = id; });
+  }
+
+  /* ------- criar aliança / entrar com código ------- */
+  var novaBn = { forma:"escudo", cor:"azul", emblema:"torre" };
+
+  /* Uma tira por parte do estandarte. O botão de cada opção mostra a própria
+     opção, não o nome dela: ninguém sabe o que é "cauda" antes de ver.
+     O mesmo seletor serve na criação da aliança e no painel do oficial, então
+     ele recebe onde desenhar e em qual estado mexer. */
+  function montaSeletorBanner(pre, bn){
+    function tira(alvo, lista, chave, desenha){
+      var el = $(alvo); if(!el) return;
+      el.innerHTML = "";
+      lista.forEach(function(v){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "bnopt" + (chave === "emblema" ? " emb" : "") + (bn[chave] === v ? " sel" : "");
+        b.innerHTML = desenha(v);
+        b.addEventListener("click", function(){
+          bn[chave] = v;
+          montaSeletorBanner(pre, bn);
+        });
+        el.appendChild(b);
+      });
+    }
+    tira("#"+pre+"Formas", BN_FORMAS, "forma", function(f){
+      return '<svg viewBox="0 0 100 124" width="34"><use href="#bnf-'+f+'" width="100" height="124" fill="'+BN_CORES[bn.cor][0]+'"/></svg>';
+    });
+    tira("#"+pre+"Cores", BN_CORES_ORD, "cor", function(c){
+      return '<svg viewBox="0 0 100 124" width="34"><use href="#bnf-'+bn.forma+'" width="100" height="124" fill="'+BN_CORES[c][0]+'"/></svg>';
+    });
+    tira("#"+pre+"Emblemas", BN_EMB, "emblema", function(e){
+      return '<img src="emblemas/'+e+'.png" alt="" loading="lazy" decoding="async">';
+    });
+    var pv = $("#"+pre+"Banner"); if(pv) pv.innerHTML = bannerSVG(bn, 104);
+  }
+
+  function abrirNovaAlianca(){
+    $("#gateOverlay").classList.remove("on");
+    $("#novaOverlay").classList.add("on");
+    montaSeletorBanner("nova", novaBn);
+  }
+  function erroCaixa(alvo, txt){
+    var el = $(alvo);
+    if(!txt){ el.style.display = "none"; return; }
+    el.textContent = txt; el.style.display = "block";
+  }
+  function criarAlianca(){
+    var nome = $("#novaNome").value.trim(), tag = $("#novaTag").value.trim().toUpperCase();
+    var srv  = $("#novaServidor").value.trim(), lider = $("#novaLider").value.trim();
+    var s1 = $("#novaSenha").value, s2 = $("#novaSenha2").value;
+    if(!nome || !tag)      return erroCaixa("#novaMsg", "Preencha o nome e a sigla da aliança.");
+    if(!lider)             return erroCaixa("#novaMsg", "Escreva seu nome no jogo.");
+    if(s1.length < 4)      return erroCaixa("#novaMsg", "A senha precisa de pelo menos 4 letras.");
+    if(s1 !== s2)          return erroCaixa("#novaMsg", "As duas senhas não são iguais.");
+    erroCaixa("#novaMsg", "");
+    var bt = $("#novaCriar"); bt.disabled = true;
+    return hashSenha(lider, s1).then(function(hash){
+      return sbRpc("alianca_criar", {p_tag:tag, p_nome:nome, p_servidor:srv,
+                                     p_device:deviceId(), p_lider:lider, p_senha:hash,
+                                     p_forma:novaBn.forma, p_cor:novaBn.cor, p_emblema:novaBn.emblema});
+    }).then(function(r){
+      if(!r || r.erro){
+        bt.disabled = false;
+        return erroCaixa("#novaMsg", r && r.erro === "existe"
+          ? "Já existe uma aliança com essa sigla nesse servidor."
+          : "Não deu para criar a aliança. Confira os dados e tente de novo.");
+      }
+      mostrarCodigos(r, nome, tag);
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#novaMsg", "Sem conexão com o servidor. Tente de novo.");
+    });
+  }
+  function mostrarCodigos(r, nome, tag){
+    $("#novaOverlay").classList.remove("on");
+    $("#codigosOverlay").classList.add("on");
+    $("#codigosBanner").innerHTML = bannerSVG(novaBn, 96);
+    $("#codigosNome").innerHTML = "<b>["+esc(tag)+"] "+esc(nome)+"</b>";
+    $("#codAcesso").textContent  = r.codigo_acesso || "······";
+    $("#codOficial").textContent = r.codigo_oficial || "······";
+    if(r.codigo_oficial) localStorage.setItem("top.ocode", r.codigo_oficial);
+    getMembro().then(function(m){ if(m) ME = m; });
+  }
+
+  function entrarComCodigo(){
+    var cod = $("#entrarCodigo").value.trim().toUpperCase();
+    var nome = $("#entrarNome").value.trim();
+    var s1 = $("#entrarSenha").value, s2 = $("#entrarSenha2").value;
+    if(cod.length < 4)  return erroCaixa("#entrarMsg", "Escreva o código de acesso da aliança.");
+    if(!nome)           return erroCaixa("#entrarMsg", "Escreva seu nome no jogo.");
+    if(s1.length < 4)   return erroCaixa("#entrarMsg", "A senha precisa de pelo menos 4 letras.");
+    if(s1 !== s2)       return erroCaixa("#entrarMsg", "As duas senhas não são iguais.");
+    erroCaixa("#entrarMsg", "");
+    var bt = $("#entrarSend"); bt.disabled = true;
+    return hashSenha(nome, s1).then(function(hash){
+      return sbRpc("membro_entrar", {p_codigo:cod, p_device:deviceId(), p_nome:nome, p_senha:hash});
+    }).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro){
+        var m = { codigo:"Código não encontrado. Confira com um oficial.",
+                  nome_usado:"Já existe alguém com esse nome nessa aliança.",
+                  nome:"Escreva seu nome no jogo.",
+                  senha:"Crie uma senha." }[r && r.erro] || "Não deu para entrar. Tente de novo.";
+        return erroCaixa("#entrarMsg", m);
+      }
+      return getMembro().then(function(mm){
+        if(!mm) return erroCaixa("#entrarMsg", "Entrou, mas não consegui carregar seu perfil. Recarregue a página.");
+        ME = mm;
+        $("#entrarOverlay").classList.remove("on");
+        entrar();
+      });
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#entrarMsg", "Sem conexão com o servidor. Tente de novo.");
+    });
+  }
+
+  /* ------- área "Minha aliança" no painel ------- */
+  var admBn = { forma:"escudo", cor:"azul", emblema:"torre" };
+  var MINHA_ALIANCA = null;
+
+  function carregaMinhaAlianca(){
+    if(!ME || !ehOficial(ME)) return Promise.resolve(null);
+    return sbRpc("alianca_codigos", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        if(!r || r.erro) return null;
+        MINHA_ALIANCA = r;
+        $("#admCodAcesso").textContent = r.codigo_acesso || "······";
+        if(r.codigo_oficial){
+          $("#admCodOficial").textContent = r.codigo_oficial;
+          $("#admCodOficialWrap").style.display = "block";
+        }
+        $("#admLiderWrap").style.display = (ME.cargo === "R5") ? "block" : "none";
+        return r;
+      }).catch(function(){ return null; });
+  }
+  function carregaEstandarte(){
+    if(!ME || !ME.alianca_id) return Promise.resolve(null);
+    return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
+      .then(function(r){
+        var a = (r||[])[0]; if(!a) return null;
+        admBn = bnDaAlianca(a);
+        pintaEstandarteNoTopo(a);
+        if($("#admFormas")) montaSeletorBanner("adm", admBn);
+        return a;
+      }).catch(function(){ return null; });
+  }
+  /* O estandarte fica onde o jogo põe: junto do nome da aliança. */
+  function pintaEstandarteNoTopo(a){
+    var alvo = $("#aliancaBrasao");
+    if(alvo) alvo.innerHTML = bannerSVG(bnDaAlianca(a), 76);
+    var nm = $("#aliancaNome");
+    // a sigla da [TOP] já foi gravada com colchetes; não dá pra pôr outro par
+    if(nm && a.tag) nm.textContent = (/^\[.*\]$/.test(a.tag) ? a.tag : "["+a.tag+"]") + (a.nome || "");
+  }
+  function salvarEstandarte(){
+    var bt = $("#admBannerSalvar"); bt.disabled = true;
+    return sbRpc("alianca_banner", {p_membro:ME.id, p_senha:null, p_device:deviceId(),
+        p_forma:admBn.forma, p_cor:admBn.cor, p_emblema:admBn.emblema})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || r.erro){ toast("❌ Não deu para salvar o estandarte."); return; }
+        toast("🏰 Estandarte salvo!");
+        return carregaEstandarte();
+      }).catch(function(){ bt.disabled = false; toast("❌ Sem conexão."); });
+  }
+
+  /* ------- passar liderança ------- */
+  var liderEscolhido = null;
+  function abrirPassarLideranca(){
+    liderEscolhido = null;
+    erroCaixa("#liderMsg", "");
+    $("#liderSenha").value = "";
+    $("#liderLista").innerHTML = '<p class="note">Carregando…</p>';
+    $("#liderOverlay").classList.add("on");
+    var soDaMinha = ME.alianca_id ? "&alianca_id=eq."+enc(ME.alianca_id) : "";
+    sbGet("top_membros?cargo=eq.R4"+soDaMinha+"&select=id,nome&order=nome").then(function(rows){
+      if(!rows || !rows.length){
+        $("#liderLista").innerHTML = '<p class="note">Nenhum R4 na aliança. Promova alguém a R4 antes de passar o cargo.</p>';
+        return;
+      }
+      $("#liderLista").innerHTML = rows.map(function(m){
+        return '<button type="button" class="bigbtn liderop" data-id="'+m.id+'" style="margin-top:8px">'+esc(m.nome)+'</button>';
+      }).join("");
+      Array.prototype.forEach.call($("#liderLista").querySelectorAll(".liderop"), function(b){
+        b.addEventListener("click", function(){
+          liderEscolhido = b.getAttribute("data-id");
+          Array.prototype.forEach.call($("#liderLista").querySelectorAll(".liderop"), function(o){ o.classList.remove("green"); });
+          b.classList.add("green");
+        });
+      });
+    }).catch(function(){ $("#liderLista").innerHTML = '<p class="note">Erro ao carregar a lista.</p>'; });
+  }
+  function confirmarPassarLideranca(){
+    if(!liderEscolhido) return erroCaixa("#liderMsg", "Escolha quem recebe o cargo.");
+    var senha = $("#liderSenha").value;
+    if(!senha) return erroCaixa("#liderMsg", "Digite sua senha para confirmar.");
+    erroCaixa("#liderMsg", "");
+    var bt = $("#liderConfirmar"); bt.disabled = true;
+    return hashSenha(ME.nome, senha).then(function(hash){
+      return sbRpc("passar_lideranca", {p_atual:ME.id, p_senha:hash, p_novo:liderEscolhido});
+    }).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro){
+        var m = { nao_e_r5:"Senha errada, ou você não é mais o R5.",
+                  alvo_nao_e_r4:"Só um R4 pode receber a liderança.",
+                  alvo_fora_da_alianca:"Esse jogador não é da sua aliança." }[r && r.erro]
+                || "Não deu para passar o cargo.";
+        return erroCaixa("#liderMsg", m);
+      }
+      $("#liderOverlay").classList.remove("on");
+      toast("👑 Liderança passada. Você agora é R4.");
+      return getMembro().then(function(mm){ if(mm){ ME = mm; } paintMembros(); });
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#liderMsg", "Sem conexão com o servidor.");
+    });
   }
 
   /* ------- entrar / gate ------- */
   function mostrarGate(msg){
-    $("#gateMsg").textContent = msg || "Este portal é só para membros da aliança [TOP] Best. Peça seu link de convite a um oficial.";
+    var semRede = !!msg && /conexão/i.test(msg);
+    $("#gateMsg").textContent = msg || "Crie a sua aliança ou entre numa que já existe.";
+    // sem servidor não adianta oferecer cadastro: os dois caminhos falhariam
+    $("#gateEscolha").style.display = semRede ? "none" : "block";
     $("#gateOverlay").classList.add("on");
   }
   function entrar(){
@@ -2533,6 +2923,8 @@
     heartbeat();
     paintMembros();
     paintEventos();
+    carregaEstandarte();
+    carregaMinhaAlianca();
     iniciarRealtime();
   }
 
@@ -4035,11 +4427,15 @@
   }
 
   /* ------- admin ------- */
+  /* O token vem do servidor, junto com a aliança de quem gerou. Antes o
+     navegador escolhia o token e a aliança ficava no padrão da tabela — o
+     convite de qualquer aliança levava para dentro da [TOP] Best. */
   function gerarConvite(){
-    var tk = "c"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-    return sbPost("top_convites", {token:tk, criado_por: ME.id}).then(function(){
-      return location.origin + location.pathname + "#c=" + tk;
-    });
+    return sbRpc("convite_criar", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        if(!r || !r.token) throw new Error(r && r.erro || "convite");
+        return location.origin + location.pathname + "#c=" + r.token;
+      });
   }
   function parsePoder(txt){
     if(!txt) return 0;
@@ -4117,6 +4513,19 @@
     }).catch(function(){ toast("❌ Erro ao salvar."); });
   }
 
+  /* O endereço do site é público, então ele precisa levar a pessoa direto ao
+     lugar certo. Além do convite (#c=token), que continua valendo, dá pra
+     mandar #entrar para quem já tem conta, #criar para uma aliança nova e
+     #codigo=XXXXXX com o código já preenchido — assim o oficial manda um link
+     em vez de explicar onde clicar. */
+  function destinoDaUrl(){
+    var h = location.hash || "";
+    var cod = h.match(/[#&]codigo=([A-Za-z0-9]+)/);
+    if(cod) return {tela:"codigo", valor:cod[1].toUpperCase()};
+    if(/[#&]entrar\b/.test(h)) return {tela:"entrar"};
+    if(/[#&]criar\b/.test(h))  return {tela:"criar"};
+    return null;
+  }
   function iniciarNuvem(){
     getMembro().then(function(m){
       if(m && m.tem_senha){ ME = m; entrar(); return; }    // aparelho já registrado
@@ -4128,6 +4537,17 @@
         });
       }
       mostrarGate();
+      var d = destinoDaUrl();
+      if(!d) return;
+      if(d.tela === "entrar") return loginPrompt();
+      if(d.tela === "criar")  return abrirNovaAlianca();
+      if(d.tela === "codigo"){
+        $("#gateOverlay").classList.remove("on");
+        $("#entrarOverlay").classList.add("on");
+        var cx = $("#entrarCodigo");
+        cx.value = d.valor;
+        cx.dispatchEvent(new Event("input"));
+      }
     }).catch(function(){
       mostrarGate("Sem conexão com o servidor. Verifique a internet e recarregue.");
     });
@@ -4659,6 +5079,65 @@
   });
   var _gl = $("#gateLogin"); if(_gl) _gl.addEventListener("click", loginPrompt);
   var _rl = $("#regLogin"); if(_rl) _rl.addEventListener("click", loginPrompt);
+
+  /* ---- criar aliança / entrar com código ---- */
+  $("#gateNovaAlianca").addEventListener("click", abrirNovaAlianca);
+  $("#gateSouMembro").addEventListener("click", function(){
+    $("#gateOverlay").classList.remove("on");
+    $("#entrarOverlay").classList.add("on");
+  });
+  function voltarAoGate(qual){
+    $(qual).classList.remove("on");
+    $("#gateOverlay").classList.add("on");
+  }
+  $("#novaVoltar").addEventListener("click", function(){ voltarAoGate("#novaOverlay"); });
+  $("#entrarVoltar").addEventListener("click", function(){ voltarAoGate("#entrarOverlay"); });
+  $("#novaCriar").addEventListener("click", criarAlianca);
+  $("#entrarSend").addEventListener("click", entrarComCodigo);
+  $("#codigosEntrar").addEventListener("click", function(){
+    $("#codigosOverlay").classList.remove("on");
+    if(ME && ME.id) entrar(); else location.reload();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-cop]"), function(b){
+    b.addEventListener("click", function(){
+      var txt = $("#"+b.getAttribute("data-cop")).textContent;
+      var ok = function(){ b.textContent = "Copiado!"; setTimeout(function(){ b.textContent = "Copiar"; }, 1600); };
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function(){});
+      else ok();
+    });
+  });
+  /* Mostrar a aliança antes de confirmar evita o cadastro no lugar errado:
+     digitou o código, viu o estandarte e o nome, aí decide. */
+  var _codBusca = null;
+  $("#entrarCodigo").addEventListener("input", function(){
+    var cod = $("#entrarCodigo").value.trim().toUpperCase();
+    var cx = $("#entrarAchou");
+    clearTimeout(_codBusca);
+    if(cod.length < 4){ cx.style.display = "none"; return; }
+    _codBusca = setTimeout(function(){
+      sbRpc("alianca_por_codigo", {p_codigo:cod}).then(function(a){
+        if(!a || !a.tag){ cx.style.display = "none"; return; }
+        cx.className = "bnchapa";
+        cx.style.display = "flex";   // o inline vence a classe, então tem que ser flex aqui
+        cx.innerHTML = bannerSVG(bnDaAlianca(a), 44)
+          + '<div><b>['+esc(a.tag)+'] '+esc(a.nome)+'</b>'
+          + (a.servidor ? '<div class="note" style="margin:2px 0 0">Servidor '+esc(a.servidor)+'</div>' : '')
+          + '</div>';
+      }).catch(function(){ cx.style.display = "none"; });
+    }, 350);
+  });
+  $("#liderCancel").addEventListener("click", function(){ $("#liderOverlay").classList.remove("on"); });
+  $("#liderConfirmar").addEventListener("click", confirmarPassarLideranca);
+  $("#admBannerSalvar").addEventListener("click", salvarEstandarte);
+  $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
+  $("#admLinkEntrar").addEventListener("click", function(){
+    var cod = $("#admCodAcesso").textContent.trim();
+    if(!cod || cod.charAt(0) === "·") return toast("Código ainda carregando.");
+    var url = location.origin + location.pathname + "#codigo=" + cod;
+    var pronto = function(){ toast("🔗 Link copiado!"); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(pronto, function(){ prompt("Copie o link:", url); });
+    else prompt("Copie o link:", url);
+  });
 
   var _er = $("#eurow"); if(_er) _er.addEventListener("click", function(e){ if(e.target.closest("#oficialBtn")) return; abrirPerfil(); });
   var _pb = $("#profileBtn"); if(_pb) _pb.addEventListener("click", abrirPerfil);
