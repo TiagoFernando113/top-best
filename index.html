@@ -13,7 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
-<body>
+<body class="fora">
 <style>
   :root{
     --bg-page:#C2A67F;
@@ -814,26 +814,53 @@
       <details class="admbox" id="admAlianca">
         <summary><span class="ic">🏰</span>Minha aliança</summary>
         <div class="admbody">
-          <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
-          <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
-          <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
-          <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
-          <div id="admCodOficialWrap" style="display:none">
-            <p class="rlab" style="margin-top:12px">Código de oficial — só R4 e R5</p>
-            <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
+          <div class="cfgsec" id="admBannerWrap" style="display:none">
+            <div class="cfghd">🏳️ Estandarte</div>
+            <div class="bnprev" id="admBanner"></div>
+            <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
+            <p class="rlab">Cor</p><div class="bntiras" id="admCores"></div>
+            <p class="rlab">Insígnia</p><div class="bntiras" id="admEmblemas"></div>
+            <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
           </div>
 
-          <p class="rlab" style="margin-top:14px">Estandarte</p>
-          <div class="bnprev" id="admBanner"></div>
-          <p class="rlab">Base</p><div class="bntiras" id="admFormas"></div>
-          <p class="rlab">Cor</p><div class="bntiras" id="admCores"></div>
-          <p class="rlab">Insígnia</p><div class="bntiras" id="admEmblemas"></div>
-          <button class="bigbtn green" id="admBannerSalvar" style="margin-top:8px">Salvar estandarte</button>
+          <div class="cfgsec" id="admIdentWrap" style="display:none">
+            <div class="cfghd">📝 Identidade</div>
+            <p class="rlab">Nome da aliança</p>
+            <input class="reginput" id="admNome" type="text" maxlength="40" autocomplete="off" style="margin-top:0">
+            <div style="display:flex;gap:8px">
+              <div style="flex:1">
+                <p class="rlab" style="margin-top:10px">Sigla</p>
+                <input class="reginput" id="admTag" type="text" maxlength="8" autocomplete="off" style="margin-top:0">
+              </div>
+              <div style="flex:1">
+                <p class="rlab" style="margin-top:10px">Servidor</p>
+                <input class="reginput" id="admServidor" type="text" maxlength="10" autocomplete="off" style="margin-top:0">
+              </div>
+            </div>
+            <p class="note" id="admIdentMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+            <button class="bigbtn green" id="admIdentSalvar" style="margin-top:10px">Salvar identidade</button>
+          </div>
 
-          <div id="admLiderWrap" style="display:none">
-            <p class="rlab" style="margin-top:16px">Liderança</p>
+          <div class="cfgsec">
+            <div class="cfghd">🔑 Entrada de novos membros</div>
+            <p class="rlab">Código de acesso — quem tiver ele entra na aliança</p>
+            <div class="bncod"><b id="admCodAcesso">······</b><button data-cop="admCodAcesso">Copiar</button></div>
+            <button class="bigbtn" id="admLinkEntrar" style="margin-top:8px">🔗 Copiar link de entrada</button>
+            <p class="note" style="margin-top:6px">O link já abre com o código preenchido. Pode mandar no chat da aliança — quem abrir escolhe o nome e a senha dele.</p>
+            <div id="admNovoCodigoWrap" style="display:none">
+              <button class="bigbtn red" id="admNovoCodigo" style="margin-top:10px">♻️ Gerar um código novo</button>
+              <p class="note" style="margin-top:6px">Use se o código cair em lugar errado. O antigo para de valer na hora, e quem já entrou continua dentro.</p>
+            </div>
+            <div id="admCodOficialWrap" style="display:none">
+              <p class="rlab" style="margin-top:14px">Código de oficial — só R4 e R5</p>
+              <div class="bncod"><b id="admCodOficial">······</b><button data-cop="admCodOficial">Copiar</button></div>
+            </div>
+          </div>
+
+          <div class="cfgsec" id="admLiderWrap" style="display:none">
+            <div class="cfghd">👑 Liderança</div>
             <p class="note" style="margin:0 0 8px">Você é o R5. Ninguém pode tirar você daqui — só você, passando o cargo a um R4.</p>
-            <button class="bigbtn" id="admPassarLideranca">👑 Passar a liderança</button>
+            <button class="bigbtn" id="admPassarLideranca">Passar a liderança</button>
           </div>
         </div>
       </details>
@@ -979,6 +1006,24 @@
   </div>
 </div>
 
+<!-- ============ SAIR DA ALIANÇA ============ -->
+<div class="overlay" id="sairOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">🚪 Sair da aliança</h2>
+    <div class="bnprev" id="sairBanner"></div>
+    <p class="sub" style="text-align:center" id="sairNome"></p>
+    <p class="note" style="margin-top:12px">Depois de sair você pode entrar em outra aliança com o código dela, ou voltar para esta se um oficial te passar o código de novo.</p>
+    <p class="note" style="margin-top:8px">Seus pontos e o histórico ficam com a aliança — quem entra em uma nova começa do zero, como no jogo.</p>
+    <p class="rlab" style="margin-top:14px">Sua senha, para confirmar</p>
+    <input class="reginput" id="sairSenha" type="password" placeholder="Sua senha" maxlength="60" autocomplete="current-password" style="margin-top:0">
+    <p class="note" id="sairMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <div class="mrow" style="margin-top:12px">
+      <button class="bcancel" id="sairCancel">Ficar</button>
+      <button class="bsend" id="sairConfirmar" style="background:var(--red)">Sair da aliança</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ REGISTRO ============ -->
 <div class="overlay" id="regOverlay">
   <div class="modal">
@@ -1010,6 +1055,7 @@
     <input class="reginput" id="perfilSenha" type="password" placeholder="Nova senha — deixe vazio pra manter" style="margin-top:0" autocomplete="new-password">
     <button class="bigbtn" id="notifBtn" style="margin-top:12px">🔔 Ativar notificações</button>
     <button class="bigbtn" id="instalarBtn" style="display:none;margin-top:10px">📲 Instalar como app</button>
+    <button class="bigbtn red" id="sairAliancaBtn" style="margin-top:10px">🚪 Sair da aliança</button>
     <div class="mrow">
       <button class="bcancel" id="perfilFechar">Fechar</button>
       <button class="bsend" id="perfilSalvar">Salvar</button>
@@ -2264,6 +2310,19 @@
     border-radius:9px;padding:8px 11px;cursor:pointer;font-size:.8rem}
   .bnchapa{display:flex;align-items:center;gap:10px}
   .bnchapa .bn{flex:none}
+  /* Antes de entrar, o site inteiro ficava montado atrás do login — com o
+     nome, o poder e o aviso fixado de UMA aliança. Quem chegasse pelo link
+     público via a [TOP] Best por trás do próprio cadastro. A casca só aparece
+     depois que se sabe de quem ela é. */
+  body.fora .topbar,
+  body.fora .shell,
+  body.fora .bottomnav{display:none}
+  body.fora{background:var(--bg,#2A2018)}
+  /* a configuração da aliança tem quatro assuntos diferentes numa tela só;
+     sem separar, vira uma pilha de campos em que ninguém acha nada */
+  .cfgsec{border:2px solid var(--pill-dk);border-radius:12px;padding:10px 11px 12px;margin-top:12px}
+  .cfgsec:first-child{margin-top:2px}
+  .cfghd{font-weight:800;font-size:.9rem;color:var(--ink);margin-bottom:8px}
   .pmember .av2{overflow:hidden;border:2px solid #2B5D96}
   .pmember .av2>*{width:100%;height:100%;border-radius:7px}
   .euav{width:26px;height:26px;border-radius:7px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:7px}
@@ -2638,6 +2697,10 @@
   }
 
   function ehOficial(m){ return !!(m && (m.is_oficial || m.cargo === "R4" || m.cargo === "R5")); }
+  /* Quem manda na aliança em si: o R5, e a conta de desenvolvedor. Esconder
+     aqui é só cortesia — quem chamar a função direto leva "sem_permissao",
+     porque o banco confere de novo. */
+  function ehLider(m){ return !!(m && (m.cargo === "R5" || m.super_admin)); }
   function virarOficial(codigo, nome){
     localStorage.setItem("top.ocode", String(codigo).trim());
     return admin("virar", {device_id:deviceId(), nome:nome}).then(function(res){
@@ -2808,20 +2871,61 @@
           $("#admCodOficial").textContent = r.codigo_oficial;
           $("#admCodOficialWrap").style.display = "block";
         }
-        $("#admLiderWrap").style.display = (ME.cargo === "R5") ? "block" : "none";
+        /* Mudar a cara, o nome ou o código da aliança é decisão de quem
+           lidera. Ver o código e convidar continuam com o R4, porque é ele
+           que recruta no dia a dia. */
+        var lider = ehLider(ME) ? "block" : "none";
+        $("#admBannerWrap").style.display     = lider;
+        $("#admIdentWrap").style.display      = lider;
+        $("#admNovoCodigoWrap").style.display = lider;
+        $("#admLiderWrap").style.display      = (ME.cargo === "R5") ? "block" : "none";
         return r;
       }).catch(function(){ return null; });
   }
   function carregaEstandarte(){
     if(!ME || !ME.alianca_id) return Promise.resolve(null);
-    return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
+    return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,servidor,banner_forma,banner_cor,banner_emblema")
       .then(function(r){
         var a = (r||[])[0]; if(!a) return null;
         admBn = bnDaAlianca(a);
         pintaEstandarteNoTopo(a);
         if($("#admFormas")) montaSeletorBanner("adm", admBn);
+        if($("#admNome")){
+          $("#admNome").value = a.nome || "";
+          $("#admTag").value = a.tag || "";
+          $("#admServidor").value = a.servidor || "";
+        }
         return a;
       }).catch(function(){ return null; });
+  }
+  function salvarIdentidade(){
+    var nome = $("#admNome").value.trim(), tag = $("#admTag").value.trim(), srv = $("#admServidor").value.trim();
+    if(!nome || !tag) return erroCaixa("#admIdentMsg", "O nome e a sigla não podem ficar vazios.");
+    erroCaixa("#admIdentMsg", "");
+    var bt = $("#admIdentSalvar"); bt.disabled = true;
+    return sbRpc("alianca_editar", {p_membro:ME.id, p_senha:null, p_device:deviceId(),
+                                    p_nome:nome, p_tag:tag, p_servidor:srv})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || r.erro){
+          return erroCaixa("#admIdentMsg", r && r.erro === "existe"
+            ? "Já existe outra aliança com essa sigla nesse servidor."
+            : "Não deu para salvar.");
+        }
+        toast("📝 Identidade salva!");
+        return carregaEstandarte();
+      }).catch(function(){ bt.disabled = false; erroCaixa("#admIdentMsg", "Sem conexão."); });
+  }
+  function gerarNovoCodigo(){
+    if(!confirm("Gerar um código novo? O código de agora para de valer na hora, e quem ainda não entrou vai precisar do novo. Quem já está na aliança continua dentro.")) return;
+    var bt = $("#admNovoCodigo"); bt.disabled = true;
+    return sbRpc("alianca_novo_codigo", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || !r.codigo_acesso){ toast("❌ Não deu para gerar."); return; }
+        $("#admCodAcesso").textContent = r.codigo_acesso;
+        toast("♻️ Código novo em uso!");
+      }).catch(function(){ bt.disabled = false; toast("❌ Sem conexão."); });
   }
   /* O estandarte fica onde o jogo põe: junto do nome da aliança. */
   function pintaEstandarteNoTopo(a){
@@ -2841,6 +2945,47 @@
         toast("🏰 Estandarte salvo!");
         return carregaEstandarte();
       }).catch(function(){ bt.disabled = false; toast("❌ Sem conexão."); });
+  }
+
+  /* ------- sair da aliança ------- */
+  function abrirSair(){
+    erroCaixa("#sairMsg", "");
+    $("#sairSenha").value = "";
+    $("#perfilOverlay").classList.remove("on");
+    $("#sairOverlay").classList.add("on");
+    // mostrar de qual aliança se está saindo: quem joga em mais de uma se perde
+    sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,banner_forma,banner_cor,banner_emblema")
+      .then(function(r){
+        var a = (r||[])[0]; if(!a) return;
+        $("#sairBanner").innerHTML = bannerSVG(bnDaAlianca(a), 76);
+        $("#sairNome").innerHTML = "<b>"+esc(a.tag)+" "+esc(a.nome)+"</b>";
+      }).catch(function(){});
+  }
+  function confirmarSair(){
+    var senha = $("#sairSenha").value;
+    if(!senha) return erroCaixa("#sairMsg", "Digite sua senha para confirmar.");
+    erroCaixa("#sairMsg", "");
+    var bt = $("#sairConfirmar"); bt.disabled = true;
+    return hashSenha(ME.nome, senha).then(function(hash){
+      return sbRpc("membro_sair", {p_membro:ME.id, p_senha:hash, p_device:deviceId()});
+    }).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro){
+        var m = { sem_permissao:"Senha errada.",
+                  ja_saiu:"Você já não está nesta aliança.",
+                  r5_precisa_passar:"Você é o R5. Passe a liderança para um R4 antes de sair." }[r && r.erro]
+                || "Não deu para sair.";
+        return erroCaixa("#sairMsg", m);
+      }
+      /* A conta antiga ficou sem aparelho e sem senha, então recarregar cai na
+         tela inicial sozinho — nada de estado velho sobrando na tela. */
+      localStorage.removeItem("top.ocode");
+      ME = null;
+      location.reload();
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#sairMsg", "Sem conexão com o servidor.");
+    });
   }
 
   /* ------- passar liderança ------- */
@@ -2897,6 +3042,7 @@
 
   /* ------- entrar / gate ------- */
   function mostrarGate(msg){
+    document.body.classList.add("fora");
     var semRede = !!msg && /conexão/i.test(msg);
     $("#gateMsg").textContent = msg || "Crie a sua aliança ou entre numa que já existe.";
     // sem servidor não adianta oferecer cadastro: os dois caminhos falhariam
@@ -2904,6 +3050,7 @@
     $("#gateOverlay").classList.add("on");
   }
   function entrar(){
+    document.body.classList.remove("fora");   // agora se sabe de quem é a casca
     $("#gateOverlay").classList.remove("on");
     $("#regOverlay").classList.remove("on");
     try{ if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } }catch(e){}
@@ -4183,7 +4330,7 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
+    return sbGet("top_membros?status=neq.saiu&select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
@@ -4793,7 +4940,7 @@
   }
   function renderRankingSel(){
     if(rankSel === "geral"){
-      return sbGet("top_membros?pontos=gt.0&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
+      return sbGet("top_membros?pontos=gt.0&status=neq.saiu&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
         rankRender((rows||[]).map(function(m){ return {nome:m.nome, foto_url:m.foto_url, avatar:m.avatar, pts:m.pontos}; }));
       });
     }
@@ -5066,7 +5213,12 @@
     $("#loginOverlay").classList.add("on");
   }
   function loginErro(m){ var el = $("#loginMsg"); el.textContent = m; el.style.display = "block"; }
-  $("#loginFechar").addEventListener("click", function(){ $("#loginOverlay").classList.remove("on"); });
+  /* Cancelar precisa ter para onde voltar: quem chega pelo link de login
+     direto não tem nada atrás, e fechar deixava a tela vazia. */
+  $("#loginFechar").addEventListener("click", function(){
+    $("#loginOverlay").classList.remove("on");
+    if(!ME) mostrarGate();
+  });
   $("#loginEntrar").addEventListener("click", function(){
     var nome = $("#loginNome").value.trim(), senha = $("#loginSenha").value;
     if(!nome || !senha){ loginErro("Preencha nome e senha."); return; }
@@ -5130,6 +5282,11 @@
   $("#liderConfirmar").addEventListener("click", confirmarPassarLideranca);
   $("#admBannerSalvar").addEventListener("click", salvarEstandarte);
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
+  $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
+  $("#admNovoCodigo").addEventListener("click", gerarNovoCodigo);
+  $("#sairAliancaBtn").addEventListener("click", abrirSair);
+  $("#sairCancel").addEventListener("click", function(){ $("#sairOverlay").classList.remove("on"); });
+  $("#sairConfirmar").addEventListener("click", confirmarSair);
   $("#admLinkEntrar").addEventListener("click", function(){
     var cod = $("#admCodAcesso").textContent.trim();
     if(!cod || cod.charAt(0) === "·") return toast("Código ainda carregando.");
