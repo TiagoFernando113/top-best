@@ -642,10 +642,10 @@
         <div class="ah-right">
           <div class="ah-name stroked" id="aliancaNome">[TOP]Best</div>
           <div class="infobox">
-            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-crown"/></svg></span>Líder da Aliança:<span class="val">LOGAN<span class="sup">Top</span></span></div>
-            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-power"/></svg></span>Poder:<span class="val">1.526.376.571</span></div>
-            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-people"/></svg></span>Membros:<span class="val">100/100</span></div>
-            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-speech"/></svg></span>Idioma:<span class="val">Todos os Idiomas</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-crown"/></svg></span>Líder da Aliança:<span class="val" id="alcLider">—</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-power"/></svg></span>Poder:<span class="val" id="alcPoder">—</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-people"/></svg></span>Membros:<span class="val" id="alcMembros">—</span></div>
+            <div class="inforow"><span class="ic"><svg class="icn"><use href="#i-speech"/></svg></span>Servidor:<span class="val" id="alcServidor">—</span></div>
           </div>
         </div>
       </div>
@@ -2696,6 +2696,15 @@
     });
   }
 
+  /* Tudo que o site lê é de UMA aliança. Enquanto existia uma só, nenhuma
+     consulta precisava dizer qual — e com a segunda a lista de membros passou
+     a somar as duas, o chat virou um só e a agenda também. Sem aliança
+     conhecida isto devolve um filtro que não casa com nada: é melhor a tela
+     ficar vazia do que mostrar dado de outra gente. */
+  var SEM_ALIANCA = "00000000-0000-0000-0000-000000000000";
+  function daMinha(){
+    return "&alianca_id=eq." + enc((ME && ME.alianca_id) || SEM_ALIANCA);
+  }
   function ehOficial(m){ return !!(m && (m.is_oficial || m.cargo === "R4" || m.cargo === "R5")); }
   /* Quem manda na aliança em si: o R5, e a conta de desenvolvedor. Esconder
      aqui é só cortesia — quem chamar a função direto leva "sem_permissao",
@@ -2934,6 +2943,23 @@
     var nm = $("#aliancaNome");
     // a sigla da [TOP] já foi gravada com colchetes; não dá pra pôr outro par
     if(nm && a.tag) nm.textContent = (/^\[.*\]$/.test(a.tag) ? a.tag : "["+a.tag+"]") + (a.nome || "");
+    var srv = $("#alcServidor");
+    if(srv) srv.textContent = a.servidor ? ("#"+a.servidor) : "—";
+  }
+  /* Líder, poder e número de membros estavam escritos no HTML, com os dados
+     da [TOP]. Uma aliança nova nascia exibindo o líder e o poder de outra. */
+  function pintaCartaoAlianca(rows){
+    rows = rows || [];
+    var lider = null, poder = 0, n = 0;
+    rows.forEach(function(m){
+      if(m.status === "saiu") return;
+      n++;
+      poder += Number(m.poder) || 0;
+      if(m.cargo === "R5") lider = m;
+    });
+    var el = $("#alcLider");   if(el) el.textContent = lider ? lider.nome : "—";
+    el = $("#alcPoder");       if(el) el.textContent = poder ? poder.toLocaleString("pt-BR") : "—";
+    el = $("#alcMembros");     if(el) el.textContent = n + "/100";
   }
   function salvarEstandarte(){
     var bt = $("#admBannerSalvar"); bt.disabled = true;
@@ -3076,7 +3102,7 @@
   }
 
   function carregarLoja(){
-    return sbGet("top_loja?ativo=eq.true&select=*&order=ordem").then(function(rows){
+    return sbGet("top_loja?ativo=eq.true"+daMinha()+"&select=*&order=ordem").then(function(rows){
       if(Array.isArray(rows) && rows.length){
         SHOP.length = 0;
         rows.forEach(function(r){ SHOP.push({id:r.id, dbId:r.id, icon:r.icone||"i-gift", t:r.titulo, d:r.descricao||"", p:r.custo}); });
@@ -3146,7 +3172,7 @@
 
   var _eventosCache = {};
   function paintEventos(){
-    return sbGet("top_eventos?ativa=eq.true&select=*&order=categoria,ordem").then(function(rows){
+    return sbGet("top_eventos?ativa=eq.true"+daMinha()+"&select=*&order=categoria,ordem").then(function(rows){
       rows = rows || []; var host = $("#eventosLista"); if(!host) return;
       _eventosCache = {}; rows.forEach(function(e){ _eventosCache[e.id] = e; });
       if(!rows.length){ host.innerHTML = '<div class="empty">Sem eventos ainda.</div>'; return; }
@@ -3735,7 +3761,7 @@
     if(!ev.permite_inscricao || !ME || !ME.id){ box.style.display = "none"; return; }
     box.style.display = "";
     $("#eventoInscTx").textContent = "…";
-    sbGet("top_inscricoes?evento_id=eq."+enc(ev.id)+"&select=id,membro_id").then(function(rows){
+    sbGet("top_inscricoes?evento_id=eq."+enc(ev.id)+daMinha()+"&select=id,membro_id").then(function(rows){
       rows = Array.isArray(rows) ? rows : [];
       for(var i = 0; i < rows.length; i++) if(rows[i].membro_id === ME.id){ _inscMinhaId = rows[i].id; break; }
       pintaInscricao(rows.length);
@@ -3928,8 +3954,8 @@
     var host = $("#resultLista"); host.innerHTML = '<p class="empty">Carregando…</p>';
     $("#resultBusca").value = "";
     Promise.all([
-      sbGet("top_membros?status=eq.ativo&select=id,nome,cargo,avatar,foto_url&order=nome"),
-      sbGet("top_resultados?evento_id=eq."+ev.id+"&select=membro_id,pontos,posicao,dia")
+      sbGet("top_membros?status=eq.ativo"+daMinha()+"&select=id,nome,cargo,avatar,foto_url&order=nome"),
+      sbGet("top_resultados?evento_id=eq."+ev.id+daMinha()+"&select=membro_id,pontos,posicao,dia")
     ]).then(function(res){
       var membros = res[0]||[], resultados = res[1]||[], acum = {}, hoje = {}, posHoje = {};
       _resultMembros = membros;
@@ -4075,6 +4101,9 @@
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
       else body[c.k] = v;
     });
+    // evento ou item novo nasce da aliança de quem criou, senão ficaria solto
+    // e apareceria para todo mundo (ou para ninguém)
+    if(!editCtx.id && ME && ME.alianca_id) body.alianca_id = ME.alianca_id;
     admin("gestao", {tabela:def.tabela, op: editCtx.id ? "update" : "insert", id: editCtx.id, dados: body})
       .then(function(res){ if(res && res.ok){ $("#editOverlay").classList.remove("on"); toast("✅ Salvo!"); def.recarrega(); paintAdminGestao(); } else toast("❌ Erro ao salvar."); })
       .catch(onAdminErr);
@@ -4106,8 +4135,8 @@
   }
   function paintAdminGestao(){
     if(!ME || !ME.is_oficial) return;
-    gestaoLista("top_loja?select=*&order=ordem", "gestLoja", "loja");
-    gestaoLista("top_eventos?select=*&order=ordem", "gestEventos", "evento");
+    gestaoLista("top_loja?select=*"+daMinha()+"&order=ordem", "gestLoja", "loja");
+    gestaoLista("top_eventos?select=*"+daMinha()+"&order=ordem", "gestEventos", "evento");
   }
   /* pendencias do Painel do Oficial: contador em cada fila + resumo no topo */
   var _admPend = {r0:0, resg:0};
@@ -4127,7 +4156,7 @@
 
   function paintResgates(){
     if(!ME || !ME.is_oficial) return;
-    sbGet("top_resgates?status=eq.pendente&select=id,item_titulo,custo,criado_em,top_membros(nome)&order=criado_em").then(function(rows){
+    sbGet("top_resgates?status=eq.pendente"+daMinha()+"&select=id,item_titulo,custo,criado_em,top_membros(nome)&order=criado_em").then(function(rows){
       rows = rows || []; var host = $("#adminResgates"); if(!host) return;
       _admPend.resg = rows.length; admBadge("badgeResg", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>📦</div>Nenhum resgate pra entregar.</div>'; return; }
@@ -4330,8 +4359,9 @@
   }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
-    return sbGet("top_membros?status=neq.saiu&select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
+    return sbGet("top_membros?status=neq.saiu"+daMinha()+"&select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
       rows = rows || [];
+      pintaCartaoAlianca(rows);   // líder, poder somado e contagem vêm daqui
       var host = $("#membrosLista"); if(!host) return;
       $("#promoHint").style.display = ehOficial(ME) ? "flex" : "none";
       var onN = rows.filter(estaOnline).length;
@@ -4560,12 +4590,12 @@
     if(autoTrad) traduzirTudo();
   }
   function chatCarregar(){
-    return sbGet("top_chat?select=*,top_membros(avatar,foto_url,cargo)&order=id.desc&limit=60").then(function(rows){
+    return sbGet("top_chat?select=*,top_membros(avatar,foto_url,cargo)"+daMinha()+"&order=id.desc&limit=60").then(function(rows){
       renderChat((rows||[]).slice().reverse());
     }).catch(function(){});
   }
   function avisoUltimo(){
-    return sbGet("top_chat?tipo=eq.aviso&select=nome,texto&order=id.desc&limit=1").then(function(r){
+    return sbGet("top_chat?tipo=eq.aviso"+daMinha()+"&select=nome,texto&order=id.desc&limit=1").then(function(r){
       if(r&&r[0]){ var a = r[0];
         $("#pinnedBox").innerHTML = '<p><b><svg class="icn"><use href="#i-pin"/></svg> Aviso da liderança</b></p><p>'+esc(a.texto)+'</p>'+
           '<div class="by"><svg class="icn"><use href="#i-pencil"/></svg> '+esc(a.nome)+'</div>';
@@ -4594,7 +4624,7 @@
   }
   function paintR0(){
     if(!ME || !ME.is_oficial) return;
-    sbGet("top_membros?status=eq.pendente&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
+    sbGet("top_membros?status=eq.pendente"+daMinha()+"&select=id,nome,foto_url,avatar&order=visto_em.desc").then(function(rows){
       rows = rows||[]; var host = $("#adminR0"); if(!host) return;
       _admPend.r0 = rows.length; admBadge("badgeR0", rows.length); admResumo();
       if(!rows.length){ host.innerHTML = '<div class="empty"><div>👌</div>Nenhuma solicitação pendente.</div>'; return; }
@@ -4940,11 +4970,11 @@
   }
   function renderRankingSel(){
     if(rankSel === "geral"){
-      return sbGet("top_membros?pontos=gt.0&status=neq.saiu&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
+      return sbGet("top_membros?pontos=gt.0&status=neq.saiu"+daMinha()+"&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
         rankRender((rows||[]).map(function(m){ return {nome:m.nome, foto_url:m.foto_url, avatar:m.avatar, pts:m.pontos}; }));
       });
     }
-    return sbGet("top_resultados?evento_id=eq."+rankSel+"&select=pontos,top_membros(nome,foto_url,avatar)").then(function(rows){
+    return sbGet("top_resultados?evento_id=eq."+rankSel+daMinha()+"&select=pontos,top_membros(nome,foto_url,avatar)").then(function(rows){
       var mapa = {};
       (rows||[]).forEach(function(r){
         var m = r.top_membros; if(!m) return;
@@ -4956,7 +4986,7 @@
     });
   }
   function paintRanking(){
-    return sbGet("top_eventos?ativa=eq.true&select=id,titulo&order=ordem").then(function(evs){
+    return sbGet("top_eventos?ativa=eq.true"+daMinha()+"&select=id,titulo&order=ordem").then(function(evs){
       evs = evs || [];
       var tabs = $("#rankTabs");
       if(tabs){
