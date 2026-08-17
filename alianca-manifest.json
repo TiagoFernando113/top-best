@@ -1,7 +1,7 @@
 {
-  "name": "Portal [TOP] Best",
-  "short_name": "[TOP] Best",
-  "description": "Portal da aliança [TOP] Best — eventos, loja, chat e ranking.",
+  "name": "Portal das Alianças",
+  "short_name": "Alianças",
+  "description": "O quadro de avisos da sua aliança no Kingshot — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
