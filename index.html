@@ -624,8 +624,9 @@
     <h1 class="stroked">Portal das Alianças</h1>
     <p>O quadro de avisos da sua aliança no <b>Kingshot</b> — agenda no seu fuso, tutoriais dos eventos e aviso no celular antes de cada um.</p>
     <div class="land-cta">
-      <button class="bigbtn green" id="landNova">🏰 Criar a minha aliança</button>
+      <button class="bigbtn green" id="landConta">✨ Criar minha conta</button>
       <button class="bigbtn" id="landMembro">⚔️ Entrar com o código da aliança</button>
+      <button class="bigbtn" id="landNova">🏰 Criar a minha aliança</button>
       <a href="#entrar" class="land-entrar" id="landLogin">Esqueci onde entrar — abrir o login</a>
     </div>
   </div>
@@ -1062,10 +1063,13 @@
            style="margin-top:0;text-transform:uppercase;letter-spacing:.16em;text-align:center;font-size:1.15rem">
     <div id="entrarAchou" style="display:none;margin-top:10px"></div>
 
-    <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
-    <input class="reginput" id="entrarNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
-    <input class="reginput" id="entrarSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
-    <input class="reginput" id="entrarSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
+    <div id="entrarConta">
+      <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
+      <input class="reginput" id="entrarNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+      <input class="reginput" id="entrarSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
+      <input class="reginput" id="entrarSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
+    </div>
+    <p class="note" id="entrarContaJa" style="display:none;margin-top:14px"></p>
 
     <p class="note" id="entrarMsg" style="display:none;color:var(--red);margin-top:8px"></p>
     <button class="bigbtn green" id="entrarSend" style="margin-top:14px">⚔️ Entrar na aliança</button>
@@ -1087,6 +1091,21 @@
       <button class="bcancel" id="liderCancel">Cancelar</button>
       <button class="bsend" id="liderConfirmar">Passar o cargo</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ CRIAR CONTA (sem aliança ainda) ============ -->
+<div class="overlay" id="contaOverlay">
+  <div class="modal">
+    <h2 style="text-align:center">✨ Criar minha conta</h2>
+    <p class="sub" style="text-align:center">Sua conta é sua. Depois você entra numa aliança com o código dela, ou cria a sua.</p>
+    <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
+    <input class="reginput" id="contaNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+    <input class="reginput" id="contaSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
+    <input class="reginput" id="contaSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
+    <p class="note" id="contaMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+    <button class="bigbtn green" id="contaCriar" style="margin-top:14px">✨ Criar conta</button>
+    <button class="bcancel" id="contaVoltar" style="width:100%;margin-top:10px;border-radius:11px;padding:11px">Voltar</button>
   </div>
 </div>
 
@@ -3095,18 +3114,34 @@
     getMembro().then(function(m){ if(m) ME = m; });
   }
 
+  function abrirEntrarComCodigo(){
+    var temConta = !!(ME && ME.id);
+    $("#entrarConta").style.display = temConta ? "none" : "";
+    var av = $("#entrarContaJa");
+    if(temConta){
+      av.innerHTML = "Você entra como <b>" + esc(ME.nome) + "</b>, com a conta que já tem.";
+      av.style.display = "block";
+    } else av.style.display = "none";
+    $("#entrarOverlay").classList.add("on");
+  }
   function entrarComCodigo(){
     var cod = $("#entrarCodigo").value.trim().toUpperCase();
-    var nome = $("#entrarNome").value.trim();
-    var s1 = $("#entrarSenha").value, s2 = $("#entrarSenha2").value;
-    if(cod.length < 4)  return erroCaixa("#entrarMsg", "Escreva o código de acesso da aliança.");
-    if(!nome)           return erroCaixa("#entrarMsg", "Escreva seu nome no jogo.");
-    if(s1.length < 4)   return erroCaixa("#entrarMsg", "A senha precisa de pelo menos 4 letras.");
-    if(s1 !== s2)       return erroCaixa("#entrarMsg", "As duas senhas não são iguais.");
+    if(cod.length < 4) return erroCaixa("#entrarMsg", "Escreva o código de acesso da aliança.");
+    // quem já tem conta aberta não cria outra: entra com a que tem
+    var temConta = !!(ME && ME.id), nome = "", s1 = "";
+    if(!temConta){
+      nome = $("#entrarNome").value.trim();
+      s1 = $("#entrarSenha").value;
+      var s2 = $("#entrarSenha2").value;
+      if(!nome)         return erroCaixa("#entrarMsg", "Escreva seu nome no jogo.");
+      if(s1.length < 4) return erroCaixa("#entrarMsg", "A senha precisa de pelo menos 4 letras.");
+      if(s1 !== s2)     return erroCaixa("#entrarMsg", "As duas senhas não são iguais.");
+    }
     erroCaixa("#entrarMsg", "");
     var bt = $("#entrarSend"); bt.disabled = true;
-    return hashSenha(nome, s1).then(function(hash){
-      return sbRpc("membro_entrar", {p_codigo:cod, p_device:deviceId(), p_nome:nome, p_senha:hash});
+    return (temConta ? Promise.resolve(null) : hashSenha(nome, s1)).then(function(hash){
+      return sbRpc("membro_entrar", {p_codigo:cod, p_device:deviceId(), p_nome:nome, p_senha:hash,
+                                     p_conta: (ME && ME.id) ? ME.id : null});
     }).then(function(r){
       bt.disabled = false;
       if(!r || r.erro){
@@ -3382,6 +3417,39 @@
     }).catch(function(){
       bt.disabled = false;
       erroCaixa("#liderMsg", "Sem conexão com o servidor.");
+    });
+  }
+
+  /* ------- criar conta sem aliança ------- */
+  /* A conta é da pessoa, não da aliança. Antes só existia conta virando R5,
+     entrando com código ou por convite — quem só queria olhar o site e
+     procurar aliança depois não tinha por onde começar. */
+  function criarConta(){
+    var nome = $("#contaNome").value.trim();
+    var s1 = $("#contaSenha").value, s2 = $("#contaSenha2").value;
+    if(!nome)         return erroCaixa("#contaMsg", "Escreva seu nome no jogo.");
+    if(s1.length < 4) return erroCaixa("#contaMsg", "A senha precisa de pelo menos 4 letras.");
+    if(s1 !== s2)     return erroCaixa("#contaMsg", "As duas senhas não são iguais.");
+    erroCaixa("#contaMsg", "");
+    var bt = $("#contaCriar"); bt.disabled = true;
+    return hashSenha(nome, s1).then(function(hash){
+      return sbRpc("conta_criar", {p_nome:nome, p_senha:hash, p_device:deviceId()});
+    }).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro){
+        return erroCaixa("#contaMsg", r && r.erro === "ja_existe"
+          ? "Já existe uma conta com esse nome e essa senha. Use o login."
+          : "Não deu para criar a conta.");
+      }
+      return getMembro().then(function(m){
+        if(!m) return erroCaixa("#contaMsg", "Conta criada, mas não carreguei o perfil. Recarregue.");
+        ME = m;
+        $("#contaOverlay").classList.remove("on");
+        mostrarCasa();
+      });
+    }).catch(function(){
+      bt.disabled = false;
+      erroCaixa("#contaMsg", "Sem conexão com o servidor.");
     });
   }
 
@@ -5710,10 +5778,11 @@
   var _rl = $("#regLogin"); if(_rl) _rl.addEventListener("click", loginPrompt);
 
   /* ---- criar aliança / entrar com código ---- */
+  $("#landConta").addEventListener("click", function(){ $("#contaOverlay").classList.add("on"); });
+  $("#contaVoltar").addEventListener("click", function(){ $("#contaOverlay").classList.remove("on"); });
+  $("#contaCriar").addEventListener("click", criarConta);
   $("#landNova").addEventListener("click", abrirNovaAlianca);
-  $("#landMembro").addEventListener("click", function(){
-    $("#entrarOverlay").classList.add("on");
-  });
+  $("#landMembro").addEventListener("click", abrirEntrarComCodigo);
   /* fechar o cadastro revela a página de entrada, que está sempre por baixo */
   function voltarAoGate(qual){ $(qual).classList.remove("on"); }
   $("#novaVoltar").addEventListener("click", function(){ voltarAoGate("#novaOverlay"); });
@@ -5758,7 +5827,7 @@
   $("#casaPerfil").addEventListener("click", abrirPerfil);
   $("#casaNotif").addEventListener("click", function(){ $("#notifBtn").click(); });
   $("#casaCriar").addEventListener("click", abrirNovaAlianca);
-  $("#casaEntrarCod").addEventListener("click", function(){ $("#entrarOverlay").classList.add("on"); });
+  $("#casaEntrarCod").addEventListener("click", abrirEntrarComCodigo);
   $("#casaForm").addEventListener("submit", function(e){ e.preventDefault(); chatGlobalEnviar(); });
   $("#casaSairConta").addEventListener("click", function(){
     if(!confirm("Sair da conta neste aparelho? Você continua na aliança — só vai precisar entrar com nome e senha de novo.")) return;
