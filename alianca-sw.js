@@ -35,7 +35,7 @@ self.addEventListener("notificationclick", (e) => {
   const url = (e.notification.data && e.notification.data.url) || "./";
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      for (const c of list) { if (c.url.indexOf("top-best") > -1 && "focus" in c) return c.focus(); }
+      for (const c of list) { if (c.url.indexOf(self.registration.scope) === 0 && "focus" in c) return c.focus(); }
       return clients.openWindow ? clients.openWindow(url) : null;
     })
   );
