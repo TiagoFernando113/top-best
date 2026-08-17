@@ -697,10 +697,11 @@
       <button class="bigbtn green" id="casaCriar" style="flex:1">🏰 Criar aliança</button>
     </div>
 
-    <h2 class="casa-tt">🌍 Chat global</h2>
+    <h2 class="casa-tt" style="display:flex;align-items:center">🌍 Chat global
+      <button class="trtoggle" id="casaAuto">🌐 Auto</button></h2>
     <p class="land-sub" style="margin:-6px 0 8px">Conversa entre alianças de todos os servidores.</p>
     <div class="casa-chat">
-      <div class="casa-msgs" id="casaMsgs"><p class="empty">Carregando…</p></div>
+      <div class="casa-msgs" id="casaMsgs" data-notrans><p class="empty">Carregando…</p></div>
       <form class="casa-envia" id="casaForm">
         <input id="casaTexto" type="text" maxlength="400" placeholder="Falar com todo mundo…" autocomplete="off">
         <button type="submit">Enviar</button>
@@ -3817,15 +3818,22 @@
         host.innerHTML = rows.map(function(m){
           var meu = !!(ME && ME.id && m.membro_id === ME.id);
           var quem = m.top_membros || {};
-          return '<div class="msg'+(meu?' me':'')+'">'
+          /* O id vai prefixado porque o chat da aliança e o global contam a
+             partir de 1 cada um: sem o "g" as duas mensagens de nº 7 seriam a
+             mesma no mapa da tradução. */
+          var mid = "g" + m.id;
+          chatGlobalById[mid] = m;
+          return '<div class="msg'+(meu?' me':'')+'" data-mid="'+mid+'">'
             + '<div class="who"><span class="chatav">'
             +   avatarSVG({avatar:quem.avatar, foto_url:quem.foto_url, nome:m.nome})
             + '</span>'
             + (m.tag ? '<span class="sg">'+esc(m.tag)+'</span>' : '')
-            + esc(m.nome||"") + '</div>'
+            + esc(m.nome||"")
+            + '<button class="trbtn" data-tr="'+mid+'">🌐</button></div>'
             + '<div class="tx">'+esc(m.texto||"")+'</div></div>';
         }).join("");
         if(perto) host.scrollTop = host.scrollHeight;   // só acompanha quem já estava no fim
+        if(autoTrad) traduzirTudoGlobal();
       }).catch(function(){});
   }
   function chatGlobalEnviar(){
@@ -5325,7 +5333,10 @@
   }
 
   /* ------- chat / avisos ------- */
-  var _trCache = {}, chatById = {}, autoTrad = localStorage.getItem("top.autotrad") === "1";
+  var _trCache = {}, chatById = {}, chatGlobalById = {}, autoTrad = localStorage.getItem("top.autotrad") === "1";
+  /* O chat da aliança redesenha do zero e limpa o mapa dele; o global tem o
+     seu, então um não apaga o outro. Quem procura a mensagem olha nos dois. */
+  function msgPorId(id){ return chatById[id] || chatGlobalById[id]; }
   function meuIdioma(){
     var l = localStorage.getItem("top.lang");
     if(l) return l;
@@ -5430,6 +5441,17 @@
       var s = chatById[id];
       traduzir(s.texto, alvo).then(function(res){
         if(res.de && res.de !== alvo){ aplicarTrad($('#chatMsgs [data-mid="'+id+'"]'), res); }
+      });
+    });
+  }
+  /* O chat global junta alianças de servidores diferentes, então é onde mais
+     aparece idioma que a pessoa não lê — mas era o único que não traduzia. */
+  function traduzirTudoGlobal(){
+    var alvo = meuIdioma();
+    Object.keys(chatGlobalById).forEach(function(id){
+      var s = chatGlobalById[id];
+      traduzir(s.texto, alvo).then(function(res){
+        if(res.de && res.de !== alvo){ aplicarTrad($('#casaMsgs [data-mid="'+id+'"]'), res); }
       });
     });
   }
@@ -6301,26 +6323,32 @@
   });
 
   /* ---------------- wiring: tradução ---------------- */
-  var _ca = $("#chatAuto");
-  if(_ca){
-    if(autoTrad) _ca.classList.add("on");
-    _ca.addEventListener("click", function(){
+  /* Os dois chats compartilham a mesma preferência: "traduza minhas conversas"
+     é uma escolha só, e as telas nunca aparecem juntas. */
+  var _trToggles = [
+    {btn:$("#chatAuto"),  redesenha:function(){ lastChatSig = ""; chatCarregar(); },  traduz:traduzirTudo},
+    {btn:$("#casaAuto"),  redesenha:function(){ chatGlobalCarregar(); },              traduz:traduzirTudoGlobal}
+  ];
+  _trToggles.forEach(function(t){
+    if(!t.btn) return;
+    if(autoTrad) t.btn.classList.add("on");
+    t.btn.addEventListener("click", function(){
       autoTrad = !autoTrad;
       localStorage.setItem("top.autotrad", autoTrad ? "1" : "0");
-      this.classList.toggle("on", autoTrad);
-      if(autoTrad) traduzirTudo();
-      else { lastChatSig = ""; chatCarregar(); }
+      _trToggles.forEach(function(o){ if(o.btn) o.btn.classList.toggle("on", autoTrad); });
+      if(autoTrad) t.traduz();
+      else t.redesenha();   // sem tradução automática, volta ao texto original
     });
-  }
+  });
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-tr]"); if(!b) return;
-    var s = chatById[b.dataset.tr]; if(!s) return;
+    var s = msgPorId(b.dataset.tr); if(!s) return;
     var el = b.closest(".msg"); b.disabled = true;
     traduzir(s.texto, meuIdioma()).then(function(res){ aplicarTrad(el, res); b.disabled = false; });
   });
   document.addEventListener("click", function(e){
     var a = e.target.closest(".trorig"); if(!a) return; e.preventDefault();
-    var el = a.closest(".msg"), s = chatById[el && el.dataset.mid];
+    var el = a.closest(".msg"), s = msgPorId(el && el.dataset.mid);
     if(s && el) el.querySelector(".tx").innerHTML = esc(s.texto);
   });
 
