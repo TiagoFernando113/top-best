@@ -631,7 +631,10 @@
     </div>
   </div>
 
-  <p class="land-aviso" id="landAviso" style="display:none"></p>
+  <div class="land-aviso" id="landAviso" style="display:none">
+    <span id="landAvisoTx"></span>
+    <button type="button" class="land-aviso-retry" id="landAvisoRetry" style="display:none">🔄 Tentar de novo</button>
+  </div>
 
   <div class="land-wrap">
     <h2 class="land-tt">O que a aliança ganha</h2>
@@ -2755,6 +2758,11 @@
   .land-aviso{max-width:460px;margin:14px auto 0;padding:11px 13px;border-radius:12px;
     background:var(--panel-3);border:3px solid var(--red);color:var(--ink);
     font-size:.83rem;font-weight:800;text-align:center}
+  .land-aviso-retry{display:block;margin:9px auto 0;padding:8px 16px;border-radius:9px;
+    background:var(--red);color:#fff;font-family:inherit;font-size:.82rem;font-weight:800;
+    border:none;cursor:pointer}
+  .land-aviso-retry:active{opacity:.85}
+  .land-aviso-retry:disabled{opacity:.6;cursor:default}
   @media(min-width:520px){ .land-hero h1{font-size:1.9rem} }
 
   /* ---- casa do jogador ----
@@ -3834,9 +3842,15 @@
     document.body.classList.remove("carregando");
     document.body.classList.remove("chat-fixo");
     document.body.classList.add("fora");
-    var av = $("#landAviso");
-    if(msg){ av.textContent = msg; av.style.display = "block"; }
-    else av.style.display = "none";
+    var av = $("#landAviso"), tx = $("#landAvisoTx"), rt = $("#landAvisoRetry");
+    if(msg){
+      if(tx) tx.textContent = msg; else av.textContent = msg;
+      av.style.display = "block";
+      if(rt){ rt.style.display = ""; rt.disabled = false; rt.textContent = "🔄 Tentar de novo"; }
+    } else {
+      av.style.display = "none";
+      if(rt) rt.style.display = "none";
+    }
     // sem servidor não adianta oferecer cadastro: os dois caminhos falhariam
     var semRede = !!msg && /conexão/i.test(msg);
     $("#landNova").style.display = semRede ? "none" : "";
@@ -6176,6 +6190,16 @@
     }).catch(function(){ bt.disabled = false; falha("Sem conexão com o servidor."); });
   });
   var _rl = $("#regLogin"); if(_rl) _rl.addEventListener("click", loginPrompt);
+
+  /* Antes só dava pra recarregar a página inteira quando o servidor
+     demorava. Tentar de novo sem sair da tela é mais rápido, e não perde
+     o que a pessoa já tinha digitado num convite ou código na URL. */
+  var _landAvisoRetry = $("#landAvisoRetry");
+  if(_landAvisoRetry) _landAvisoRetry.addEventListener("click", function(){
+    this.disabled = true; this.textContent = "Tentando…";
+    document.body.classList.add("carregando");
+    iniciarNuvem();
+  });
 
   /* ---- criar aliança / entrar com código ---- */
   $("#landConta").addEventListener("click", function(){ $("#contaOverlay").classList.add("on"); });
