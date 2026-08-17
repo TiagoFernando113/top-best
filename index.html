@@ -2304,6 +2304,11 @@
     width:min(calc(100% - 24px),536px);
     top:118px; bottom:calc(64px + env(safe-area-inset-bottom,0px));
     height:auto;z-index:40}
+  /* A caixa é fixa mas o cartão do título rolava com a página: bastava um
+     arrastão para o título subir por baixo das bolhas e o texto parecer
+     fora da tela. Na tela do chat quem rola é só a lista de mensagens. */
+  body.chat-fixo{overflow:hidden}
+  body.chat-fixo .shell{overflow:hidden}
   .msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
     touch-action:pan-y;display:flex;flex-direction:column;gap:9px;padding:4px 2px}
   .msg{max-width:82%;background:var(--panel-3);border-radius:12px;padding:8px 12px;
@@ -2320,10 +2325,13 @@
   .msg.aviso{align-self:stretch;max-width:100%;background:linear-gradient(180deg,#F6E7C4,#E3C892);
     border:3px solid var(--btn-edge);box-shadow:0 3px 0 var(--btn-edge)}
   .msg.aviso .who::before{content:"📌 ";}
-  /* aviso do sistema: faixa no meio, sem dono e sem bolha de fala */
-  .msg.sistema{align-self:center;max-width:94%;text-align:center;background:rgba(90,70,45,.13);
-    box-shadow:none;color:var(--ink-soft);font-size:.8rem;font-weight:800;padding:6px 12px;
-    border-radius:9px}
+  /* aviso do sistema: faixa no meio, sem dono e sem bolha de fala.
+     Fundo escuro e letra clara porque em cima do painel bege o cinza
+     antigo sumia — a faixa tem de ser lida de relance, como no jogo. */
+  .msg.sistema{align-self:center;max-width:94%;text-align:center;
+    background:linear-gradient(180deg,#7C6142,#5E4830);border:2px solid #4A3722;
+    box-shadow:0 2px 0 rgba(0,0,0,.18);color:#FBEFD8;font-size:.82rem;font-weight:800;
+    padding:7px 14px;border-radius:10px;text-shadow:0 1px 0 rgba(0,0,0,.4)}
   .chatform{display:flex;gap:8px;margin-top:10px;position:relative}
   .msg .ping{background:var(--gold-lt);color:var(--ink);border-radius:5px;padding:0 4px;font-weight:900}
   .msg.me .ping{background:rgba(255,255,255,.32);color:#fff}
@@ -2538,8 +2546,10 @@
      mesmo lado para as próprias mensagens, e a sigla da aliança de quem
      falou — que é a única coisa a mais aqui. */
   .casa-chat{background:var(--panel-2);border:3px solid var(--pill-dk);border-radius:14px;padding:10px}
-  .casa-msgs{max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    display:flex;flex-direction:column;gap:9px;padding:2px}
+  /* antes era uma faixa de 300px no meio da tela; agora a lista cresce com
+     o aparelho e o chat global fica com cara de chat, não de recado */
+  .casa-msgs{height:min(58vh,520px);min-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:2px}
   .casa-msgs .msg .sg{background:var(--pill-dk);color:#fff;border-radius:6px;padding:0 5px;
     font-size:.62rem;-webkit-text-stroke:0}
   .casa-msgs .msg.me .sg{background:rgba(255,255,255,.3)}
@@ -3464,6 +3474,7 @@
   function mostrarCasa(){
     document.body.classList.remove("carregando");
     document.body.classList.remove("fora");
+    document.body.classList.remove("chat-fixo");
     document.body.classList.add("na-casa");
     carregaCasa();
     chatGlobalCarregar();
@@ -3549,6 +3560,7 @@
   /* ------- entrar / página de entrada ------- */
   function mostrarGate(msg){
     document.body.classList.remove("carregando");
+    document.body.classList.remove("chat-fixo");
     document.body.classList.add("fora");
     var av = $("#landAviso");
     if(msg){ av.textContent = msg; av.style.display = "block"; }
@@ -5068,17 +5080,36 @@
         cb.style.width = larg + 'px';
         cb.style.transform = 'none';
       }
+      /* a caixa é fixa, ou seja, sai do fluxo: sem isto o cartão do painel
+         acabava logo abaixo do título e as bolhas ficavam soltas no fundo */
+      var fim = window.innerHeight - (parseFloat(getComputedStyle(cb).bottom) || 64);
+      var alto = fim - p.top + 10;
+      if(alto > 120) pn.style.minHeight = alto + 'px';
     }
   }
+  /* a caixa é fixa e o resto da tela do chat não rola mais, então quem
+     desce até a última mensagem é só a lista. O antigo "empurrão" na
+     página (window.scrollTo até o fim) era justamente o que desencaixava
+     a caixa do cartão do título. */
   function scrollChatBottom(){
     var b = $("#chatMsgs"); if(!b) return;
-    function go(){
-      b.scrollTop = b.scrollHeight;
-      // fallback: em alguns aparelhos quem rola é a página, não a área de mensagens
-      try{ if(cur === 'chat') window.scrollTo(0, document.documentElement.scrollHeight); }catch(e){}
-    }
+    function go(){ b.scrollTop = b.scrollHeight; }
     requestAnimationFrame(function(){ go(); requestAnimationFrame(go); });
   }
+  /* girar o aparelho, abrir o teclado ou mudar a barra do navegador muda
+     onde o cartão do título termina; sem recalcular, a caixa fica no lugar
+     antigo e as bolhas sobem por cima do título de novo. */
+  (function(){
+    var pend = false;
+    function recalc(){
+      if(pend || cur !== 'chat') return;
+      pend = true;
+      requestAnimationFrame(function(){ pend = false; posicionarChat(); scrollChatBottom(); });
+    }
+    window.addEventListener('resize', recalc);
+    window.addEventListener('orientationchange', recalc);
+    if(window.visualViewport) window.visualViewport.addEventListener('resize', recalc);
+  })();
   function renderChat(rows){
     var box = $("#chatMsgs");
     if(!rows.length){ box.innerHTML = '<p class="empty">Sem mensagens ainda. Comece a conversa!</p>'; return; }
@@ -5342,6 +5373,11 @@
     if(name === 'eventos') paintEventos();
     if(typeof atualizarBanner === 'function') atualizarBanner();
     window.scrollTo({top:0, behavior:'instant'});
+    /* a página só fica travada na tela do chat: a caixa é fixa, então se a
+       página rolar o cartão do título anda e a caixa não, e as bolhas
+       acabam por cima do título. Trava depois de subir a página, senão
+       a rolagem já estaria bloqueada na hora de voltar ao topo. */
+    document.body.classList.toggle('chat-fixo', name === 'chat');
   }
   document.addEventListener('click', function(e){
     var b = e.target.closest('[data-go]');
