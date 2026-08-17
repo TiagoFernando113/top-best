@@ -2530,12 +2530,15 @@
   .casa-alc .bn{flex:none}
   .casa-alc b{display:block;font-size:.95rem;color:var(--ink)}
   .casa-alc span{font-size:.76rem;color:var(--ink-soft);font-weight:700}
-  .casa-chat{background:var(--panel-3);border:3px solid var(--pill-dk);border-radius:14px;padding:10px}
-  .casa-msgs{max-height:270px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
-  .casa-msg{background:var(--panel);border-radius:10px;padding:7px 9px}
-  .casa-msg .q{font-size:.73rem;font-weight:800;color:var(--teal-dk)}
-  .casa-msg .q .sg{color:var(--ink-soft)}
-  .casa-msg .t{font-size:.84rem;color:var(--ink);font-weight:600;word-break:break-word}
+  /* O chat global usa as mesmas bolhas do chat da aliança: mesma leitura,
+     mesmo lado para as próprias mensagens, e a sigla da aliança de quem
+     falou — que é a única coisa a mais aqui. */
+  .casa-chat{background:var(--panel-2);border:3px solid var(--pill-dk);border-radius:14px;padding:10px}
+  .casa-msgs{max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    display:flex;flex-direction:column;gap:9px;padding:2px}
+  .casa-msgs .msg .sg{background:var(--pill-dk);color:#fff;border-radius:6px;padding:0 5px;
+    font-size:.62rem;-webkit-text-stroke:0}
+  .casa-msgs .msg.me .sg{background:rgba(255,255,255,.3)}
   .casa-envia{display:flex;gap:7px;margin-top:8px}
   .casa-envia input{flex:1;min-width:0;border:2px solid var(--pill-dk);border-radius:9px;
     background:#fff;padding:9px 10px;font-family:inherit;font-weight:700;font-size:.84rem;
@@ -3510,16 +3513,22 @@
   }
 
   function chatGlobalCarregar(){
-    return sbGet("chat_global?select=id,nome,tag,texto,criado_em&order=id.desc&limit=40")
+    return sbGet("chat_global?select=id,membro_id,nome,tag,texto,criado_em,top_membros(avatar,foto_url)&order=id.desc&limit=40")
       .then(function(rows){
         var host = $("#casaMsgs"); if(!host) return;
         rows = (rows||[]).slice().reverse();
         if(!rows.length){ host.innerHTML = '<p class="empty">Ninguém falou ainda. Comece você.</p>'; return; }
         var perto = (host.scrollTop + host.clientHeight) >= (host.scrollHeight - 40);
         host.innerHTML = rows.map(function(m){
-          return '<div class="casa-msg"><div class="q">'+esc(m.nome||"")
-            + (m.tag ? ' <span class="sg">'+esc(m.tag)+'</span>' : '')
-            + '</div><div class="t">'+esc(m.texto||"")+'</div></div>';
+          var meu = !!(ME && ME.id && m.membro_id === ME.id);
+          var quem = m.top_membros || {};
+          return '<div class="msg'+(meu?' me':'')+'">'
+            + '<div class="who"><span class="chatav">'
+            +   avatarSVG({avatar:quem.avatar, foto_url:quem.foto_url, nome:m.nome})
+            + '</span>'
+            + (m.tag ? '<span class="sg">'+esc(m.tag)+'</span>' : '')
+            + esc(m.nome||"") + '</div>'
+            + '<div class="tx">'+esc(m.texto||"")+'</div></div>';
         }).join("");
         if(perto) host.scrollTop = host.scrollHeight;   // só acompanha quem já estava no fim
       }).catch(function(){});
@@ -5033,11 +5042,27 @@
   function mentionLabel(lang){ lang=String(lang||'pt'); return MENTION[lang]||MENTION[lang.slice(0,2)]||'@todos'; }
   function marcarLabel(lang){ lang=String(lang||'pt'); return MARCAR[lang]||MARCAR[lang.slice(0,2)]||'Marcar todos'; }
   function renderMentions(txtEsc){ return txtEsc.replace(/@todos/ig, '<span class="ping">'+esc(mentionLabel(meuIdioma()))+'</span>'); }
+  /* A caixa do chat é fixa (para a rolagem ser confiável em qualquer
+     aparelho), e por isso tinha largura própria: ficava mais larga que o
+     painel e as bolhas cruzavam a borda arredondada do cartão. Aqui ela é
+     encaixada na largura de dentro do painel, em vez de adivinhar. */
   function posicionarChat(){
-    var cb = document.querySelector('#s-chat .chatbox'), st = document.querySelector('#s-chat .stitle');
+    var cb = document.querySelector('#s-chat .chatbox'),
+        st = document.querySelector('#s-chat .stitle'),
+        pn = document.querySelector('#s-chat .panel');
     if(!cb || !st) return;
     var r = st.getBoundingClientRect();
     if(r.bottom > 0) cb.style.top = Math.max(56, r.bottom + 8) + 'px';
+    if(pn){
+      var p = pn.getBoundingClientRect(), cs = getComputedStyle(pn);
+      var esq  = p.left + parseFloat(cs.paddingLeft || 0);
+      var larg = p.width - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+      if(larg > 40){
+        cb.style.left = esq + 'px';
+        cb.style.width = larg + 'px';
+        cb.style.transform = 'none';
+      }
+    }
   }
   function scrollChatBottom(){
     var b = $("#chatMsgs"); if(!b) return;
