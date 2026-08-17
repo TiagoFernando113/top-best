@@ -2320,6 +2320,10 @@
   .msg.aviso{align-self:stretch;max-width:100%;background:linear-gradient(180deg,#F6E7C4,#E3C892);
     border:3px solid var(--btn-edge);box-shadow:0 3px 0 var(--btn-edge)}
   .msg.aviso .who::before{content:"📌 ";}
+  /* aviso do sistema: faixa no meio, sem dono e sem bolha de fala */
+  .msg.sistema{align-self:center;max-width:94%;text-align:center;background:rgba(90,70,45,.13);
+    box-shadow:none;color:var(--ink-soft);font-size:.8rem;font-weight:800;padding:6px 12px;
+    border-radius:9px}
   .chatform{display:flex;gap:8px;margin-top:10px;position:relative}
   .msg .ping{background:var(--gold-lt);color:var(--ink);border-radius:5px;padding:0 4px;font-weight:900}
   .msg.me .ping{background:rgba(255,255,255,.32);color:#fff}
@@ -5085,6 +5089,11 @@
       var cargo = mem.cargo || s.cargo;
       var mine = ME && s.membro_id === ME.id;
       var ofi = cargo==="R5" || cargo==="R4";
+      /* Aviso do sistema: quem entrou, quem foi promovido, evento novo. Não é
+         de ninguém, então não leva avatar nem lado — é uma faixa no meio,
+         como o jogo faz. */
+      if(s.tipo === "sistema")
+        return '<div class="msg sistema" data-mid="'+s.id+'">'+esc(s.texto)+'</div>';
       var cls = "msg" + (mine?" me":"") + (s.tipo==="aviso" ? " aviso" : (ofi?" oficial":""));
       var avObj = {nome:s.nome, avatar:mem.avatar, foto_url:mem.foto_url};
       return '<div class="'+cls+'" data-mid="'+s.id+'"><div class="who">'+
