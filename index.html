@@ -750,13 +750,10 @@
         <div class="lvltrack"><div class="lvlfill"></div><span class="stroked-sm">Limite alcançado</span></div>
       </div>
 
-      <div class="pinned" id="pinnedBox">
-        <p><b>Sworland showdown playbook!</b></p>
-        <p>Use seu teleporte grátis a cada 12 minutos com sabedoria para controlar o campo.</p>
-        <div class="by"><svg class="icn"><use href="#i-pencil"/></svg> Maelle<span class="sup">Top</span>
-          <span class="likes"><span style="display:inline-flex;align-items:center;gap:3px"><svg class="icn"><use href="#i-heart"/></svg>7</span><span style="display:inline-flex;align-items:center;gap:3px"><svg class="icn"><use href="#i-thumbdown"/></svg>0</span></span>
-        </div>
-      </div>
+      <!-- vazio: quem preenche é o último aviso da liderança, do banco.
+           Vinha com um recado inventado da maquete, que aparecia para toda
+           aliança até o aviso de verdade chegar. -->
+      <div class="pinned" id="pinnedBox"></div>
 
       <div class="grid2" id="menuGrid">
         <button class="gbtn" data-sortable data-go="loja">
@@ -5080,9 +5077,15 @@
   }
   function avisoUltimo(){
     return sbGet("top_chat?tipo=eq.aviso"+daMinha()+"&select=nome,texto&order=id.desc&limit=1").then(function(r){
+      var cx = $("#pinnedBox"); if(!cx) return;
       if(r&&r[0]){ var a = r[0];
-        $("#pinnedBox").innerHTML = '<p><b><svg class="icn"><use href="#i-pin"/></svg> Aviso da liderança</b></p><p>'+esc(a.texto)+'</p>'+
+        cx.innerHTML = '<p><b><svg class="icn"><use href="#i-pin"/></svg> Aviso da liderança</b></p><p>'+esc(a.texto)+'</p>'+
           '<div class="by"><svg class="icn"><use href="#i-pencil"/></svg> '+esc(a.nome)+'</div>';
+      } else {
+        // sem aviso o quadro ficaria um retângulo vazio, sem dizer por quê
+        cx.innerHTML = '<p><b><svg class="icn"><use href="#i-pin"/></svg> Aviso da liderança</b></p>'
+          + '<p style="opacity:.75">Nenhum aviso ainda.'
+          + (ehOficial(ME) ? ' Publique um no painel do oficial.' : '') + '</p>';
       }
     }).catch(function(){});
   }
@@ -5232,34 +5235,9 @@
     {id:'help',  icon:'i-build',  t:'Mutirão Total',        d:'A aliança toda ajuda sua obra',    p:600}
   ];
 
-  var R4 = [
-    ['Sroor','25,2M',26,'on'], ['NOX CHIN','17,9M',24,'on'],
-    ['쁘띠시니','30,3M',27,'42 min'], ['kangminseok88','28,4M',26,'2 h'],
-    ['Lady Farquaad','26,7M',26,'52 min'], ['Player1','23,8M',26,'1 dia'],
-    ['Maelle','22,6M',26,'2 min'], ['Mochi','20,4M',23,'9 min']
-  ];
-  var R3 = [
-    ['BadddieeeTee','25M',26,'on'], ['LordyAji','19,1M',23,'on'],
-    ['VincentLiu','18,4M',23,'on'], ['Mango','16,7M',23,'on'],
-    ['King Charles MLP','16,7M',22,'on'], ['공중요새','16,2M',23,'1 min'],
-    ['3400Ss88Ss00','16,2M',24,'on'], ['Yañez','15,6M',24,'on'],
-    ['America','13,2M',23,'on'], ['雲淡風輕','11,5M',21,'on'],
-    ['DonQuiroga','11,3M',21,'on'], ['Lordodis','26,7M',27,'56 min'],
-    ['SouthernWind','26,7M',26,'6 h'], ['slayers 69','22,4M',25,'8 h'],
-    ['sahab','22,2M',26,'2 h'], ['Faiz','22M',25,'31 min'],
-    ['Psykokile','20,2M',25,'4 h'], ['vandie00','19,1M',24,'6 h'],
-    ['OneKilL','18,7M',24,'12 h'], ['ozzy','17,8M',24,'2 h'],
-    ['ElAbUeLo','17,5M',23,'6 h'], ['Raz','17,4M',24,'1 h'],
-    ['LordNivek','17,1M',23,'17 min'], ['Kaz','17M',23,'15 min'],
-    ['TheUji','16,7M',24,'9 h'], ['Bazron','16,7M',23,'3 h'],
-    ['Reinarra','16,6M',24,'26 min'], ['jingfly316','16,4M',23,'3 min'],
-    ['KZEEEN','16,3M',22,'59 min'], ['누니누니','16,3M',24,'1 h'],
-    ['Buchi','15,9M',23,'6 h'], ['SaikatChakma','15,9M',23,'48 min'],
-    ['海角霖生','15,9M',24,'5 h'], ['PonkQ','15,9M',23,'10 h'],
-    ['ecethequeen','15,8M',24,'2 h'], ['Eliqz','15,8M',23,'3 h'],
-    ['Eggbert','15,7M',24,'6 h'], ['Mtk','15,7M',24,'11 h'],
-    ['ละอ่อนเหนือ','15,5M',24,'13 h']
-  ];
+  /* As listas de jogadores inventados da maquete saíram daqui: eram uns 30
+     nomes que nunca existiram, e só serviam para a paintRanks() — que nunca
+     foi chamada. A lista de membros de verdade vem do banco. */
   var AVATARS = ['🦅','🐺','🐉','🦁','⚔️','🛡️','👑','🏹','🔥','⭐','🐻','🦊','🌟','💎','🗡️'];
 
   /* ---------------- estado ---------------- */
@@ -5340,7 +5318,15 @@
     if(cur !== 'inicio') go('inicio');
     else if(ME && ME.id) mostrarCasa();
   });
-  $('#bellBtn').addEventListener('click', function(){ toast('📌 Sworland Showdown — leia o aviso da Maelle!'); });
+  /* O sino mostrava um recado inventado, copiado da maquete. Agora mostra o
+     aviso de verdade da liderança — e diz quando não há nenhum. */
+  $('#bellBtn').addEventListener('click', function(){
+    sbGet("top_chat?tipo=eq.aviso"+daMinha()+"&select=nome,texto&order=id.desc&limit=1")
+      .then(function(r){
+        var a = (r||[])[0];
+        toast(a ? ("📌 " + a.texto) : "Nenhum aviso da liderança ainda.");
+      }).catch(function(){ toast("Sem conexão para buscar o aviso."); });
+  });
 
   /* ---------------- moedas ---------------- */
   function paintCoins(){
@@ -5396,45 +5382,7 @@
     }).catch(function(){ b.disabled = false; toast('❌ Erro ao resgatar.'); });
   });
 
-  /* ---------------- membros ---------------- */
-  function memberCard(row){
-    var name = row[0], pw = row[1], lv = row[2], last = row[3];
-    var on = last === 'on';
-    return '<div class="mcard" data-name="'+esc(name.toLowerCase())+'">'+
-      '<span class="av">'+avatarFor(name)+
-        '<span class="stat '+(on?'on':'off')+'">'+(on?'On-line':esc(last))+'</span>'+
-      '</span>'+
-      '<span class="info">'+
-        '<span class="nm">'+esc(name)+'</span>'+
-        '<span class="row">✊ '+esc(pw)+'</span>'+
-        '<span class="row">🏰 Nv. '+lv+'</span>'+
-      '</span>'+
-    '</div>';
-  }
 
-  function paintRanks(){
-    var host = $('#ranks');
-    var groups = [
-      {r:'R4', n:'Colonel',  online:2,  total:8,  list:R4},
-      {r:'R3', n:'Major',    online:11, total:63, list:R3},
-      {r:'R2', n:'Captain',  online:5,  total:26, list:[]},
-      {r:'R1', n:'Lieutenant', online:0, total:2, list:[]},
-      {r:'R0', n:'Lista de Solicitações', online:0, total:0, list:[]}
-    ];
-    host.innerHTML = groups.map(function(g, i){
-      var open = i < 2;
-      return '<button class="rankhdr" aria-expanded="'+open+'" data-grp="g'+i+'">'+
-          '<span class="rbadge">'+g.r+'</span>'+
-          '<span class="rname stroked-sm">'+esc(g.n)+'</span>'+
-          '<span class="rcount">👤 '+(g.list.length ? g.online+'/'+g.total : g.total)+'</span>'+
-          '<span class="chev">▼</span>'+
-        '</button>'+
-        '<div class="mgrid'+(open?'':' collapsed')+'" id="g'+i+'">'+
-          (g.list.length ? g.list.map(memberCard).join('')
-            : '<p style="grid-column:1/-1;font-size:.82rem;color:var(--ink-soft);font-weight:600;text-align:center;padding:6px">Sem print desta lista ainda — me manda que eu preencho.</p>')+
-        '</div>';
-    }).join('');
-  }
 
   document.addEventListener('click', function(e){
     var h = e.target.closest('.rankhdr');
