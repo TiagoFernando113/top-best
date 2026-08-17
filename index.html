@@ -1062,6 +1062,9 @@
     <div id="entrarConta">
       <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
       <input class="reginput" id="entrarNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+      <p class="rlab" style="margin-top:14px">Seu ID no jogo</p>
+      <input class="reginput" id="entrarJogoId" type="text" inputmode="numeric" placeholder="Só números — veja no seu perfil no jogo" maxlength="15" autocomplete="off" style="margin-top:0">
+      <div id="entrarJogoPreview" style="display:none;margin-top:8px"></div>
       <input class="reginput" id="entrarSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
       <input class="reginput" id="entrarSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
     </div>
@@ -1097,6 +1100,9 @@
     <p class="sub" style="text-align:center">Sua conta é sua. Depois você entra numa aliança com o código dela, ou cria a sua.</p>
     <p class="rlab" style="margin-top:14px">Seu nome no jogo</p>
     <input class="reginput" id="contaNome" type="text" placeholder="Como aparece no jogo" maxlength="40" autocomplete="off" style="margin-top:0">
+    <p class="rlab" style="margin-top:14px">Seu ID no jogo</p>
+    <input class="reginput" id="contaJogoId" type="text" inputmode="numeric" placeholder="Só números — veja no seu perfil no jogo" maxlength="15" autocomplete="off" style="margin-top:0">
+    <div id="contaJogoPreview" style="display:none;margin-top:8px"></div>
     <input class="reginput" id="contaSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60" autocomplete="new-password">
     <input class="reginput" id="contaSenha2" type="password" placeholder="Repita a senha" maxlength="60" autocomplete="new-password">
     <p class="note" id="contaMsg" style="display:none;color:var(--red);margin-top:8px"></p>
@@ -1146,6 +1152,8 @@
     <p class="sub" id="regSub">Escolha seu avatar e crie sua senha.</p>
     <div id="regAlianca" style="display:none"></div>
     <input class="reginput" id="regNome" type="text" placeholder="Seu nome no jogo" maxlength="40" autocomplete="off">
+    <input class="reginput" id="regJogoId" type="text" inputmode="numeric" placeholder="Seu ID no jogo — só números" maxlength="15" autocomplete="off">
+    <div id="regJogoPreview" style="display:none;margin-top:8px"></div>
     <input class="reginput" id="regSenha" type="password" placeholder="Crie uma senha (mín. 4)" maxlength="60">
     <p class="rlab" style="margin-top:12px">Escolha seu avatar</p>
     <div class="avgrid" id="regAvatares"></div>
@@ -2906,15 +2914,18 @@
      do navegador, o convite podia ser gasto e o cadastro falhar logo depois,
      deixando a pessoa de fora com o convite já perdido. E o membro nascia sem
      aliança dita, caindo no padrão — que era sempre a [TOP] Best. */
-  function registrar(nome, senha, avatar){
+  function registrar(nome, senha, avatar, jogoId){
     return hashSenha(nome, senha).then(function(hash){
       return sbRpc("convite_usar", {p_token:conviteToken, p_device:deviceId(),
-                                    p_nome:nome, p_senha:hash, p_avatar:avatar});
+                                    p_nome:nome, p_senha:hash, p_avatar:avatar, p_jogo_id:jogoId||null});
     }).then(function(r){
       if(!r || r.erro){
         var m = { convite:"Este convite já foi usado. Peça outro a um oficial.",
                   nome_usado:"Já existe alguém com esse nome nessa aliança.",
                   nome:"Escreva seu nome no jogo.",
+                  jogo_id:"Escreva seu ID no jogo.",
+                  jogo_id_formato:"Esse ID não parece certo — só números, veja no seu perfil no jogo.",
+                  jogo_id_usado:"Esse ID já está cadastrado por outro membro dessa aliança.",
                   senha:"Crie uma senha." }[r && r.erro] || "Não deu para entrar.";
         return {ok:false, msg:m};
       }
@@ -3141,19 +3152,21 @@
     var cod = $("#entrarCodigo").value.trim().toUpperCase();
     if(cod.length < 4) return erroCaixa("#entrarMsg", "Escreva o código de acesso da aliança.");
     // quem já tem conta aberta não cria outra: entra com a que tem
-    var temConta = !!(ME && ME.id), nome = "", s1 = "";
+    var temConta = !!(ME && ME.id), nome = "", s1 = "", jogoId = "";
     if(!temConta){
       nome = $("#entrarNome").value.trim();
+      jogoId = $("#entrarJogoId").value.trim();
       s1 = $("#entrarSenha").value;
       var s2 = $("#entrarSenha2").value;
       if(!nome)         return erroCaixa("#entrarMsg", "Escreva seu nome no jogo.");
+      if(!/^\d{5,15}$/.test(jogoId)) return erroCaixa("#entrarMsg", "Escreva seu ID no jogo — só números, veja no seu perfil.");
       if(s1.length < 4) return erroCaixa("#entrarMsg", "A senha precisa de pelo menos 4 letras.");
       if(s1 !== s2)     return erroCaixa("#entrarMsg", "As duas senhas não são iguais.");
     }
     erroCaixa("#entrarMsg", "");
     var bt = $("#entrarSend"); bt.disabled = true;
     return (temConta ? Promise.resolve(null) : hashSenha(nome, s1)).then(function(hash){
-      return sbRpc("membro_entrar", {p_codigo:cod, p_device:deviceId(), p_nome:nome, p_senha:hash,
+      return sbRpc("membro_entrar", {p_codigo:cod, p_device:deviceId(), p_nome:nome, p_senha:hash, p_jogo_id:jogoId||null,
                                      p_conta: (ME && ME.id) ? ME.id : null});
     }).then(function(r){
       bt.disabled = false;
@@ -3161,6 +3174,9 @@
         var m = { codigo:"Código não encontrado. Confira com um oficial.",
                   nome_usado:"Já existe alguém com esse nome nessa aliança.",
                   nome:"Escreva seu nome no jogo.",
+                  jogo_id:"Escreva seu ID no jogo.",
+                  jogo_id_formato:"Esse ID não parece certo — só números, veja no seu perfil no jogo.",
+                  jogo_id_usado:"Esse ID já está cadastrado por outro membro dessa aliança.",
                   senha:"Crie uma senha." }[r && r.erro] || "Não deu para entrar. Tente de novo.";
         return erroCaixa("#entrarMsg", m);
       }
@@ -3439,20 +3455,24 @@
      procurar aliança depois não tinha por onde começar. */
   function criarConta(){
     var nome = $("#contaNome").value.trim();
+    var jogoId = $("#contaJogoId").value.trim();
     var s1 = $("#contaSenha").value, s2 = $("#contaSenha2").value;
     if(!nome)         return erroCaixa("#contaMsg", "Escreva seu nome no jogo.");
+    if(!/^\d{5,15}$/.test(jogoId)) return erroCaixa("#contaMsg", "Escreva seu ID no jogo — só números, veja no seu perfil.");
     if(s1.length < 4) return erroCaixa("#contaMsg", "A senha precisa de pelo menos 4 letras.");
     if(s1 !== s2)     return erroCaixa("#contaMsg", "As duas senhas não são iguais.");
     erroCaixa("#contaMsg", "");
     var bt = $("#contaCriar"); bt.disabled = true;
     return hashSenha(nome, s1).then(function(hash){
-      return sbRpc("conta_criar", {p_nome:nome, p_senha:hash, p_device:deviceId()});
+      return sbRpc("conta_criar", {p_nome:nome, p_senha:hash, p_device:deviceId(), p_jogo_id:jogoId});
     }).then(function(r){
       bt.disabled = false;
       if(!r || r.erro){
-        return erroCaixa("#contaMsg", r && r.erro === "ja_existe"
-          ? "Já existe uma conta com esse nome e essa senha. Use o login."
-          : "Não deu para criar a conta.");
+        var msg = { ja_existe:"Já existe uma conta com esse nome e essa senha. Use o login.",
+                    jogo_id:"Escreva seu ID no jogo.",
+                    jogo_id_formato:"Esse ID não parece certo — só números, veja no seu perfil no jogo." }[r && r.erro]
+                  || "Não deu para criar a conta.";
+        return erroCaixa("#contaMsg", msg);
       }
       return getMembro().then(function(m){
         if(!m) return erroCaixa("#contaMsg", "Conta criada, mas não carreguei o perfil. Recarregue.");
@@ -4862,6 +4882,47 @@
     if(n >= 1e3) return Math.round(n/1e3)+"K";
     return String(n||0);
   }
+  /* Confirma visualmente o ID do jogo antes do cadastro: busca no
+     kingshotstats.com e mostra o perfil pra pessoa conferir que é ela mesma,
+     em vez de digitar um número às cegas. Não bloqueia — é confiança extra;
+     se o ID não bater com ninguém lá, ainda dá pra continuar. */
+  function montaBuscaJogoId(inputSel, previewSel){
+    var inp = $(inputSel), prev = $(previewSel);
+    if(!inp || !prev) return;
+    var timer = null, ultimoFid = null;
+    function limpar(){ prev.style.display = "none"; prev.innerHTML = ""; }
+    inp.addEventListener("input", function(){
+      var fid = inp.value.trim();
+      clearTimeout(timer);
+      if(!/^\d{5,15}$/.test(fid)){ limpar(); return; }
+      timer = setTimeout(function(){
+        ultimoFid = fid;
+        prev.style.display = "block";
+        prev.innerHTML = '<p class="note">🔎 Procurando…</p>';
+        fetch(SB_URL+"/functions/v1/top-jogo-lookup", {method:"POST",
+          headers:{"Content-Type":"application/json"}, body:JSON.stringify({fid:fid})})
+          .then(function(r){ return r.json(); })
+          .then(function(r){
+            if(fid !== ultimoFid) return; // já digitou outra coisa enquanto isso respondia
+            if(!r || !r.ok || !r.achou){
+              if(r && r.indisponivel){ limpar(); return; }
+              prev.innerHTML = '<p class="note">🤔 Não achei esse ID ainda no kingshotstats. Confira se digitou certo — mas pode continuar se tiver certeza.</p>';
+              return;
+            }
+            var av = r.avatar_url ? '<img src="'+esc(r.avatar_url)+'" style="width:34px;height:34px;border-radius:9px;object-fit:cover;flex:none" onerror="this.remove()">' : '';
+            var alianca = r.alliance_abbr ? ('· ['+esc(r.alliance_abbr)+'] '+esc(r.alliance_name||'')) : '';
+            prev.innerHTML = '<div style="display:flex;align-items:center;gap:9px;background:var(--panel-3);border-radius:11px;padding:8px 10px">'+
+              av+
+              '<div style="flex:1;min-width:0">'+
+                '<div style="font-weight:800;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✅ '+esc(r.nick_name||'')+'</div>'+
+                '<div class="note" style="font-weight:600">'+alianca+(r.power?(' · ⚡ '+fmtPoder(r.power)):'')+'</div>'+
+              '</div>'+
+            '</div>'+
+            '<p class="note" style="margin-top:6px">É você? Confira o nome antes de continuar.</p>';
+          }).catch(function(){ if(fid === ultimoFid) limpar(); });
+      }, 500);
+    });
+  }
   function estaOnline(m){ return m.visto_em && (Date.now() - new Date(m.visto_em).getTime()) < 300000; }
   function paintMembros(){
     return sbGet("top_membros?status=neq.saiu"+daMinha()+"&select=id,nome,cargo,pontos,moedas,foto_url,avatar,visto_em,status,is_oficial,poder,abates,jogo_id,reino&order=pontos.desc&limit=300").then(function(rows){
@@ -5757,10 +5818,12 @@
   function mostrarR0(){ toast("👋 Bem-vindo! Você entrou como novo jogador (R0). Um oficial vai revisar seu perfil."); }
   $("#regSend").addEventListener("click", function(){
     var nome = $("#regNome").value.trim(), senha = $("#regSenha").value;
+    var jogoId = $("#regJogoId").value.trim();
     if(nome.length < 2){ regErro("Digite seu nome do jogo."); return; }
+    if(!/^\d{5,15}$/.test(jogoId)){ regErro("Escreva seu ID no jogo — só números, veja no seu perfil."); return; }
     if(senha.length < 4){ regErro("Senha muito curta (mínimo 4)."); return; }
     var btn = this; btn.disabled = true; $("#regMsg").style.display = "none";
-    registrar(nome, senha, regAvatarSel).then(function(res){
+    registrar(nome, senha, regAvatarSel, jogoId).then(function(res){
       if(res.ok){ entrar(); if(res.novo){ mostrarR0(); notificar('oficiais', '🙋 Novo pedido de entrada', nome+' quer entrar na aliança', deviceId()); } }
       else { regErro(res.msg); btn.disabled = false; }
     }).catch(function(){ regErro("Erro de conexão. Tente de novo."); btn.disabled = false; });
@@ -5813,6 +5876,9 @@
   $("#landConta").addEventListener("click", function(){ $("#contaOverlay").classList.add("on"); });
   $("#contaVoltar").addEventListener("click", function(){ $("#contaOverlay").classList.remove("on"); });
   $("#contaCriar").addEventListener("click", criarConta);
+  montaBuscaJogoId("#entrarJogoId", "#entrarJogoPreview");
+  montaBuscaJogoId("#contaJogoId", "#contaJogoPreview");
+  montaBuscaJogoId("#regJogoId", "#regJogoPreview");
   $("#landNova").addEventListener("click", abrirNovaAlianca);
   $("#landMembro").addEventListener("click", abrirEntrarComCodigo);
   /* fechar o cadastro revela a página de entrada, que está sempre por baixo */
