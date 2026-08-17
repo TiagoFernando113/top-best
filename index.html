@@ -847,15 +847,10 @@
   <!-- ============ RANKING ============ -->
   <div class="screen" id="s-ranking">
     <div class="panel">
-      <div class="stitle"><h2>Ranking de Pontos</h2><div class="rule"></div></div>
-      <div class="embreve">
-        <span class="eb-ic">🚧</span>
-        <div class="eb-tx"><b>Em breve</b>
-          <p>Estamos acertando como contar a participação de cada um. Enquanto isso o ranking fica parado — ninguém está perdendo posição.</p></div>
-      </div>
+      <div class="stitle"><h2>Ranking</h2><div class="rule"></div></div>
       <div id="rankTabs" class="rtabs"></div>
       <div id="rankTop"></div>
-      <div class="hint">🎯 Pontos são ganhos participando dos eventos — quanto mais pontos, mais alto no ranking e mais moedas na Loja.</div>
+      <div class="hint" id="rankHint">🎯 Pontos são ganhos participando dos eventos — quanto mais pontos, mais alto no ranking e mais moedas na Loja.</div>
     </div>
   </div>
 
@@ -5478,19 +5473,31 @@
 
   /* ---------------- ranking ---------------- */
   var rankSel = "geral";
-  function rankRender(arr){
+  function rankRender(arr, modo){
     var host = $('#rankTop'); if(!host) return;
-    if(!arr.length){ host.innerHTML = '<div class="empty">Ainda sem pontos aqui.</div>'; return; }
+    if(!arr.length){ host.innerHTML = '<div class="empty">'+(modo==="poder"?"Ninguém com poder sincronizado ainda.":"Ainda sem pontos aqui.")+'</div>'; return; }
     host.innerHTML = arr.map(function(m,i){
+      var valor = modo==="poder" ? ('⚡ '+fmtPoder(m.pts||0)) : ('🎯 '+fmt(m.pts||0));
       return '<div style="display:flex;align-items:center;gap:10px;background:var(--panel-3);border-radius:11px;padding:8px 12px;margin-bottom:8px">'+
         '<span style="width:30px;text-align:center;font-size:'+(i<3?'1.2rem':'.95rem')+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º')+'</span>'+
         '<span class="mav" style="width:34px;height:34px">'+avatarSVG(m)+'</span>'+
         '<span style="flex:1;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.nome)+'</span>'+
-        '<span style="font-variant-numeric:tabular-nums;font-size:.92rem">🎯 '+fmt(m.pts||0)+'</span>'+
+        '<span style="font-variant-numeric:tabular-nums;font-size:.92rem">'+valor+'</span>'+
       '</div>';
     }).join('');
   }
+  var RANK_HINTS = {
+    poder: "⚡ Poder puxado do kingshotstats.com e atualizado a cada hora — só aparece quem tem o ID do jogo cadastrado no perfil.",
+    geral: "🎯 Pontos são ganhos participando dos eventos — quanto mais pontos, mais alto no ranking e mais moedas na Loja."
+  };
   function renderRankingSel(){
+    var hint = $("#rankHint");
+    if(hint) hint.textContent = RANK_HINTS[rankSel] || RANK_HINTS.geral;
+    if(rankSel === "poder"){
+      return sbGet("top_membros?poder=gt.0&status=neq.saiu"+daMinha()+"&select=nome,poder,foto_url,avatar&order=poder.desc&limit=40").then(function(rows){
+        rankRender((rows||[]).map(function(m){ return {nome:m.nome, foto_url:m.foto_url, avatar:m.avatar, pts:m.poder}; }), "poder");
+      });
+    }
     if(rankSel === "geral"){
       return sbGet("top_membros?pontos=gt.0&status=neq.saiu"+daMinha()+"&select=nome,pontos,foto_url,avatar&order=pontos.desc&limit=40").then(function(rows){
         rankRender((rows||[]).map(function(m){ return {nome:m.nome, foto_url:m.foto_url, avatar:m.avatar, pts:m.pontos}; }));
@@ -5512,7 +5519,8 @@
       evs = evs || [];
       var tabs = $("#rankTabs");
       if(tabs){
-        tabs.innerHTML = '<button class="rtab'+(rankSel==="geral"?" sel":"")+'" data-rank="geral">🏆 Geral</button>' +
+        tabs.innerHTML = '<button class="rtab'+(rankSel==="poder"?" sel":"")+'" data-rank="poder">⚡ Poder</button>' +
+          '<button class="rtab'+(rankSel==="geral"?" sel":"")+'" data-rank="geral">🏆 Geral</button>' +
           evs.map(function(e){ return '<button class="rtab'+(rankSel===e.id?" sel":"")+'" data-rank="'+e.id+'">'+esc(e.titulo)+'</button>'; }).join("");
       }
       return renderRankingSel();
