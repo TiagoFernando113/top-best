@@ -1,0 +1,14 @@
+app = "top-best-discord-bot"
+primary_region = "gru"
+
+[build]
+
+[processes]
+  app = "node index.js"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[deploy]
+  strategy = "immediate"
