@@ -952,6 +952,23 @@
             </div>
           </div>
 
+          <div class="cfgsec" id="admDiscordWrap" style="display:none">
+            <div class="cfghd">🤖 Discord da aliança</div>
+            <p class="note" style="margin:0 0 10px">Liga o portal ao seu servidor do Discord: os avisos de evento aparecem lá, e os comandos do bot respondem com os dados desta aliança.</p>
+
+            <p class="rlab">ID do servidor do Discord</p>
+            <input class="reginput" id="admDiscordGuild" type="text" inputmode="numeric" placeholder="Só números" maxlength="25" autocomplete="off" style="margin-top:0">
+            <p class="note" style="margin-top:6px">No Discord: Configurações → Avançado → Modo desenvolvedor ligado. Depois segure o nome do servidor → Copiar ID do servidor.</p>
+
+            <p class="rlab" style="margin-top:14px">Webhook do canal de avisos <span style="font-weight:600;opacity:.8">(opcional)</span></p>
+            <input class="reginput" id="admDiscordHook" type="text" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" style="margin-top:0">
+            <p class="note" style="margin-top:6px">No canal onde os avisos devem cair: Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL. Deixe vazio para não avisar no Discord.</p>
+
+            <p class="note" id="admDiscordEstado" style="margin-top:10px;display:none"></p>
+            <p class="note" id="admDiscordMsg" style="display:none;color:var(--red);margin-top:8px"></p>
+            <button class="bigbtn green" id="admDiscordSalvar" style="margin-top:10px">Salvar Discord</button>
+          </div>
+
           <div class="cfgsec" id="admLiderWrap" style="display:none">
             <div class="cfghd">👑 Liderança</div>
             <p class="note" style="margin:0 0 8px">Você é o R5. Ninguém pode tirar você daqui — só você, passando o cargo a um R4.</p>
@@ -3476,9 +3493,50 @@
         $("#admBannerWrap").style.display     = lider;
         $("#admIdentWrap").style.display      = lider;
         $("#admNovoCodigoWrap").style.display = lider;
+        $("#admDiscordWrap").style.display    = lider;
         $("#admLiderWrap").style.display      = (ME.cargo === "R5") ? "block" : "none";
+        if(ehLider(ME)) carregaDiscord();
         return r;
       }).catch(function(){ return null; });
+  }
+  /* O webhook é praticamente uma senha (quem tem a URL posta no canal), então o
+     servidor devolve só se existe — nunca a URL de volta. O campo fica vazio e
+     quem quiser trocar cola uma nova. */
+  function carregaDiscord(){
+    return sbRpc("alianca_discord_ver", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        if(!r || r.erro) return;
+        var g = $("#admDiscordGuild"); if(g && r.guild) g.value = r.guild;
+        var e = $("#admDiscordEstado");
+        if(e){
+          e.textContent = r.webhook
+            ? "✅ Avisos ligados neste servidor. Para trocar o canal, cole outro webhook."
+            : "Sem webhook: os avisos de evento não vão para o Discord.";
+          e.style.display = "block";
+        }
+      }).catch(function(){});
+  }
+  function salvarDiscord(){
+    var guild = $("#admDiscordGuild").value.trim();
+    var hook  = $("#admDiscordHook").value.trim();
+    erroCaixa("#admDiscordMsg", "");
+    var bt = $("#admDiscordSalvar"); bt.disabled = true;
+    return sbRpc("alianca_discord_salvar", {p_membro:ME.id, p_senha:null, p_device:deviceId(),
+                                            p_webhook:hook, p_guild:guild})
+      .then(function(r){
+        bt.disabled = false;
+        if(!r || r.erro){
+          var m = { sem_permissao:"Só o líder mexe no Discord da aliança.",
+                    url:"Esse endereço não parece um webhook do Discord. Ele começa com https://discord.com/api/webhooks/",
+                    guild:"O ID do servidor é só números.",
+                    guild_usado:"Esse servidor do Discord já está ligado a outra aliança." }[r && r.erro]
+                  || "Não deu para salvar.";
+          return erroCaixa("#admDiscordMsg", m);
+        }
+        $("#admDiscordHook").value = "";   // não deixa a senha na tela depois de salva
+        toast("🤖 Discord salvo!");
+        return carregaDiscord();
+      }).catch(function(){ bt.disabled = false; erroCaixa("#admDiscordMsg", "Sem conexão."); });
   }
   function carregaEstandarte(){
     if(!ME || !ME.alianca_id) return Promise.resolve(null);
@@ -6290,6 +6348,7 @@
   $("#admPassarLideranca").addEventListener("click", abrirPassarLideranca);
   $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
   $("#admNovoCodigo").addEventListener("click", gerarNovoCodigo);
+  var _adSv = $("#admDiscordSalvar"); if(_adSv) _adSv.addEventListener("click", salvarDiscord);
   $("#sairAliancaBtn").addEventListener("click", abrirSair);
   $("#sairCancel").addEventListener("click", function(){ $("#sairOverlay").classList.remove("on"); });
   $("#sairConfirmar").addEventListener("click", confirmarSair);
