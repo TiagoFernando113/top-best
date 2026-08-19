@@ -68,5 +68,19 @@ fly deploy
 - em Variables, adicione as 3 variáveis de ambiente acima
 - Railway detecta o Dockerfile e sobe sozinho
 
-Depois do primeiro deploy manual, dá pra automatizar (todo push atualiza o
-bot sozinho) — é só avisar depois de escolher o host e eu configuro isso.
+## 4. Deploy automático (dá pra fazer pelo celular)
+
+`.github/workflows/deploy-bot.yml` faz o `fly deploy` sozinho a cada push que
+mexer nesta pasta. Sem isso, mudar o `index.js` não muda nada no Discord até
+alguém rodar `fly deploy` de um computador com o flyctl instalado — o portal é
+GitHub Pages, mas o bot é um processo Node num host separado.
+
+Para ligar, uma vez só:
+
+1. fly.io → Account → Access Tokens → criar um token
+2. neste repositório: Settings → Secrets and variables → Actions → New
+   repository secret → nome `FLY_API_TOKEN`, valor o token do passo 1
+
+Os dois passos funcionam pelo navegador do celular. Depois disso, dá para
+disparar um deploy na mão pela aba **Actions** → *Deploy do bot do Discord* →
+*Run workflow*, sem precisar de push.
