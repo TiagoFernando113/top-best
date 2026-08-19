@@ -5,7 +5,28 @@ Este bot fica ligado 24h no Discord pra fazer duas coisas que o bot de
 o chat:
 
 - traduz automaticamente mensagens de jogadores que não escreverem em português
+- pendura o seletor 🌐 de tradução privada nos avisos de evento
 - responde com o GIF de rosas quando alguém menciona "Lady" ou "Maelle"
+
+## Tradução privada (o seletor 🌐)
+
+A aliança tem gente lendo em português, inglês, árabe e japonês. Traduzir cada
+aviso para todos os idiomas de uma vez deixaria o canal de eventos ilegível —
+um aviso viraria oito versões empilhadas.
+
+Então o bot **não traduz nada no canal**. Ele pendura um seletor 🌐 embaixo da
+mensagem; quem escolhe um idioma recebe o texto traduzido numa resposta
+**efêmera**, que só essa pessoa vê. O canal fica com uma linha a mais, não com
+oito.
+
+Quem atende o clique é o `top-discord` (Supabase Edge Function), no ramo
+`traduzir-msg:` — este bot só guarda o texto original em `discord_msg_traducao`
+e manda o id junto no seletor, porque o `custom_id` do Discord só cabe 100
+caracteres e um aviso de evento passa disso fácil.
+
+Para traduzir uma mensagem qualquer que não tenha seletor, cada pessoa também
+pode usar **clique direito na mensagem → Apps → Translate**, que já responde no
+idioma salvo em `/mylanguage`.
 
 ## 1. No Discord Developer Portal
 
