@@ -291,8 +291,14 @@ function vantajosoTraduzir(texto, teto = 800) {
 const TEXTO_MAXIMO = 3500;  // teto do que cabe guardar e traduzir sob demanda
 
 
-async function guardarPraTraduzir(texto) {
-  const r = await sbPost("discord_msg_traducao", { texto: texto.slice(0, 4000) });
+async function guardarPraTraduzir(texto, link) {
+  const r = await sbPost("discord_msg_traducao", {
+    texto: texto.slice(0, 4000),
+    /* O link e o que permite a traducao oferecer o caminho de volta: a resposta
+       efemera nasce no fim do canal, e sem ele quem toca num recado antigo tem
+       que rolar de volta na mao. */
+    link: link || null,
+  });
   return r?.[0]?.id ?? null;
 }
 
@@ -359,14 +365,43 @@ async function traduzirEResponder(msg, texto) {
 
      Sem deteccao de idioma aqui: nao ha mais nada pra decidir com ela, e a
      traducao acontece no clique. Zero chamada de traducao por mensagem. */
-  const id = await guardarPraTraduzir(texto).catch(() => null);
+  const id = await guardarPraTraduzir(texto, msg.url).catch(() => null);
   if (!id) return;
 
-  await msg.reply({
-    content: "-# 🌐 Ler no seu idioma / Read in your language",
+  /* O seletor vai dentro de um topico preso na mensagem, nao solto no canal.
+
+     Duas coisas melhoram de uma vez. No canal sobra so a linha fina do topico
+     ("Ver topico"), bem menor que uma caixa de seletor embaixo de cada recado.
+     E a resposta com a traducao, que e efemera, nasce no fim do lugar onde foi
+     pedida -- dentro do topico isso e logo abaixo do seletor, porque o topico
+     tem uma mensagem so. Some o "desce la embaixo": nao ha pra onde descer.
+
+     Solto no canal a efemera ia parar no fim de tudo, e quem tocasse num
+     recado antigo perdia o lugar na conversa.
+
+     Uma hora de arquivamento: passado esse tempo o topico sai da lista de
+     ativos sozinho, senao um chat movimentado viraria um cemiterio deles. */
+  const topico = await msg.startThread({
+    name: "🌐 Tradução",
+    autoArchiveDuration: 60,
+  }).catch((e) => {
+    console.error(`traducao: nao consegui criar topico em #${msg.channel?.name}:`, e?.message || e);
+    return null;
+  });
+
+  const corpo = {
+    content: "🌐 Escolha seu idioma / Pick your language",
     components: menuTraduzir(id),
-    allowedMentions: { parse: [], repliedUser: false },
-  }).catch(() => {});
+    allowedMentions: { parse: [] },
+  };
+
+  /* Sem topico (falta de permissao, canal que nao aceita), o seletor volta a
+     sair solto no canal. Pior de posicao, mas melhor que ficar sem tradutor.
+     Aqui o metodo muda junto: topico manda com send, mensagem com reply. */
+  await (topico
+    ? topico.send(corpo)
+    : msg.reply({ ...corpo, allowedMentions: { parse: [], repliedUser: false } })
+  ).catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
 }
 
 client.on("messageCreate", async (msg) => {
