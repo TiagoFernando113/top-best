@@ -185,24 +185,43 @@ async function canalBoasVindas(aliancaId) {
    mesmo aviso com GIF + seletor de idioma direto pelo bot. */
 client.on("guildMemberAdd", async (member) => {
   try {
+    /* Cada desistencia daqui pra baixo fala por que. Antes tudo era silencioso
+       (`.catch(() => {})`), e quando as boas-vindas pararam nao havia uma linha
+       de log dizendo se foi o canal, a permissao ou o vinculo -- so o canal
+       vazio. Quem entra no Discord entra uma vez: nao da pra reproduzir depois. */
+    const quem = member.displayName || member.user.username;
+
     const aliancaId = await aliancaDoGuild(member.guild.id);
-    if (!aliancaId) return;
+    if (!aliancaId) {
+      return console.error(`boas-vindas ${quem}: servidor ${member.guild.id} nao esta ligado a nenhuma alianca`);
+    }
     const canalId = await canalBoasVindas(aliancaId);
-    if (!canalId) return;
-    const canal = await member.guild.channels.fetch(canalId).catch(() => null);
-    if (!canal?.isTextBased?.()) return;
+    if (!canalId) {
+      return console.error(`boas-vindas ${quem}: nao achei o canal (webhook de boas-vindas caiu ou nao esta configurado)`);
+    }
+    const canal = await member.guild.channels.fetch(canalId).catch((e) => {
+      console.error(`boas-vindas ${quem}: nao consegui abrir o canal ${canalId}:`, e?.message || e);
+      return null;
+    });
+    if (!canal) return;
+    if (!canal.isTextBased?.()) {
+      return console.error(`boas-vindas ${quem}: o canal ${canalId} nao aceita mensagem`);
+    }
 
     const [gif, tag] = await Promise.all([gifBoasVindas(), tagDaAlianca(aliancaId)]);
     await canal.send({
       embeds: [{
-        title: `🎉 Boas-vindas, ${member.displayName || member.user.username}!`,
+        title: `🎉 Boas-vindas, ${quem}!`,
         description: `Entrou na **${tag}**. Bem-vindo(a) ao time!`,
         color: 6208835,
         ...(gif ? { image: { url: gif } } : {}),
         footer: { text: "🌐 Escolha seu idioma abaixo / Pick your language below" },
       }],
       components: menuIdioma(),
-    }).catch(() => {});
+    }).then(
+      () => console.log(`boas-vindas: ${quem} recebido em #${canal.name}`),
+      (e) => console.error(`boas-vindas ${quem}: o Discord recusou o envio em #${canal.name} (falta permissao no canal?):`, e?.message || e),
+    );
   } catch (e) {
     console.error("erro ao dar boas-vindas:", e?.message || e);
   }
