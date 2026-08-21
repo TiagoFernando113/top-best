@@ -230,6 +230,47 @@ client.on("guildMemberAdd", async (member) => {
 /* ---------------- traducao (mesmo endpoint publico que o site ja usa) ---------------- */
 
 
+const IDIOMA = {
+  pt: { nome: "Português", bandeira: "🇧🇷" }, en: { nome: "Inglês", bandeira: "🇬🇧" },
+  es: { nome: "Espanhol", bandeira: "🇪🇸" }, ko: { nome: "Coreano", bandeira: "🇰🇷" },
+  ja: { nome: "Japonês", bandeira: "🇯🇵" }, zh: { nome: "Chinês", bandeira: "🇨🇳" },
+  "zh-cn": { nome: "Chinês", bandeira: "🇨🇳" }, "zh-CN": { nome: "Chinês", bandeira: "🇨🇳" },
+  "zh-tw": { nome: "Chinês", bandeira: "🇨🇳" }, de: { nome: "Alemão", bandeira: "🇩🇪" },
+  fr: { nome: "Francês", bandeira: "🇫🇷" }, it: { nome: "Italiano", bandeira: "🇮🇹" },
+  ru: { nome: "Russo", bandeira: "🇷🇺" }, ar: { nome: "Árabe", bandeira: "🇸🇦" },
+  tr: { nome: "Turco", bandeira: "🇹🇷" }, id: { nome: "Indonésio", bandeira: "🇮🇩" },
+  th: { nome: "Tailandês", bandeira: "🇹🇭" }, vi: { nome: "Vietnamita", bandeira: "🇻🇳" },
+  pl: { nome: "Polonês", bandeira: "🇵🇱" }, nl: { nome: "Holandês", bandeira: "🇳🇱" },
+  tl: { nome: "Filipino", bandeira: "🇵🇭" }, hi: { nome: "Hindi", bandeira: "🇮🇳" },
+  uk: { nome: "Ucraniano", bandeira: "🇺🇦" },
+};
+
+/* Idiomas pra sempre cobrir, mesmo sem ninguem ter configurado /meuidioma. */
+const IDIOMAS_BASE = ["pt", "en"];
+const MAX_IDIOMAS_EXTRA = 6; // trava: no maximo 8 traducoes por mensagem
+
+/* A lista cresce sozinha conforme os jogadores escolhem idioma -- ninguem
+   precisa avisar quais a alianca fala, o bot descobre pelo uso real. */
+let cacheIdiomas = { v: IDIOMAS_BASE, t: 0 };
+async function idiomasAtivos() {
+  if (Date.now() - cacheIdiomas.t < 60 * 1000) return cacheIdiomas.v;
+  let extras = [];
+  try {
+    const r = await sb(`discord_idioma_jogador?select=idioma&order=atualizado_em.desc&limit=200`);
+    const vistos = new Set();
+    for (const row of r || []) {
+      const cod = row.idioma;
+      if (!cod || IDIOMAS_BASE.includes(cod) || vistos.has(cod)) continue;
+      vistos.add(cod);
+      extras.push(cod);
+      if (extras.length >= MAX_IDIOMAS_EXTRA) break;
+    }
+  } catch { /* mantem o cache anterior/base */ }
+  const v = [...IDIOMAS_BASE, ...extras];
+  cacheIdiomas = { v, t: Date.now() };
+  return v;
+}
+
 let falhasSeguidas = 0;
 let tradutorFora = 0; // timestamp ate quando o tradutor fica desligado
 
@@ -276,19 +317,16 @@ function vantajosoTraduzir(texto, teto = 800) {
   return true;
 }
 
-/* ---------------- traducao sob demanda, pra texto grande ----------------
+/* ---------------- seletor: o plano B da traducao ----------------
 
-   Recado curto sai traduzido no canal mesmo, em todos os idiomas da alianca:
-   sao duas ou tres linhas e resolve sem ninguem clicar em nada. Texto grande
-   e' o oposto -- em oito idiomas vira uma redacao que empurra a conversa pra
-   cima. Nesse caso o bot nao traduz pra ninguem: pendura o seletor, e quem
-   quiser abre no proprio idioma numa resposta efemera que so ele enxerga.
+   Usado so quando nao da pra criar o topico (ver traduzirEResponder). O
+   Discord atende o clique pelo top-discord (Supabase), ramo "traduzir-msg:",
+   e responde com a traducao numa mensagem efemera.
 
-   Quem atende o clique e' o top-discord (Supabase), no ramo "traduzir-msg:".
    O texto vai pro banco porque o custom_id do Discord so cabe 100 caracteres,
    e um aviso de evento passa disso facil. */
 
-const TEXTO_MAXIMO = 3500;  // teto do que cabe guardar e traduzir sob demanda
+const TEXTO_MAXIMO = 3500;  // teto do que o bot se propoe a traduzir
 
 
 async function guardarPraTraduzir(texto, link) {
@@ -337,52 +375,120 @@ function mencionaLadyOuMaelle(texto) {
 
 /* ---------------- evento principal ---------------- */
 
-/* Uma resposta, um seletor, e a traducao acontece no clique.
+/* A traducao completa vive dentro de um topico pendurado na mensagem.
 
-   Antes o bot traduzia pra todos os idiomas da alianca e despejava tudo no
-   canal. Isso tinha tres defeitos que so apareceram no uso: quem escreveu a
-   mensagem via a traducao do proprio texto (sujeira pura, ela ja sabe o que
-   escreveu), cada pessoa lia uma linha e ignorava as outras quatro, e o bot
-   gastava cinco chamadas de traducao por mensagem.
+   Historico curto, porque cada tentativa morreu por um motivo diferente e vale
+   nao repetir: despejar oito idiomas no canal virava parede de texto; o seletor
+   com resposta efemera resolvia o espaco mas a efemera nasce sempre no fim do
+   canal, entao quem clicava num recado antigo era jogado la pra baixo; topico
+   com seletor dentro juntava os dois defeitos e ainda enchia a barra lateral.
 
-   Agora o bot so descobre em que idioma a mensagem esta -- uma chamada -- e
-   guarda o texto. Quem quer ler toca no seletor e recebe so o seu idioma, numa
-   resposta que so ele enxerga. Trocar de idioma depois reescreve aquela mesma
-   resposta no lugar, sem empilhar (quem faz isso e o top-discord, no ramo
-   "traduzir-msg:").
+   Aqui nao ha clique nenhum: o bot ja traduz e deixa tudo escrito dentro do
+   topico. Quem quer ler abre, encontra o proprio idioma e fecha. O canal fica
+   com uma linha so ("N mensagens") e a conversa nao anda um pixel.
 
-   Serve pra mensagem de jogador e pra aviso automatico igual. */
+   Contra a barra lateral: o topico e' arquivado na hora e o autor da mensagem
+   e' removido dele. Arquivar sozinho nao bastava porque o Discord lista topico
+   do qual voce e' MEMBRO, e abrir topico na mensagem de alguem inscreve essa
+   pessoa automaticamente.
+
+   Se nao der pra criar topico (permissao faltando, canal que nao aceita, a
+   mensagem ja tem um), cai no seletor solto no canal -- o comportamento
+   anterior, que funciona em qualquer lugar. */
+
+/* pt-br e pt sao o mesmo idioma pra este fim; zh-cn e zh tambem. */
+function mesmoIdioma(a, b) {
+  if (!a || !b) return false;
+  const raiz = (s) => String(s).toLowerCase().split("-")[0];
+  return raiz(a) === raiz(b);
+}
+
+/* Um embed por idioma: cabe 4096 caracteres cada, contra 2000 de uma mensagem
+   comum, e o titulo em negrito separa os idiomas sem eu ter que desenhar isso
+   na mao. O agrupamento respeita os dois limites do Discord (10 embeds e 6000
+   caracteres por mensagem) e quebra em mais mensagens quando estoura. */
+function agruparEmbeds(embeds) {
+  const lotes = [];
+  let atual = [], tamanho = 0;
+  for (const e of embeds) {
+    const custo = (e.title || "").length + (e.description || "").length;
+    if (atual.length >= 10 || (atual.length && tamanho + custo > 5800)) {
+      lotes.push(atual); atual = []; tamanho = 0;
+    }
+    atual.push(e); tamanho += custo;
+  }
+  if (atual.length) lotes.push(atual);
+  return lotes;
+}
+
 async function traduzirEResponder(msg, texto) {
   if (!vantajosoTraduzir(texto, TEXTO_MAXIMO)) return;
 
-  /* O seletor vale pra qualquer idioma, inclusive portugues.
+  const idiomas = await idiomasAtivos();
 
-     A primeira versao pulava portugues, com medo de encher o canal de caixas.
-     Errado: metade da alianca nao le portugues, e pular significava que os
-     recados da casa eram justamente os que ninguem de fora conseguia ler --
-     o contrario do que o tradutor existe pra fazer. Agora vale pros dois
-     lados, e ninguem depende do idioma de quem escreveu.
+  /* Em paralelo: sao ate oito chamadas e em serie o topico demoraria a aparecer.
+     traduzir() ja engole os proprios erros e devolve null. */
+  const brutos = await Promise.all(
+    idiomas.map(async (cod) => ({ cod, r: await traduzir(texto, cod) })),
+  );
 
-     Sem deteccao de idioma aqui: nao ha mais nada pra decidir com ela, e a
-     traducao acontece no clique. Zero chamada de traducao por mensagem. */
+  /* Todo resultado traz o idioma detectado na origem; basta o primeiro que
+     respondeu pra eu saber em que idioma a mensagem foi escrita. */
+  const origem = brutos.find((x) => x.r?.idioma)?.r.idioma || "";
+
+  const embeds = [];
+  for (const { cod, r } of brutos) {
+    if (!r?.traduzido) continue;
+    if (mesmoIdioma(cod, origem)) continue; // nao devolve o texto pra quem escreveu
+    const t = r.traduzido.trim();
+    /* O Google as vezes devolve o texto intacto quando nao entende o idioma
+       alvo. Repetir a mensagem original com outra bandeira em cima so confunde. */
+    if (!t || normalizar(t) === normalizar(texto)) continue;
+    const info = IDIOMA[cod] || { nome: cod, bandeira: "🌐" };
+    embeds.push({
+      title: `${info.bandeira} ${info.nome}`,
+      description: t.slice(0, 4000),
+      color: 5793266,
+    });
+  }
+  if (!embeds.length) return; // ninguem ganharia nada com este topico
+
+  /* Fora de canal de texto comum (dentro de outro topico, DM, forum) nao da
+     pra pendurar topico -- e nem faria sentido, ja estamos dentro de um. */
+  const podeTopico = typeof msg.startThread === "function" && !msg.hasThread && !msg.channel?.isThread?.();
+
+  let topico = null;
+  if (podeTopico) {
+    topico = await msg.startThread({
+      name: "🌐 Tradução / Translation",
+      autoArchiveDuration: 60,
+    }).catch((e) => {
+      console.error("traducao: nao consegui criar o topico:", e?.message || e);
+      return null;
+    });
+  }
+
+  if (topico) {
+    for (const lote of agruparEmbeds(embeds)) {
+      await topico.send({ embeds: lote, allowedMentions: { parse: [] } })
+        .catch((e) => console.error("traducao: nao consegui postar no topico:", e?.message || e));
+    }
+    /* A ordem importa: remover o autor precisa vir depois de postar, senao o
+       Discord o reinscreve ao notificar a mensagem nova do topico. */
+    if (msg.author?.id) {
+      await topico.members.remove(msg.author.id)
+        .catch((e) => console.error("traducao: nao consegui tirar o autor do topico:", e?.message || e));
+    }
+    await topico.setArchived(true)
+      .catch((e) => console.error("traducao: nao consegui arquivar o topico:", e?.message || e));
+    return;
+  }
+
+  /* Sem topico: volta pro seletor solto no canal. Guarda o texto no banco
+     porque o custom_id do Discord so cabe 100 caracteres, e leva o link da
+     mensagem junto pra traducao oferecer o caminho de volta. */
   const id = await guardarPraTraduzir(texto, msg.url).catch(() => null);
   if (!id) return;
-
-  /* O seletor sai solto no canal, e nao dentro de um topico preso na mensagem.
-
-     O topico foi tentado e nao serviu. A ideia era boa -- a resposta efemera
-     nasce no fim do lugar onde foi pedida, e num topico de uma mensagem so nao
-     ha pra onde descer. Mas cada topico aparecia na barra lateral embaixo do
-     canal, um por mensagem, e a lista enchia em minutos. Arquivar na hora nao
-     resolveu: o arquivamento funciona, so que a barra mostra topico do qual a
-     pessoa e MEMBRO, e criar topico na mensagem de alguem inscreve essa pessoa
-     nele. Teria que remover membro a membro, e quem abrisse entraria de novo.
-
-     Fica a descida, entao -- mas ela custa menos do que parecia. Efemera nasce
-     no fim do canal, e em conversa ao vivo quem le ja esta no fim: nao ha
-     salto nenhum. So incomoda em recado antigo, e pra esse caso a traducao
-     leva um link de volta que devolve a pessoa exatamente pra mensagem de onde
-     saiu (o link vai em guardarPraTraduzir e o top-discord o inclui). */
   await msg.reply({
     content: "-# 🌐 Ler no seu idioma / Read in your language",
     components: menuTraduzir(id),
