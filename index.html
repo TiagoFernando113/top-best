@@ -4309,21 +4309,38 @@
     return mi + "min";
   }
   function horarioLocal(ev){
-    if(!ev || !ev.hora_utc) return null;
-    var quando = proximaOcorrencia(ev.hora_utc, (ev.dia_semana == null ? null : +ev.dia_semana));
-    if(!quando) return null;
+    if(!ev) return null;
+    var quando, hUtc, vencido = false;
+
+    /* Data marcada manda sobre o dia da semana. É o caso do Urso: a armadilha
+       recarrega em ~47h30 da última caçada, então o dia anda pelo calendário e
+       "toda sexta" só acerta a primeira vez. Quando a data já passou, dizemos
+       isso em vez de inventar a próxima — o portal não tem como adivinhar
+       quando o oficial vai instalar de novo. */
+    if(ev.proxima_em){
+      quando = new Date(ev.proxima_em);
+      if(isNaN(quando)) return null;
+      vencido = quando.getTime() < Date.now();
+      hUtc = quando.toISOString().slice(11,16);
+    } else {
+      if(!ev.hora_utc) return null;
+      quando = proximaOcorrencia(ev.hora_utc, (ev.dia_semana == null ? null : +ev.dia_semana));
+      if(!quando) return null;
+      hUtc = String(ev.hora_utc).slice(0,5);
+    }
+
     var tz = fusoDoMembro(), loc = localeDoMembro();
     function f(opts){
       try{ return quando.toLocaleString(loc, Object.assign({timeZone:tz}, opts)); }
       catch(e){ return quando.toLocaleString("en", Object.assign({timeZone:"UTC"}, opts)); }
     }
-    var hUtc = String(ev.hora_utc).slice(0,5);
     return {
-      dia:   esc(ev.dia_semana == null ? f({weekday:"short"}) : f({weekday:"short"})).toUpperCase(),
+      dia:   esc(vencido ? f({day:"2-digit", month:"2-digit"}) : f({weekday:"short"})).toUpperCase(),
       hora:  esc(f({hour:"2-digit", minute:"2-digit", hour12:false})),
-      falta: falta(quando) || "agora",
+      falta: vencido ? "a definir" : (falta(quando) || "agora"),
       utc:   hUtc,
-      fuso:  tz
+      fuso:  tz,
+      vencido: vencido
     };
   }
 
@@ -5251,10 +5268,14 @@
         {k:"tipo",l:"Cor/Tipo",t:"tipo"},
 
         {sec:"🕐 Quando acontece"},
+        /* Dois modelos, e o de cima ganha. O Urso não tem dia fixo: a
+           armadilha recarrega em ~47h30 da última caçada, então o dia anda
+           pelo calendário e "toda sexta" erra depois da primeira vez. */
+        {k:"proxima_em",l:"📌 Próxima vez (UTC) — para evento sem dia fixo, tipo o Urso",t:"datahora"},
         {k:"dia",l:"Dia (ex.: SEX / SEG–DOM)",t:"text"},
         {k:"hora",l:"Hora (ex.: 21:00)",t:"text"},
-        {k:"hora_utc",l:"🕐 Hora no jogo (UTC) — cada membro vê no fuso dele",t:"hora"},
-        {k:"dia_semana",l:"📅 Dia da semana (em UTC)",t:"dsem"},
+        {k:"hora_utc",l:"🕐 Hora no jogo (UTC) — só se o evento tem dia fixo",t:"hora"},
+        {k:"dia_semana",l:"📅 Dia da semana (em UTC) — só se tem dia fixo",t:"dsem"},
         {k:"inicio",l:"Início (só temporário)",t:"date"},
         {k:"fim",l:"Fim (só temporário)",t:"date"},
 
@@ -5300,6 +5321,15 @@
       if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
       if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
+      /* O campo é lido e gravado em UTC, não no fuso de quem digita: o jogo
+         mostra o horário do Urso em UTC, então o oficial copia o que está na
+         tela sem converter nada. Um datetime-local puro assumiria o fuso do
+         aparelho e erraria em 3 horas. */
+      if(c.t==="datahora"){
+        var iso = v ? new Date(v).toISOString().slice(0,16) : "";
+        return lbl + '<input class="rin" data-k="'+c.k+'" type="datetime-local" value="'+esc(iso)+'">'
+             + '<span class="bcpad">Deixe vazio se o evento tem dia fixo da semana.</span>';
+      }
       if(c.t==="textarea") return lbl + '<textarea class="rin" data-k="'+c.k+'" rows="6" style="resize:vertical">'+esc(String(v||""))+'</textarea>';
       return lbl + '<input class="rin" data-k="'+c.k+'" type="'+(c.t==="number"?"number":"text")+'" value="'+esc(String(v))+'">';
     }).join("");
@@ -5315,6 +5345,9 @@
       if(c.t==="simnao") body[c.k] = (v === "true");
       else if(c.t==="number" || c.t==="aviso") body[c.k] = parseInt(v,10)||0;
       else if(c.t==="date") body[c.k] = (String(v).trim()==="" ? null : v);
+      /* O "Z" é o que faz o valor digitado valer como UTC. Sem ele o navegador
+         mandaria o horário como se fosse do fuso local. */
+      else if(c.t==="datahora") body[c.k] = (String(v).trim()==="" ? null : v + ":00Z");
       else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
       else body[c.k] = v;
@@ -5357,7 +5390,7 @@
     gestaoLista("top_eventos?select=*"+daMinha()+"&order=ordem", "gestEventos", "evento");
   }
   /* pendencias do Painel do Oficial: contador em cada fila + resumo no topo */
-  var _admPend = {r0:0, resg:0};
+  var _admPend = {r0:0, resg:0, semData:[]};
   function admBadge(id, n){
     var b = $("#"+id); if(!b) return;
     b.textContent = n;
@@ -5365,11 +5398,29 @@
   }
   function admResumo(){
     var el = $("#adminResumo"); if(!el) return;
-    var a = _admPend.r0, b = _admPend.resg, p = [];
-    if(!a && !b){ el.innerHTML = "✅ <b>Tudo em dia.</b> Nada esperando por você."; return; }
+    var a = _admPend.r0, b = _admPend.resg, d = _admPend.semData.length, p = [];
+    if(!a && !b && !d){ el.innerHTML = "✅ <b>Tudo em dia.</b> Nada esperando por você."; return; }
     if(a) p.push("<b>"+a+"</b> "+(a === 1 ? "entrada para aprovar" : "entradas para aprovar"));
     if(b) p.push("<b>"+b+"</b> "+(b === 1 ? "resgate para entregar" : "resgates para entregar"));
-    el.innerHTML = "👋 Você tem " + p.join(" e ") + ".";
+    if(d) p.push("<b>"+d+"</b> "+(d === 1 ? "evento sem próxima data" : "eventos sem próxima data"));
+    var txt = "👋 Você tem " + p.join(", ").replace(/, ([^,]*)$/, " e $1") + ".";
+    /* Nomear os eventos vencidos: "1 evento sem data" faz a pessoa abrir a
+       lista pra descobrir qual. O aviso só serve se disser o que fazer. */
+    if(d) txt += '<br><span style="font-weight:700;font-size:.82rem">📌 '
+      + _admPend.semData.map(function(e){ return esc(e.titulo); }).join(", ")
+      + ' — marque a próxima em Eventos da agenda.</span>';
+    el.innerHTML = txt;
+  }
+  /* Evento com data marcada que já passou é aviso que não vai mais sair. Sem
+     isso o esquecimento é invisível: a agenda mostra uma data velha e ninguém
+     estranha até o Urso passar batido. */
+  function carregaEventosSemData(){
+    if(!ME || !ME.is_oficial) return Promise.resolve();
+    return sbRpc("eventos_sem_data", {p_membro:ME.id, p_senha:null, p_device:deviceId()})
+      .then(function(r){
+        _admPend.semData = (r && r.ok && r.eventos) ? r.eventos : [];
+        admResumo();
+      }).catch(function(){});
   }
 
   function paintResgates(){
@@ -6133,7 +6184,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function(b){
       b.classList.toggle('on', b.dataset.go === name);
     });
-    if(name === 'admin'){ paintR0(); paintResgates(); paintAdminGestao(); }
+    if(name === 'admin'){ paintR0(); paintResgates(); paintAdminGestao(); carregaEventosSemData(); }
     if(name === 'chat'){ chatCarregar(); chatUnread = 0; badgeChat(); requestAnimationFrame(posicionarChat); scrollChatBottom(); setTimeout(function(){ posicionarChat(); scrollChatBottom(); }, 120); setTimeout(scrollChatBottom, 400); }
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
