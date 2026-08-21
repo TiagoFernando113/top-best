@@ -262,11 +262,17 @@ async function traduzir(texto, alvo) {
    para em 800 (acima disso vira parede de texto), mas a que fica atras do
    seletor nao ocupa tela nenhuma, entao pode ir bem mais longe. */
 function vantajosoTraduzir(texto, teto = 800) {
-  if (texto.length < 2 || texto.length > teto) return false;
+  /* O minimo subiu de 2 pra 12 porque agora TODA mensagem ganharia seletor,
+     nao so as de outro idioma. "ok", "kkkk", "sim", "boa" nao precisam de
+     tradutor -- e uma caixa embaixo de cada uma dessas encheria o canal de
+     coisa inutil. Doze caracteres e mais ou menos onde comeca a frase. */
+  if (texto.length < 12 || texto.length > teto) return false;
   if (/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u.test(texto)) return false;
   if (/^https?:\/\/\S+$/i.test(texto)) return false;
   if (/^[\d\s.,:!?-]+$/.test(texto)) return false;
   if (/^[/!.][a-z]/i.test(texto)) return false; // parece comando
+  /* So risadas e interjeicoes: "kkkkkk", "hahaha", "rsrsrs", "hehe". */
+  if (/^[kkhaeirs\s!?.]+$/i.test(texto)) return false;
   return true;
 }
 
@@ -343,16 +349,16 @@ function mencionaLadyOuMaelle(texto) {
 async function traduzirEResponder(msg, texto) {
   if (!vantajosoTraduzir(texto, TEXTO_MAXIMO)) return;
 
-  /* Uma chamada so, pra saber o idioma de origem. O alvo aqui nao importa --
-     o que interessa e o idioma que o detector devolve. */
-  const detec = await traduzir(texto, "en");
-  if (!detec || !detec.idioma) return;
+  /* O seletor vale pra qualquer idioma, inclusive portugues.
 
-  /* Mensagem no idioma da casa nao ganha seletor: seria um a cada recado, e o
-     canal viraria uma fileira de caixas. Quem le outro idioma e precisa de uma
-     dessas usa o Apps -> Translate na propria mensagem. */
-  if (detec.idioma === "pt") return;
+     A primeira versao pulava portugues, com medo de encher o canal de caixas.
+     Errado: metade da alianca nao le portugues, e pular significava que os
+     recados da casa eram justamente os que ninguem de fora conseguia ler --
+     o contrario do que o tradutor existe pra fazer. Agora vale pros dois
+     lados, e ninguem depende do idioma de quem escreveu.
 
+     Sem deteccao de idioma aqui: nao ha mais nada pra decidir com ela, e a
+     traducao acontece no clique. Zero chamada de traducao por mensagem. */
   const id = await guardarPraTraduzir(texto).catch(() => null);
   if (!id) return;
 
