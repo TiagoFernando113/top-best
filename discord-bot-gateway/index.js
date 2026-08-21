@@ -387,10 +387,15 @@ function mencionaLadyOuMaelle(texto) {
    topico. Quem quer ler abre, encontra o proprio idioma e fecha. O canal fica
    com uma linha so ("N mensagens") e a conversa nao anda um pixel.
 
-   Contra a barra lateral: o topico e' arquivado na hora e o autor da mensagem
-   e' removido dele. Arquivar sozinho nao bastava porque o Discord lista topico
-   do qual voce e' MEMBRO, e abrir topico na mensagem de alguem inscreve essa
-   pessoa automaticamente.
+   O topico nasce trancado, arquivado, e sem o autor da mensagem dentro. Os
+   tres juntos, porque cada um cobre um buraco do outro: arquivar tira da
+   lista, mas topico arquivado reabre sozinho quando alguem escreve; trancar
+   impede de escrever, entao ele fica so pra leitura e nao reabre; e remover o
+   autor e' o que limpa a barra lateral, que lista topico do qual voce e'
+   MEMBRO -- abrir topico na mensagem de alguem inscreve essa pessoa
+   automaticamente.
+
+   Os tres dependem de o bot ter "Gerenciar Topicos" no canal.
 
    Se nao der pra criar topico (permissao faltando, canal que nao aceita, a
    mensagem ja tem um), cai no seletor solto no canal -- o comportamento
@@ -479,8 +484,12 @@ async function traduzirEResponder(msg, texto) {
       await topico.members.remove(msg.author.id)
         .catch((e) => console.error("traducao: nao consegui tirar o autor do topico:", e?.message || e));
     }
-    await topico.setArchived(true)
-      .catch((e) => console.error("traducao: nao consegui arquivar o topico:", e?.message || e));
+    /* Trancado e arquivado na mesma chamada. Trancar e' o que garante que o
+       topico continue fechado: topico arquivado volta a aparecer sozinho se
+       alguem escrever dentro dele, e trancado ninguem escreve -- vira so
+       leitura. Quem tiver "Gerenciar Topicos" ainda consegue reabrir. */
+    await topico.edit({ archived: true, locked: true })
+      .catch((e) => console.error("traducao: nao consegui trancar e arquivar o topico:", e?.message || e));
     return;
   }
 
