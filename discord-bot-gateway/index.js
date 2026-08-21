@@ -398,10 +398,24 @@ async function traduzirEResponder(msg, texto) {
   /* Sem topico (falta de permissao, canal que nao aceita), o seletor volta a
      sair solto no canal. Pior de posicao, mas melhor que ficar sem tradutor.
      Aqui o metodo muda junto: topico manda com send, mensagem com reply. */
-  await (topico
-    ? topico.send(corpo)
-    : msg.reply({ ...corpo, allowedMentions: { parse: [], repliedUser: false } })
-  ).catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
+  if (!topico) {
+    await msg.reply({ ...corpo, allowedMentions: { parse: [], repliedUser: false } })
+      .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
+    return;
+  }
+
+  await topico.send(corpo)
+    .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
+
+  /* Arquivar na hora, sem esperar a hora de inatividade.
+
+     Topico ativo aparece na barra lateral embaixo do canal, e um por mensagem
+     encheria a lista em minutos. Arquivado ele sai da barra mas continua preso
+     na mensagem: o "Ver topico" segue ali, e quem abre continua conseguindo
+     escolher o idioma -- clicar num componente nao exige que o topico esteja
+     ativo. Some da lista, nao some da mensagem. */
+  await topico.setArchived(true)
+    .catch((e) => console.error("traducao: topico ficou sem arquivar:", e?.message || e));
 }
 
 client.on("messageCreate", async (msg) => {
