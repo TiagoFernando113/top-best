@@ -405,11 +405,20 @@ async function traduzirEResponder(msg, texto) {
 
   const linhas = resultados
     .filter(([, txt]) => txt.trim().toLowerCase() !== texto.toLowerCase())
-    .map(([cod, txt]) => `${IDIOMA[cod]?.bandeira ?? "🌐"} **${IDIOMA[cod]?.nome ?? cod}:** ${txt}`);
+    /* O || do spoiler é o que fecha o bloco; se a tradução trouxer um, ela
+       fecharia o spoiler no meio e o resto vazaria. */
+    .map(([cod, txt]) => `${IDIOMA[cod]?.bandeira ?? "🌐"} **${IDIOMA[cod]?.nome ?? cod}:** ${txt.replace(/\|\|/g, "|")}`);
 
   if (linhas.length) {
+    /* Cinco idiomas empilhados fazem um "oi" ocupar meia tela do celular. A
+       primeira linha fica à vista -- resolve pra maioria sem tocar em nada --
+       e o resto vai pra dentro de um spoiler, que o Discord mostra como uma
+       barra fechada até alguém tocar. Uma linha só quando não há resto. */
+    const [primeira, ...resto] = linhas;
+    const desc = resto.length ? `${primeira}\n||${resto.join("\n")}||` : primeira;
+
     await msg.reply({
-      embeds: [{ color: 0x5865f2, description: linhas.join("\n").slice(0, 4000) }],
+      embeds: [{ color: 0x5865f2, description: desc.slice(0, 4000) }],
       allowedMentions: { repliedUser: false },
     }).catch(() => {});
   }
