@@ -92,6 +92,15 @@ const IDIOMA_NOME = {
   tl: "filipino", hi: "hindi",
 };
 
+/* O detector devolve o codigo com regiao e maiuscula ("zh-CN"), enquanto o mapa
+   acima e todo minusculo. Sem normalizar, o chines saia como "zh-CN → pt" em
+   vez de "chinês → pt" -- so o chines cai nesse caso hoje, mas o mesmo valeria
+   pra qualquer "xx-YY" que o Google resolva devolver. */
+function nomeDoIdioma(codigo) {
+  const c = String(codigo || "").toLowerCase();
+  return IDIOMA_NOME[c] || IDIOMA_NOME[c.split("-")[0]] || codigo;
+}
+
 let falhasSeguidas = 0;
 let tradutorFora = 0; // timestamp ate quando o tradutor fica desligado
 
@@ -252,15 +261,14 @@ client.on("messageCreate", async (msg) => {
       if (r && r.idioma && r.idioma !== "pt" && r.traduzido) {
         const igual = r.traduzido.trim().toLowerCase() === texto.toLowerCase();
         if (!igual) {
-          const rotulo = IDIOMA_NOME[r.idioma] || r.idioma;
-          /* A linha em portugues fica publica de proposito: e uma linha so, no
-             idioma da casa, e resolve pra maioria sem ninguem clicar em nada.
-             O seletor ao lado atende quem nao le portugues -- e ele traduz o
-             ORIGINAL, nao esta traducao, pra nao virar telefone sem fio. */
-          const id = await guardarPraTraduzir(texto).catch(() => null);
+          /* Aqui a resposta e exatamente a linha de sempre, sem seletor. O
+             seletor existe pros avisos de evento, que sao longos e sairiam em
+             oito idiomas; no chat a mensagem e curta e a linha em portugues ja
+             resolve, entao uma caixa embaixo de cada recado so entulhava a
+             conversa. Quem nao le portugues traduz pelo Apps -> Translate. */
+          const rotulo = nomeDoIdioma(r.idioma);
           await msg.reply({
             content: `🌐 *${rotulo} → pt:* ${r.traduzido}`.slice(0, 1900),
-            ...(id ? { components: seletorTraduzir(id) } : {}),
             allowedMentions: { repliedUser: false },
           }).catch(() => {});
         }
