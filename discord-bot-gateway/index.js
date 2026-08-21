@@ -326,10 +326,23 @@ function vantajosoTraduzir(texto, teto = 800) {
 const TEXTO_GRANDE = 300;   // daqui pra cima a traducao publica ocuparia mais tela que o original
 const TEXTO_MAXIMO = 3500;  // teto do que cabe guardar e traduzir sob demanda
 
-/* Quanto a linha juntada pode ter antes de virar seletor. ~90 caracteres cabem
-   por linha na tela de celular, entao 180 sao as duas linhas que o Tiago pediu.
-   Acima disso a resposta volta a empurrar a conversa pra cima. */
-const LINHA_MAXIMA = 180;
+/* Ate onde vale traduzir na cara do canal, somando todos os idiomas.
+
+   Abaixo disso as traducoes saem em linhas miudas: ninguem toca em nada, e a
+   resposta efemera do seletor -- que nasce no fim do canal -- nao obriga
+   ninguem a rolar de volta. Acima, o seletor compensa: o bloco ficaria alto
+   demais, e um toque sai mais barato que meia tela de traducao.
+
+   O teto e alto de proposito. A resposta do seletor nasce sempre no fim do
+   canal -- o Discord nao deixa escolher onde -- entao quem toca nela num
+   recado antigo perde o lugar e tem que rolar de volta. Isso e aceitavel uma
+   vez, num guia comprido que se le uma vez so; em conversa normal, nao. Como a
+   linha miuda custa pouca altura, sai mais barato mostrar do que esconder.
+
+   900 cobrem recado de ate ~180 caracteres em cinco idiomas, que e o tamanho
+   do que se escreve num chat. Acima disso o bloco ficaria alto demais e o
+   toque compensa. */
+const BLOCO_MAXIMO = 900;
 
 async function guardarPraTraduzir(texto) {
   const r = await sbPost("discord_msg_traducao", { texto: texto.slice(0, 4000) });
@@ -410,36 +423,40 @@ async function traduzirEResponder(msg, texto) {
 
   const partes = resultados
     .filter(([, txt]) => txt.trim().toLowerCase() !== texto.toLowerCase())
-    /* Só a bandeira, sem "Português:" na frente: o nome do idioma dobrava o
-       tamanho de cada tradução sem dizer nada que a bandeira já não diga. */
-    .map(([cod, txt]) => `${IDIOMA[cod]?.bandeira ?? "🌐"} ${txt.replace(/\s+/g, " ").trim()}`);
+    /* Uma linha por idioma, em texto miúdo (-#), com bandeira e sem o nome do
+       idioma na frente.
+
+       Três formatos foram tentados antes deste. Embed com nome por extenso era
+       alto demais. Spoiler não serviu: esconde o texto mas não o espaço, e
+       sobram os mesmos retângulos empilhados. Tudo numa linha só ficou estranho
+       por causa do árabe -- texto da direita pra esquerda no meio de texto
+       ocidental faz os separadores saltarem de lugar, e a linha sai torta.
+
+       Separando por linha, cada idioma manda no próprio espaço e o problema
+       some. O -# compensa a altura: linha miúda ocupa bem menos que linha
+       normal, então cinco idiomas cabem em menos espaço do que as cinco linhas
+       normais de antes -- e ninguém precisa tocar em nada pra ler. */
+    .map(([cod, txt]) => `-# ${IDIOMA[cod]?.bandeira ?? "🌐"} ${txt.replace(/\s+/g, " ").trim()}`);
 
   if (!partes.length) return;
 
-  /* Tudo numa linha, e sem embed.
+  const bloco = partes.join("\n");
 
-     Spoiler foi a primeira tentativa e não resolveu: ele esconde o texto mas
-     não o espaço -- ficam os mesmos retângulos empilhados, só cinzas. E o
-     embed ainda cobra a barra lateral e o respiro em volta. Juntando as
-     traduções com um separador e mandando como recado simples, cinco idiomas
-     de um "oi" cabem em uma ou duas linhas. */
-  const uma = partes.join("  ·  ");
-
-  if (uma.length <= LINHA_MAXIMA) {
+  if (bloco.length <= BLOCO_MAXIMO) {
     await msg.reply({
-      content: uma.slice(0, 1900),
+      content: bloco.slice(0, 1900),
       allowedMentions: { parse: [], repliedUser: false },
     }).catch(() => {});
     return;
   }
 
-  /* Não coube em duas linhas: em vez de despejar, vira seletor -- mesmo
-     tratamento do texto grande, e pela mesma razão. */
+  /* Passou do teto: em vez de despejar, vira seletor -- mesmo tratamento do
+     texto grande, e pela mesma razão. */
   const id = await guardarPraTraduzir(texto).catch(() => null);
   await msg.reply(id
     ? { content: "-# 🌐 Ler no seu idioma", components: menuTraduzir(id),
         allowedMentions: { parse: [], repliedUser: false } }
-    : { content: uma.slice(0, 1900), allowedMentions: { parse: [], repliedUser: false } }
+    : { content: bloco.slice(0, 1900), allowedMentions: { parse: [], repliedUser: false } }
   ).catch(() => {});
 }
 
