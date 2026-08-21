@@ -162,6 +162,10 @@ function podeTraduzirAgora(authorId) {
    mensagem de evento passa disso facil; no clique o top-discord busca o texto
    por esse id. */
 
+/* A partir daqui a traducao publica ocuparia mais tela que a mensagem original.
+   Abaixo disso ela cabe em duas ou tres linhas e sai direto. */
+const TEXTO_GRANDE = 300;
+
 async function guardarPraTraduzir(texto) {
   const r = await sbPost("discord_msg_traducao", { texto: texto.slice(0, 4000) });
   return r?.[0]?.id ?? null;
@@ -261,16 +265,25 @@ client.on("messageCreate", async (msg) => {
       if (r && r.idioma && r.idioma !== "pt" && r.traduzido) {
         const igual = r.traduzido.trim().toLowerCase() === texto.toLowerCase();
         if (!igual) {
-          /* Aqui a resposta e exatamente a linha de sempre, sem seletor. O
-             seletor existe pros avisos de evento, que sao longos e sairiam em
-             oito idiomas; no chat a mensagem e curta e a linha em portugues ja
-             resolve, entao uma caixa embaixo de cada recado so entulhava a
-             conversa. Quem nao le portugues traduz pelo Apps -> Translate. */
           const rotulo = nomeDoIdioma(r.idioma);
-          await msg.reply({
-            content: `🌐 *${rotulo} → pt:* ${r.traduzido}`.slice(0, 1900),
-            allowedMentions: { repliedUser: false },
-          }).catch(() => {});
+
+          /* Recado curto sai traduzido na hora, como sempre saiu: a linha e
+             menor que a caixa do seletor, entao esconder atras de um clique so
+             daria trabalho. Texto grande e o contrario -- despejado no canal
+             ele empurra a conversa pra cima, e ainda por cima em portugues,
+             que nem todo mundo le. Nesse caso o bot nao traduz pra ninguem:
+             pendura o seletor e cada um decide se abre, e em que idioma. */
+          const id = texto.length >= TEXTO_GRANDE
+            ? await guardarPraTraduzir(texto).catch(() => null)
+            : null;
+
+          await msg.reply(id
+            ? { content: `-# 🌐 ${rotulo} · texto longo`,
+                components: seletorTraduzir(id),
+                allowedMentions: { repliedUser: false } }
+            : { content: `🌐 *${rotulo} → pt:* ${r.traduzido}`.slice(0, 1900),
+                allowedMentions: { repliedUser: false } }
+          ).catch(() => {});
         }
       }
     }
