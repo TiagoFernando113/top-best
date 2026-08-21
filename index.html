@@ -977,6 +977,94 @@
         </div>
       </details>
 
+      <details class="admbox" id="admBotWrap" style="display:none">
+        <summary><span class="ic">🤖</span>Bot do Discord</summary>
+        <div class="admbody">
+          <div class="rtabs" id="botTabs">
+            <button class="rtab sel" data-bot="enviar" type="button">✉️ Enviar</button>
+            <button class="rtab" data-bot="canais" type="button">📺 Canais</button>
+            <button class="rtab" data-bot="textos" type="button">📝 Textos</button>
+            <button class="rtab" data-bot="gifs"   type="button">🖼️ GIFs</button>
+            <button class="rtab" data-bot="dicas"  type="button">💡 Dicas</button>
+          </div>
+
+          <div class="botpane" id="botPaneEnviar">
+            <p class="rlab">Canal</p>
+            <select class="reginput" id="botEnvCanal" style="margin-top:0"></select>
+
+            <p class="rlab" style="margin-top:12px">Título <span style="font-weight:600;opacity:.8">(opcional)</span></p>
+            <input class="reginput" id="botEnvTitulo" type="text" maxlength="250" autocomplete="off" style="margin-top:0">
+
+            <p class="rlab" style="margin-top:12px">Mensagem</p>
+            <textarea class="reginput" id="botEnvTexto" rows="7" maxlength="3900" style="margin-top:0;resize:vertical"></textarea>
+            <p class="note" style="margin-top:6px">Negrito é <code>**assim**</code>, itálico <code>*assim*</code>. Quebra de linha vale.</p>
+
+            <p class="rlab" style="margin-top:12px">Imagem ou GIF <span style="font-weight:600;opacity:.8">(opcional)</span></p>
+            <input class="reginput" id="botEnvGif" type="text" placeholder="https://…" autocomplete="off" style="margin-top:0">
+
+            <label class="trtoggle" style="display:flex;align-items:center;gap:9px;margin-top:12px;padding:9px 11px">
+              <input type="checkbox" id="botEnvEveryone" style="width:18px;height:18px;flex:none">
+              <span style="font-weight:800;font-size:.85rem">Marcar @everyone</span>
+            </label>
+
+            <div class="botprev" id="botEnvPrev"></div>
+            <p class="note" id="botEnvMsg" style="display:none;margin-top:8px"></p>
+            <button class="bigbtn green" id="botEnvBtn" style="margin-top:10px">Enviar no Discord</button>
+          </div>
+
+          <div class="botpane" id="botPaneCanais" style="display:none">
+            <p class="note" style="margin:0 0 10px">Cada canal guarda o webhook dele. O portal nunca mostra a URL de volta — ela é praticamente uma senha, quem tem a URL posta no canal.</p>
+            <div id="botCanaisLista"></div>
+            <div class="cfgsec" style="margin-top:12px">
+              <div class="cfghd">➕ Novo canal</div>
+              <p class="rlab">Nome — como vai aparecer na lista</p>
+              <input class="reginput" id="botCanalNome" type="text" maxlength="30" placeholder="urso, geral, guerra…" autocomplete="off" style="margin-top:0">
+              <p class="rlab" style="margin-top:12px">Webhook do canal</p>
+              <input class="reginput" id="botCanalHook" type="text" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" style="margin-top:0">
+              <p class="note" style="margin-top:6px">No canal: Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL.</p>
+              <p class="note" id="botCanalMsg" style="display:none;margin-top:8px"></p>
+              <button class="bigbtn green" id="botCanalSalvar" style="margin-top:10px">Salvar canal</button>
+            </div>
+          </div>
+
+          <div class="botpane" id="botPaneTextos" style="display:none">
+            <p class="note" style="margin:0 0 10px">O que o bot escreve sozinho. Deixe vazio e salve para voltar ao texto de fábrica.</p>
+            <div id="botTextosLista"></div>
+          </div>
+
+          <div class="botpane" id="botPaneGifs" style="display:none">
+            <p class="note" style="margin:0 0 10px">Boas-vindas sorteia um da lista a cada pessoa que entra. Rosas é o que o bot responde quando alguém cita a Lady ou a Maelle.</p>
+            <div id="botGifsLista"></div>
+            <div class="cfgsec" style="margin-top:12px">
+              <div class="cfghd">➕ Novo GIF</div>
+              <p class="rlab">Onde usar</p>
+              <select class="reginput" id="botGifUso" style="margin-top:0">
+                <option value="boas_vindas">🎉 Boas-vindas</option>
+                <option value="rosas">🌹 Rosas (Lady / Maelle)</option>
+              </select>
+              <p class="rlab" style="margin-top:12px">Endereço da imagem</p>
+              <input class="reginput" id="botGifUrl" type="text" placeholder="https://…" autocomplete="off" style="margin-top:0">
+              <p class="note" id="botGifMsg" style="display:none;margin-top:8px"></p>
+              <button class="bigbtn green" id="botGifSalvar" style="margin-top:10px">Adicionar GIF</button>
+            </div>
+          </div>
+
+          <div class="botpane" id="botPaneDicas" style="display:none">
+            <p class="note" style="margin:0 0 10px">Uma por dia, às 10:00 UTC, girando pela lista. A de hoje aparece marcada.</p>
+            <div id="botDicasLista"></div>
+            <div class="cfgsec" style="margin-top:12px">
+              <div class="cfghd">➕ Nova dica</div>
+              <p class="rlab">Título</p>
+              <input class="reginput" id="botDicaTitulo" type="text" maxlength="250" autocomplete="off" style="margin-top:0">
+              <p class="rlab" style="margin-top:12px">Texto</p>
+              <textarea class="reginput" id="botDicaTexto" rows="5" maxlength="3900" style="margin-top:0;resize:vertical"></textarea>
+              <p class="note" id="botDicaMsg" style="display:none;margin-top:8px"></p>
+              <button class="bigbtn green" id="botDicaSalvar" style="margin-top:10px">Adicionar dica</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
       <details class="admbox">
         <summary><span class="ic">🎁</span>Itens da loja</summary>
         <div class="admbody">
@@ -2994,6 +3082,25 @@
   .escrow:last-child{border-bottom:none}
   .escrow span{color:var(--ink-soft);font-weight:700}
   .escrow b{flex:none;color:var(--ink)}
+  /* A prévia imita o embed do Discord: barra colorida na esquerda, fundo
+     escuro. Sem ela a pessoa só descobre como ficou depois de mandar pro
+     canal, e mensagem no Discord não dá pra editar por webhook depois. */
+  .botprev{margin-top:12px;border-radius:11px;padding:11px 13px;
+    background:#2B2D31;border-left:4px solid #F5B841;color:#DBDEE1;
+    font-size:.86rem;line-height:1.45;word-break:break-word;display:none}
+  .botprev b{color:#fff}
+  .botprev .bpt{font-weight:800;color:#fff;margin-bottom:5px}
+  .botprev img{max-width:100%;border-radius:8px;margin-top:8px;display:block}
+  .botprev .bpe{color:#F5B841;font-weight:800}
+  .botlinha{display:flex;align-items:center;gap:9px;padding:10px 11px;margin-bottom:7px;
+    border-radius:11px;background:var(--panel-3);border:2px solid var(--pill-dk)}
+  .botlinha .bln{flex:1;min-width:0;font-weight:800;font-size:.86rem;overflow:hidden;text-overflow:ellipsis}
+  .botlinha .blsub{display:block;font-weight:600;font-size:.75rem;opacity:.8}
+  .botlinha button{flex:none;border:none;cursor:pointer;font-family:inherit;font-weight:800;
+    font-size:.76rem;padding:7px 10px;border-radius:9px;background:rgba(0,0,0,.10)}
+  .botlinha button.red{background:var(--red);color:#fff}
+  .botcampo{margin-bottom:14px}
+  .botcampo .bcpad{font-size:.74rem;opacity:.75;font-weight:600;margin-top:4px;display:block;word-break:break-word}
   .rtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px}
   .rtab{flex:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:.8rem;padding:7px 12px;border-radius:11px;
     border:2.5px solid var(--pill-dk);background:var(--panel-3);color:var(--ink-soft);white-space:nowrap}
@@ -3495,6 +3602,10 @@
         $("#admNovoCodigoWrap").style.display = lider;
         $("#admDiscordWrap").style.display    = lider;
         $("#admLiderWrap").style.display      = (ME.cargo === "R5") ? "block" : "none";
+        /* O painel do bot abre pro oficial, não só pro líder: mandar recado no
+           canal é trabalho de R4 no dia a dia. Quem manda de verdade é o banco
+           — enviar e listar pedem oficial, mexer na configuração pede líder. */
+        $("#admBotWrap").style.display        = "block";
         if(ehLider(ME)) carregaDiscord();
         return r;
       }).catch(function(){ return null; });
@@ -3538,6 +3649,203 @@
         return carregaDiscord();
       }).catch(function(){ bt.disabled = false; erroCaixa("#admDiscordMsg", "Sem conexão."); });
   }
+  /* ---------------- painel do bot ----------------
+
+     Nenhuma destas funções vê webhook. A página manda o NOME do canal e o
+     banco resolve a URL lá dentro; é isso que impede um visitante qualquer de
+     descobrir o endereço e postar no Discord da aliança. */
+
+  var BOT = { canais: [], carregado: {} };
+
+  function botAuth(extra){
+    var b = { p_membro: ME && ME.id, p_senha: null, p_device: deviceId() };
+    for(var k in (extra||{})) b[k] = extra[k];
+    return b;
+  }
+  function botErro(alvo, r, mapa){
+    var m = (mapa||{})[r && r.erro] || {
+      sem_permissao: "Isso aqui é só para oficial.",
+      url:  "Esse endereço não parece um webhook do Discord. Ele começa com https://discord.com/api/webhooks/",
+      nome: "O nome pode ter letras, números, espaço, - e _, entre 2 e 30 caracteres.",
+      canal: "Esse canal não tem webhook cadastrado.",
+      vazio: "Escreva pelo menos um título ou uma mensagem.",
+      gif:  "O endereço da imagem precisa começar com https://",
+      faixa: "Esse número está fora do que o bot aceita.",
+      numero: "Isso precisa ser um número.",
+      longo: "Texto grande demais.",
+      titulo_longo: "O título passa de 250 caracteres.",
+      texto_longo: "A mensagem passa de 3900 caracteres."
+    }[r && r.erro] || "Não deu para salvar.";
+    erroCaixa(alvo, m);
+    $(alvo).style.color = "var(--red)";
+  }
+  function botOk(alvo, txt){
+    erroCaixa(alvo, txt); $(alvo).style.color = "var(--green-dk, #2E7D32)";
+  }
+
+  /* Markdown do Discord em HTML, só o que o embed realmente mostra. O esc()
+     vem antes de tudo, senão a prévia viraria uma porta de entrada pra HTML
+     colado no campo de mensagem. */
+  function botMd(s){
+    return esc(s || "")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/\*([^*]+)\*/g, "<i>$1</i>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\n/g, "<br>");
+  }
+  function botPrevia(){
+    var t = $("#botEnvTitulo").value.trim();
+    var x = $("#botEnvTexto").value.trim();
+    var g = $("#botEnvGif").value.trim();
+    var e = $("#botEnvEveryone").checked;
+    var box = $("#botEnvPrev");
+    if(!t && !x && !g){ box.style.display = "none"; return; }
+    box.innerHTML = (e ? '<div class="bpe">@everyone</div>' : "")
+      + (t ? '<div class="bpt">'+botMd(t)+'</div>' : "")
+      + (x ? '<div>'+botMd(x)+'</div>' : "")
+      + (/^https:\/\/\S+$/.test(g) ? '<img src="'+esc(g)+'" alt="">' : "");
+    box.style.display = "block";
+  }
+
+  function botCarregaCanais(){
+    return sbRpc("discord_canais_listar", botAuth()).then(function(r){
+      if(!r || r.erro) return;
+      BOT.canais = r.canais || [];
+      var sel = $("#botEnvCanal"), lista = $("#botCanaisLista");
+      var ligados = BOT.canais.filter(function(c){ return c.ligado; });
+      sel.innerHTML = ligados.length
+        ? ligados.map(function(c){ return '<option value="'+esc(c.nome)+'">'+esc(c.nome)+'</option>'; }).join("")
+        : '<option value="">— nenhum canal com webhook —</option>';
+      lista.innerHTML = BOT.canais.map(function(c){
+        return '<div class="botlinha">'
+          + '<span class="bln">'+esc(c.nome)
+          + '<span class="blsub">'+(c.ligado ? "✅ ligado" : "— sem webhook")
+          + (c.reservado ? " · usado pelo bot" : "") + '</span></span>'
+          + (c.ligado ? '<button data-bottest="'+esc(c.nome)+'">Testar</button>' : "")
+          + (c.ligado ? '<button class="red" data-botdel="'+esc(c.nome)+'">Tirar</button>' : "")
+          + '</div>';
+      }).join("");
+    }).catch(function(){});
+  }
+
+  /* O net.http_post do banco é assíncrono: na volta do envio o Discord ainda
+     não respondeu. Por isso perguntamos o estado depois, em vez de dizer
+     "enviado" sem saber. */
+  function botConfereEnvio(req, tentativa){
+    return sbRpc("discord_envio_status", botAuth({p_req:req})).then(function(s){
+      if(s && s.estado === "enviado") return botOk("#botEnvMsg", "✅ Enviado!");
+      if(s && s.estado === "falhou")
+        return botErro("#botEnvMsg", {}, {undefined:"O Discord recusou (código "+(s.codigo||"?")+"). O webhook pode ter sido apagado."});
+      if((tentativa||0) < 4) return new Promise(function(ok){ setTimeout(ok, 900); }).then(function(){
+        return botConfereEnvio(req, (tentativa||0)+1); });
+      return botOk("#botEnvMsg", "Mandei, mas o Discord está demorando a confirmar. Olhe no canal.");
+    }).catch(function(){});
+  }
+  function botEnviar(){
+    var bt = $("#botEnvBtn"); bt.disabled = true;
+    erroCaixa("#botEnvMsg", "");
+    return sbRpc("discord_enviar", botAuth({
+      p_canal: $("#botEnvCanal").value,
+      p_titulo: $("#botEnvTitulo").value,
+      p_texto: $("#botEnvTexto").value,
+      p_gif: $("#botEnvGif").value,
+      p_everyone: $("#botEnvEveryone").checked
+    })).then(function(r){
+      bt.disabled = false;
+      if(!r || r.erro) return botErro("#botEnvMsg", r);
+      botOk("#botEnvMsg", "Mandando…");
+      $("#botEnvTitulo").value = ""; $("#botEnvTexto").value = "";
+      $("#botEnvGif").value = ""; $("#botEnvEveryone").checked = false;
+      botPrevia();
+      return botConfereEnvio(r.req, 0);
+    }).catch(function(){ bt.disabled = false; erroCaixa("#botEnvMsg", "Sem conexão."); });
+  }
+
+  var BOT_ROTULOS = {
+    bv_titulo:        ["🎉 Boas-vindas — título", "{nome} vira o nome de quem entrou"],
+    bv_texto:         ["🎉 Boas-vindas — texto", "{alianca} vira a sigla da aliança"],
+    evento_titulo:    ["⏰ Aviso de evento — título", "{evento} vira o nome do evento"],
+    evento_texto:     ["⏰ Aviso de evento — texto", "{min} vira quantos minutos faltam"],
+    arena_titulo:     ["⚔️ Lembrete da Arena — título", ""],
+    arena_texto:      ["⚔️ Lembrete da Arena — texto", "{quando} vira a hora no fuso de cada um"],
+    trad_grande:      ["🌐 Tradutor — texto grande", "Daqui pra cima o bot mostra o seletor em vez de traduzir no canal (50 a 2000)"],
+    trad_max_idiomas: ["🌐 Tradutor — idiomas por mensagem", "Quantos idiomas extras além de português e inglês (0 a 10)"]
+  };
+  function botCarregaTextos(){
+    return sbRpc("discord_textos_ver", botAuth()).then(function(r){
+      if(!r || r.erro) return;
+      var t = r.textos || {};
+      $("#botTextosLista").innerHTML = Object.keys(BOT_ROTULOS).map(function(k){
+        var d = t[k] || {}; var rot = BOT_ROTULOS[k];
+        var num = (k.indexOf("trad_") === 0);
+        return '<div class="botcampo">'
+          + '<p class="rlab">'+esc(rot[0])+(d.alterado ? " <span style=\"opacity:.7\">(alterado)</span>" : "")+'</p>'
+          + (num
+              ? '<input class="reginput" data-bottxt="'+k+'" type="text" inputmode="numeric" value="'+esc(d.valor||"")+'" style="margin-top:0">'
+              : '<textarea class="reginput" data-bottxt="'+k+'" rows="2" style="margin-top:0;resize:vertical">'+esc(d.valor||"")+'</textarea>')
+          + (rot[1] ? '<span class="bcpad">'+esc(rot[1])+'</span>' : "")
+          + '<span class="bcpad">Padrão: '+esc(d.padrao||"")+'</span>'
+          + '<div style="display:flex;gap:7px;margin-top:7px">'
+          +   '<button class="bigbtn green" data-bottxtsave="'+k+'" style="flex:1;margin:0;padding:9px">Salvar</button>'
+          +   (d.alterado ? '<button class="bigbtn" data-bottxtreset="'+k+'" style="flex:none;margin:0;padding:9px 12px">↺ Padrão</button>' : "")
+          + '</div></div>';
+      }).join("") + '<p class="note" id="botTextoMsg" style="display:none"></p>';
+    }).catch(function(){});
+  }
+  function botSalvaTexto(chave, valor){
+    return sbRpc("discord_texto_salvar", botAuth({p_chave:chave, p_valor:valor})).then(function(r){
+      if(!r || r.erro) return botErro("#botTextoMsg", r);
+      toast("📝 Texto salvo!");
+      return botCarregaTextos();
+    }).catch(function(){});
+  }
+
+  function botCarregaGifs(){
+    return sbRpc("discord_gifs_listar", botAuth()).then(function(r){
+      if(!r || r.erro) return;
+      var g = r.gifs || [];
+      $("#botGifsLista").innerHTML = g.length ? g.map(function(x){
+        return '<div class="botlinha">'
+          + '<img src="'+esc(x.url)+'" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none">'
+          + '<span class="bln">'+(x.uso === "rosas" ? "🌹 Rosas" : "🎉 Boas-vindas")
+          + '<span class="blsub">'+(x.ativo ? "ativo" : "desligado")+'</span></span>'
+          + '<button data-botgif="'+x.id+'">'+(x.ativo ? "Desligar" : "Ligar")+'</button>'
+          + '<button class="red" data-botgifdel="'+x.id+'">Apagar</button>'
+          + '</div>';
+      }).join("") : '<p class="note">Nenhum GIF ainda.</p>';
+    }).catch(function(){});
+  }
+
+  function botCarregaDicas(){
+    return sbRpc("discord_dicas_listar", botAuth()).then(function(r){
+      if(!r || r.erro) return;
+      var d = r.dicas || [];
+      $("#botDicasLista").innerHTML = d.length ? d.map(function(x, i){
+        return '<div class="botlinha">'
+          + '<span class="bln">'+(i + 1 === r.hoje ? "📅 " : "")+esc(x.titulo)
+          + '<span class="blsub">'+esc((x.texto||"").slice(0, 70))+((x.texto||"").length > 70 ? "…" : "")+'</span></span>'
+          + '<button data-botdica="'+x.id+'">Editar</button>'
+          + '<button class="red" data-botdicadel="'+x.id+'">Apagar</button>'
+          + '</div>';
+      }).join("") : '<p class="note">Nenhuma dica ainda.</p>';
+    }).catch(function(){});
+  }
+
+  var BOT_CARREGA = { enviar: botCarregaCanais, canais: botCarregaCanais,
+                      textos: botCarregaTextos, gifs: botCarregaGifs, dicas: botCarregaDicas };
+  function botAba(nome){
+    Array.prototype.forEach.call(document.querySelectorAll("#botTabs .rtab"), function(b){
+      b.classList.toggle("sel", b.getAttribute("data-bot") === nome);
+    });
+    ["enviar","canais","textos","gifs","dicas"].forEach(function(n){
+      var p = $("#botPane" + n.charAt(0).toUpperCase() + n.slice(1));
+      if(p) p.style.display = (n === nome) ? "block" : "none";
+    });
+    /* Cada aba busca os dados dela só na primeira vez que é aberta -- abrir o
+       painel não deve disparar cinco consultas de uma vez. */
+    if(!BOT.carregado[nome]){ BOT.carregado[nome] = true; (BOT_CARREGA[nome] || function(){})(); }
+  }
+
   function carregaEstandarte(){
     if(!ME || !ME.alianca_id) return Promise.resolve(null);
     return sbGet("aliancas?id=eq."+enc(ME.alianca_id)+"&select=tag,nome,servidor,banner_forma,banner_cor,banner_emblema")
@@ -6349,6 +6657,125 @@
   $("#admIdentSalvar").addEventListener("click", salvarIdentidade);
   $("#admNovoCodigo").addEventListener("click", gerarNovoCodigo);
   var _adSv = $("#admDiscordSalvar"); if(_adSv) _adSv.addEventListener("click", salvarDiscord);
+
+  /* ---------------- cliques do painel do bot ----------------
+     Um ouvinte só, delegado: as listas são redesenhadas a cada mudança, e
+     ouvinte preso em botão redesenhado morre junto com ele. */
+  (function(){
+    var tabs = $("#botTabs"); if(!tabs) return;
+    tabs.addEventListener("click", function(e){
+      var b = e.target.closest("[data-bot]"); if(b) botAba(b.getAttribute("data-bot"));
+    });
+
+    ["#botEnvTitulo","#botEnvTexto","#botEnvGif"].forEach(function(s){
+      var el = $(s); if(el) el.addEventListener("input", botPrevia);
+    });
+    var ev = $("#botEnvEveryone"); if(ev) ev.addEventListener("change", botPrevia);
+    var eb = $("#botEnvBtn"); if(eb) eb.addEventListener("click", botEnviar);
+
+    var cs = $("#botCanalSalvar");
+    if(cs) cs.addEventListener("click", function(){
+      erroCaixa("#botCanalMsg", "");
+      sbRpc("discord_canal_salvar", botAuth({
+        p_nome: $("#botCanalNome").value, p_webhook: $("#botCanalHook").value
+      })).then(function(r){
+        if(!r || r.erro) return botErro("#botCanalMsg", r);
+        $("#botCanalNome").value = "";
+        $("#botCanalHook").value = "";   // não deixa a senha na tela depois de salva
+        toast("📺 Canal salvo!");
+        return botCarregaCanais();
+      }).catch(function(){ erroCaixa("#botCanalMsg", "Sem conexão."); });
+    });
+
+    var admBody = $("#admBotWrap"); if(!admBody) return;
+    admBody.addEventListener("click", function(e){
+      var t = e.target.closest("button"); if(!t) return;
+      var nome;
+
+      if((nome = t.getAttribute("data-bottest"))){
+        t.disabled = true;
+        return sbRpc("discord_enviar", botAuth({
+          p_canal: nome, p_titulo: "✅ Teste do portal",
+          p_texto: "Se você está lendo isto, o canal **" + nome + "** está ligado certinho."
+        })).then(function(r){
+          t.disabled = false;
+          toast(r && r.ok ? "✉️ Mandei no " + nome : "Não deu para testar.");
+        }).catch(function(){ t.disabled = false; });
+      }
+      if((nome = t.getAttribute("data-botdel"))){
+        if(!confirm('Tirar o webhook do canal "' + nome + '"?')) return;
+        return sbRpc("discord_canal_apagar", botAuth({p_nome:nome}))
+          .then(function(){ toast("Canal desligado."); return botCarregaCanais(); }).catch(function(){});
+      }
+
+      var k;
+      if((k = t.getAttribute("data-bottxtsave"))){
+        var campo = admBody.querySelector('[data-bottxt="' + k + '"]');
+        return botSalvaTexto(k, campo ? campo.value : "");
+      }
+      if((k = t.getAttribute("data-bottxtreset"))) return botSalvaTexto(k, "");
+
+      var id;
+      if((id = t.getAttribute("data-botgif")))
+        return sbRpc("discord_gif_mexer", botAuth({p_id:Number(id), p_apagar:false}))
+          .then(botCarregaGifs).catch(function(){});
+      if((id = t.getAttribute("data-botgifdel"))){
+        if(!confirm("Apagar este GIF?")) return;
+        return sbRpc("discord_gif_mexer", botAuth({p_id:Number(id), p_apagar:true}))
+          .then(botCarregaGifs).catch(function(){});
+      }
+
+      if((id = t.getAttribute("data-botdicadel"))){
+        if(!confirm("Apagar esta dica?")) return;
+        return sbRpc("discord_dica_apagar", botAuth({p_id:Number(id)}))
+          .then(botCarregaDicas).catch(function(){});
+      }
+      if((id = t.getAttribute("data-botdica"))){
+        /* Editar reaproveita o formulário de baixo em vez de abrir outro: o
+           botão passa a "Salvar alteração" e volta ao normal depois. */
+        return sbRpc("discord_dicas_listar", botAuth()).then(function(r){
+          var d = ((r && r.dicas) || []).filter(function(x){ return String(x.id) === id; })[0];
+          if(!d) return;
+          $("#botDicaTitulo").value = d.titulo;
+          $("#botDicaTexto").value  = d.texto;
+          $("#botDicaSalvar").setAttribute("data-editando", id);
+          $("#botDicaSalvar").textContent = "Salvar alteração";
+          $("#botDicaTitulo").scrollIntoView({behavior:"smooth", block:"center"});
+        }).catch(function(){});
+      }
+    });
+
+    var ds = $("#botDicaSalvar");
+    if(ds) ds.addEventListener("click", function(){
+      erroCaixa("#botDicaMsg", "");
+      var editando = ds.getAttribute("data-editando");
+      sbRpc("discord_dica_salvar", botAuth({
+        p_id: editando ? Number(editando) : null,
+        p_titulo: $("#botDicaTitulo").value, p_texto: $("#botDicaTexto").value
+      })).then(function(r){
+        if(!r || r.erro) return botErro("#botDicaMsg", r);
+        $("#botDicaTitulo").value = ""; $("#botDicaTexto").value = "";
+        ds.removeAttribute("data-editando"); ds.textContent = "Adicionar dica";
+        toast("💡 Dica salva!");
+        return botCarregaDicas();
+      }).catch(function(){ erroCaixa("#botDicaMsg", "Sem conexão."); });
+    });
+
+    var gs = $("#botGifSalvar");
+    if(gs) gs.addEventListener("click", function(){
+      erroCaixa("#botGifMsg", "");
+      sbRpc("discord_gif_salvar", botAuth({
+        p_uso: $("#botGifUso").value, p_url: $("#botGifUrl").value
+      })).then(function(r){
+        if(!r || r.erro) return botErro("#botGifMsg", r);
+        $("#botGifUrl").value = "";
+        toast("🖼️ GIF adicionado!");
+        return botCarregaGifs();
+      }).catch(function(){ erroCaixa("#botGifMsg", "Sem conexão."); });
+    });
+
+    botAba("enviar");
+  })();
   $("#sairAliancaBtn").addEventListener("click", abrirSair);
   $("#sairCancel").addEventListener("click", function(){ $("#sairOverlay").classList.remove("on"); });
   $("#sairConfirmar").addEventListener("click", confirmarSair);
