@@ -1,0 +1,48 @@
+# O bot de conexão permanente não vive no GitHub Pages como o resto do portal:
+# ele é um processo Node que precisa de um host ligado 24h (Fly.io). Sem este
+# workflow, mudar o index.js do bot não muda nada no Discord até alguém rodar
+# `fly deploy` de um computador com flyctl instalado.
+#
+# Para ligar, uma vez só:
+#   1. fly.io → Account → Access Tokens → criar um token
+#   2. neste repositório: Settings → Secrets and variables → Actions →
+#      New repository secret → nome FLY_API_TOKEN, valor o token do passo 1
+# Os dois passos funcionam pelo navegador do celular.
+
+name: Deploy do bot do Discord
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "discord-bot-gateway/**"
+      - ".github/workflows/deploy-bot.yml"
+  workflow_dispatch: # permite disparar na mão, pela aba Actions
+
+jobs:
+  deploy:
+    name: fly deploy
+    runs-on: ubuntu-latest
+    # Dois deploys ao mesmo tempo brigam pela mesma máquina; o último ganha.
+    concurrency:
+      group: deploy-discord-bot
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Conferir se o segredo existe
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Falta o secret FLY_API_TOKEN. Veja o comentário no topo deste arquivo."
+            exit 1
+          fi
+
+      - name: Deploy
+        working-directory: discord-bot-gateway
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only

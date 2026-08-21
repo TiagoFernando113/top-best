@@ -5,7 +5,28 @@ Este bot fica ligado 24h no Discord pra fazer duas coisas que o bot de
 o chat:
 
 - traduz automaticamente mensagens de jogadores que não escreverem em português
+- pendura o seletor 🌐 de tradução privada nos avisos de evento
 - responde com o GIF de rosas quando alguém menciona "Lady" ou "Maelle"
+
+## Tradução privada (o seletor 🌐)
+
+A aliança tem gente lendo em português, inglês, árabe e japonês. Traduzir cada
+aviso para todos os idiomas de uma vez deixaria o canal de eventos ilegível —
+um aviso viraria oito versões empilhadas.
+
+Então o bot **não traduz nada no canal**. Ele pendura um seletor 🌐 embaixo da
+mensagem; quem escolhe um idioma recebe o texto traduzido numa resposta
+**efêmera**, que só essa pessoa vê. O canal fica com uma linha a mais, não com
+oito.
+
+Quem atende o clique é o `top-discord` (Supabase Edge Function), no ramo
+`traduzir-msg:` — este bot só guarda o texto original em `discord_msg_traducao`
+e manda o id junto no seletor, porque o `custom_id` do Discord só cabe 100
+caracteres e um aviso de evento passa disso fácil.
+
+Para traduzir uma mensagem qualquer que não tenha seletor, cada pessoa também
+pode usar **clique direito na mensagem → Apps → Translate**, que já responde no
+idioma salvo em `/mylanguage`.
 
 ## 1. No Discord Developer Portal
 
@@ -47,5 +68,19 @@ fly deploy
 - em Variables, adicione as 3 variáveis de ambiente acima
 - Railway detecta o Dockerfile e sobe sozinho
 
-Depois do primeiro deploy manual, dá pra automatizar (todo push atualiza o
-bot sozinho) — é só avisar depois de escolher o host e eu configuro isso.
+## 4. Deploy automático (dá pra fazer pelo celular)
+
+`.github/workflows/deploy-bot.yml` faz o `fly deploy` sozinho a cada push que
+mexer nesta pasta. Sem isso, mudar o `index.js` não muda nada no Discord até
+alguém rodar `fly deploy` de um computador com o flyctl instalado — o portal é
+GitHub Pages, mas o bot é um processo Node num host separado.
+
+Para ligar, uma vez só:
+
+1. fly.io → Account → Access Tokens → criar um token
+2. neste repositório: Settings → Secrets and variables → Actions → New
+   repository secret → nome `FLY_API_TOKEN`, valor o token do passo 1
+
+Os dois passos funcionam pelo navegador do celular. Depois disso, dá para
+disparar um deploy na mão pela aba **Actions** → *Deploy do bot do Discord* →
+*Run workflow*, sem precisar de push.
