@@ -229,47 +229,6 @@ client.on("guildMemberAdd", async (member) => {
 
 /* ---------------- traducao (mesmo endpoint publico que o site ja usa) ---------------- */
 
-const IDIOMA = {
-  pt: { nome: "Português", bandeira: "🇧🇷" }, en: { nome: "Inglês", bandeira: "🇬🇧" },
-  es: { nome: "Espanhol", bandeira: "🇪🇸" }, ko: { nome: "Coreano", bandeira: "🇰🇷" },
-  ja: { nome: "Japonês", bandeira: "🇯🇵" }, zh: { nome: "Chinês", bandeira: "🇨🇳" },
-  "zh-cn": { nome: "Chinês", bandeira: "🇨🇳" }, "zh-CN": { nome: "Chinês", bandeira: "🇨🇳" },
-  "zh-tw": { nome: "Chinês", bandeira: "🇨🇳" }, de: { nome: "Alemão", bandeira: "🇩🇪" },
-  fr: { nome: "Francês", bandeira: "🇫🇷" }, it: { nome: "Italiano", bandeira: "🇮🇹" },
-  ru: { nome: "Russo", bandeira: "🇷🇺" }, ar: { nome: "Árabe", bandeira: "🇸🇦" },
-  tr: { nome: "Turco", bandeira: "🇹🇷" }, id: { nome: "Indonésio", bandeira: "🇮🇩" },
-  th: { nome: "Tailandês", bandeira: "🇹🇭" }, vi: { nome: "Vietnamita", bandeira: "🇻🇳" },
-  pl: { nome: "Polonês", bandeira: "🇵🇱" }, nl: { nome: "Holandês", bandeira: "🇳🇱" },
-  tl: { nome: "Filipino", bandeira: "🇵🇭" }, hi: { nome: "Hindi", bandeira: "🇮🇳" },
-  uk: { nome: "Ucraniano", bandeira: "🇺🇦" },
-};
-
-/* Idiomas pra sempre cobrir, mesmo sem ninguem ter configurado /meuidioma ainda. */
-const IDIOMAS_BASE = ["pt", "en"];
-const MAX_IDIOMAS_EXTRA = 6; // trava de seguranca: no maximo 8 traducoes por mensagem (2 base + 6 extras)
-
-/* A lista de idiomas "ativos" cresce sozinha conforme os jogadores configuram
-   /meuidioma no bot de comandos -- ninguem precisa avisar quais idiomas a
-   alianca fala, o bot descobre pelo uso real. */
-let cacheIdiomas = { v: IDIOMAS_BASE, t: 0 };
-async function idiomasAtivos() {
-  if (Date.now() - cacheIdiomas.t < 60 * 1000) return cacheIdiomas.v;
-  let extras = [];
-  try {
-    const r = await sb(`discord_idioma_jogador?select=idioma&order=atualizado_em.desc&limit=200`);
-    const vistos = new Set();
-    for (const row of r || []) {
-      const cod = row.idioma;
-      if (!cod || IDIOMAS_BASE.includes(cod) || vistos.has(cod)) continue;
-      vistos.add(cod);
-      extras.push(cod);
-      if (extras.length >= MAX_IDIOMAS_EXTRA) break;
-    }
-  } catch { /* mantem o cache anterior/base */ }
-  const v = [...IDIOMAS_BASE, ...extras];
-  cacheIdiomas = { v, t: Date.now() };
-  return v;
-}
 
 let falhasSeguidas = 0;
 let tradutorFora = 0; // timestamp ate quando o tradutor fica desligado
@@ -323,26 +282,8 @@ function vantajosoTraduzir(texto, teto = 800) {
    O texto vai pro banco porque o custom_id do Discord so cabe 100 caracteres,
    e um aviso de evento passa disso facil. */
 
-const TEXTO_GRANDE = 300;   // daqui pra cima a traducao publica ocuparia mais tela que o original
 const TEXTO_MAXIMO = 3500;  // teto do que cabe guardar e traduzir sob demanda
 
-/* Ate onde vale traduzir na cara do canal, somando todos os idiomas.
-
-   Abaixo disso as traducoes saem em linhas miudas: ninguem toca em nada, e a
-   resposta efemera do seletor -- que nasce no fim do canal -- nao obriga
-   ninguem a rolar de volta. Acima, o seletor compensa: o bloco ficaria alto
-   demais, e um toque sai mais barato que meia tela de traducao.
-
-   O teto e alto de proposito. A resposta do seletor nasce sempre no fim do
-   canal -- o Discord nao deixa escolher onde -- entao quem toca nela num
-   recado antigo perde o lugar e tem que rolar de volta. Isso e aceitavel uma
-   vez, num guia comprido que se le uma vez so; em conversa normal, nao. Como a
-   linha miuda custa pouca altura, sai mais barato mostrar do que esconder.
-
-   900 cobrem recado de ate ~180 caracteres em cinco idiomas, que e o tamanho
-   do que se escreve num chat. Acima disso o bloco ficaria alto demais e o
-   toque compensa. */
-const BLOCO_MAXIMO = 900;
 
 async function guardarPraTraduzir(texto) {
   const r = await sbPost("discord_msg_traducao", { texto: texto.slice(0, 4000) });
@@ -384,80 +325,42 @@ function mencionaLadyOuMaelle(texto) {
 
 /* ---------------- evento principal ---------------- */
 
-/* Traduz pra todo idioma que a alianca realmente usa, numa unica resposta
-   (uma mensagem por idioma viraria spam). A lista de idiomas vem de
-   idiomasAtivos() -- cresce sozinha conforme o uso de /meuidioma. Serve tanto
-   pra mensagem de jogador quanto pra aviso automatico (evento, dica do dia).
+/* Uma resposta, um seletor, e a traducao acontece no clique.
 
-   Acima de TEXTO_GRANDE a resposta troca de forma: em vez das traducoes, sai
-   so o seletor. */
+   Antes o bot traduzia pra todos os idiomas da alianca e despejava tudo no
+   canal. Isso tinha tres defeitos que so apareceram no uso: quem escreveu a
+   mensagem via a traducao do proprio texto (sujeira pura, ela ja sabe o que
+   escreveu), cada pessoa lia uma linha e ignorava as outras quatro, e o bot
+   gastava cinco chamadas de traducao por mensagem.
+
+   Agora o bot so descobre em que idioma a mensagem esta -- uma chamada -- e
+   guarda o texto. Quem quer ler toca no seletor e recebe so o seu idioma, numa
+   resposta que so ele enxerga. Trocar de idioma depois reescreve aquela mesma
+   resposta no lugar, sem empilhar (quem faz isso e o top-discord, no ramo
+   "traduzir-msg:").
+
+   Serve pra mensagem de jogador e pra aviso automatico igual. */
 async function traduzirEResponder(msg, texto) {
-  if (texto.length >= TEXTO_GRANDE) {
-    if (!vantajosoTraduzir(texto, TEXTO_MAXIMO)) return;
-    const id = await guardarPraTraduzir(texto).catch(() => null);
-    if (id) {
-      await msg.reply({
-        content: "-# 🌐 Texto longo — escolha seu idioma / long text, pick your language",
-        components: menuTraduzir(id),
-        allowedMentions: { repliedUser: false },
-      }).catch(() => {});
-      return;
-    }
-    /* Banco fora do ar: melhor cair na resposta longa de sempre do que deixar
-       quem nao le portugues sem entender nada. */
-  }
+  if (!vantajosoTraduzir(texto, TEXTO_MAXIMO)) return;
 
-  if (!vantajosoTraduzir(texto)) return;
-  const alvos = await idiomasAtivos();
-  const [primeiroAlvo, ...restoAlvos] = alvos;
-  const primeira = await traduzir(texto, primeiroAlvo);
-  if (!primeira || !primeira.idioma) return;
+  /* Uma chamada so, pra saber o idioma de origem. O alvo aqui nao importa --
+     o que interessa e o idioma que o detector devolve. */
+  const detec = await traduzir(texto, "en");
+  if (!detec || !detec.idioma) return;
 
-  const origem = primeira.idioma;
-  const resultados = [];
-  if (origem !== primeiroAlvo && primeira.traduzido) resultados.push([primeiroAlvo, primeira.traduzido]);
+  /* Mensagem no idioma da casa nao ganha seletor: seria um a cada recado, e o
+     canal viraria uma fileira de caixas. Quem le outro idioma e precisa de uma
+     dessas usa o Apps -> Translate na propria mensagem. */
+  if (detec.idioma === "pt") return;
 
-  const restantes = restoAlvos.filter((a) => a !== origem);
-  const traduzidos = await Promise.all(restantes.map((a) => traduzir(texto, a)));
-  traduzidos.forEach((r, idx) => { if (r?.traduzido) resultados.push([restantes[idx], r.traduzido]); });
-
-  const partes = resultados
-    .filter(([, txt]) => txt.trim().toLowerCase() !== texto.toLowerCase())
-    /* Uma linha por idioma, em texto miúdo (-#), com bandeira e sem o nome do
-       idioma na frente.
-
-       Três formatos foram tentados antes deste. Embed com nome por extenso era
-       alto demais. Spoiler não serviu: esconde o texto mas não o espaço, e
-       sobram os mesmos retângulos empilhados. Tudo numa linha só ficou estranho
-       por causa do árabe -- texto da direita pra esquerda no meio de texto
-       ocidental faz os separadores saltarem de lugar, e a linha sai torta.
-
-       Separando por linha, cada idioma manda no próprio espaço e o problema
-       some. O -# compensa a altura: linha miúda ocupa bem menos que linha
-       normal, então cinco idiomas cabem em menos espaço do que as cinco linhas
-       normais de antes -- e ninguém precisa tocar em nada pra ler. */
-    .map(([cod, txt]) => `-# ${IDIOMA[cod]?.bandeira ?? "🌐"} ${txt.replace(/\s+/g, " ").trim()}`);
-
-  if (!partes.length) return;
-
-  const bloco = partes.join("\n");
-
-  if (bloco.length <= BLOCO_MAXIMO) {
-    await msg.reply({
-      content: bloco.slice(0, 1900),
-      allowedMentions: { parse: [], repliedUser: false },
-    }).catch(() => {});
-    return;
-  }
-
-  /* Passou do teto: em vez de despejar, vira seletor -- mesmo tratamento do
-     texto grande, e pela mesma razão. */
   const id = await guardarPraTraduzir(texto).catch(() => null);
-  await msg.reply(id
-    ? { content: "-# 🌐 Ler no seu idioma", components: menuTraduzir(id),
-        allowedMentions: { parse: [], repliedUser: false } }
-    : { content: bloco.slice(0, 1900), allowedMentions: { parse: [], repliedUser: false } }
-  ).catch(() => {});
+  if (!id) return;
+
+  await msg.reply({
+    content: "-# 🌐 Ler no seu idioma / Read in your language",
+    components: menuTraduzir(id),
+    allowedMentions: { parse: [], repliedUser: false },
+  }).catch(() => {});
 }
 
 client.on("messageCreate", async (msg) => {
