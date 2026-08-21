@@ -326,6 +326,11 @@ function vantajosoTraduzir(texto, teto = 800) {
 const TEXTO_GRANDE = 300;   // daqui pra cima a traducao publica ocuparia mais tela que o original
 const TEXTO_MAXIMO = 3500;  // teto do que cabe guardar e traduzir sob demanda
 
+/* Quanto a linha juntada pode ter antes de virar seletor. ~90 caracteres cabem
+   por linha na tela de celular, entao 180 sao as duas linhas que o Tiago pediu.
+   Acima disso a resposta volta a empurrar a conversa pra cima. */
+const LINHA_MAXIMA = 180;
+
 async function guardarPraTraduzir(texto) {
   const r = await sbPost("discord_msg_traducao", { texto: texto.slice(0, 4000) });
   return r?.[0]?.id ?? null;
@@ -403,25 +408,39 @@ async function traduzirEResponder(msg, texto) {
   const traduzidos = await Promise.all(restantes.map((a) => traduzir(texto, a)));
   traduzidos.forEach((r, idx) => { if (r?.traduzido) resultados.push([restantes[idx], r.traduzido]); });
 
-  const linhas = resultados
+  const partes = resultados
     .filter(([, txt]) => txt.trim().toLowerCase() !== texto.toLowerCase())
-    /* O || do spoiler é o que fecha o bloco; se a tradução trouxer um, ela
-       fecharia o spoiler no meio e o resto vazaria. */
-    .map(([cod, txt]) => `${IDIOMA[cod]?.bandeira ?? "🌐"} **${IDIOMA[cod]?.nome ?? cod}:** ${txt.replace(/\|\|/g, "|")}`);
+    /* Só a bandeira, sem "Português:" na frente: o nome do idioma dobrava o
+       tamanho de cada tradução sem dizer nada que a bandeira já não diga. */
+    .map(([cod, txt]) => `${IDIOMA[cod]?.bandeira ?? "🌐"} ${txt.replace(/\s+/g, " ").trim()}`);
 
-  if (linhas.length) {
-    /* Cinco idiomas empilhados fazem um "oi" ocupar meia tela do celular. A
-       primeira linha fica à vista -- resolve pra maioria sem tocar em nada --
-       e o resto vai pra dentro de um spoiler, que o Discord mostra como uma
-       barra fechada até alguém tocar. Uma linha só quando não há resto. */
-    const [primeira, ...resto] = linhas;
-    const desc = resto.length ? `${primeira}\n||${resto.join("\n")}||` : primeira;
+  if (!partes.length) return;
 
+  /* Tudo numa linha, e sem embed.
+
+     Spoiler foi a primeira tentativa e não resolveu: ele esconde o texto mas
+     não o espaço -- ficam os mesmos retângulos empilhados, só cinzas. E o
+     embed ainda cobra a barra lateral e o respiro em volta. Juntando as
+     traduções com um separador e mandando como recado simples, cinco idiomas
+     de um "oi" cabem em uma ou duas linhas. */
+  const uma = partes.join("  ·  ");
+
+  if (uma.length <= LINHA_MAXIMA) {
     await msg.reply({
-      embeds: [{ color: 0x5865f2, description: desc.slice(0, 4000) }],
-      allowedMentions: { repliedUser: false },
+      content: uma.slice(0, 1900),
+      allowedMentions: { parse: [], repliedUser: false },
     }).catch(() => {});
+    return;
   }
+
+  /* Não coube em duas linhas: em vez de despejar, vira seletor -- mesmo
+     tratamento do texto grande, e pela mesma razão. */
+  const id = await guardarPraTraduzir(texto).catch(() => null);
+  await msg.reply(id
+    ? { content: "-# 🌐 Ler no seu idioma", components: menuTraduzir(id),
+        allowedMentions: { parse: [], repliedUser: false } }
+    : { content: uma.slice(0, 1900), allowedMentions: { parse: [], repliedUser: false } }
+  ).catch(() => {});
 }
 
 client.on("messageCreate", async (msg) => {
