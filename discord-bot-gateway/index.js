@@ -368,54 +368,26 @@ async function traduzirEResponder(msg, texto) {
   const id = await guardarPraTraduzir(texto, msg.url).catch(() => null);
   if (!id) return;
 
-  /* O seletor vai dentro de um topico preso na mensagem, nao solto no canal.
+  /* O seletor sai solto no canal, e nao dentro de um topico preso na mensagem.
 
-     Duas coisas melhoram de uma vez. No canal sobra so a linha fina do topico
-     ("Ver topico"), bem menor que uma caixa de seletor embaixo de cada recado.
-     E a resposta com a traducao, que e efemera, nasce no fim do lugar onde foi
-     pedida -- dentro do topico isso e logo abaixo do seletor, porque o topico
-     tem uma mensagem so. Some o "desce la embaixo": nao ha pra onde descer.
+     O topico foi tentado e nao serviu. A ideia era boa -- a resposta efemera
+     nasce no fim do lugar onde foi pedida, e num topico de uma mensagem so nao
+     ha pra onde descer. Mas cada topico aparecia na barra lateral embaixo do
+     canal, um por mensagem, e a lista enchia em minutos. Arquivar na hora nao
+     resolveu: o arquivamento funciona, so que a barra mostra topico do qual a
+     pessoa e MEMBRO, e criar topico na mensagem de alguem inscreve essa pessoa
+     nele. Teria que remover membro a membro, e quem abrisse entraria de novo.
 
-     Solto no canal a efemera ia parar no fim de tudo, e quem tocasse num
-     recado antigo perdia o lugar na conversa.
-
-     Uma hora de arquivamento: passado esse tempo o topico sai da lista de
-     ativos sozinho, senao um chat movimentado viraria um cemiterio deles. */
-  const topico = await msg.startThread({
-    name: "🌐 Tradução",
-    autoArchiveDuration: 60,
-  }).catch((e) => {
-    console.error(`traducao: nao consegui criar topico em #${msg.channel?.name}:`, e?.message || e);
-    return null;
-  });
-
-  const corpo = {
-    content: "🌐 Escolha seu idioma / Pick your language",
+     Fica a descida, entao -- mas ela custa menos do que parecia. Efemera nasce
+     no fim do canal, e em conversa ao vivo quem le ja esta no fim: nao ha
+     salto nenhum. So incomoda em recado antigo, e pra esse caso a traducao
+     leva um link de volta que devolve a pessoa exatamente pra mensagem de onde
+     saiu (o link vai em guardarPraTraduzir e o top-discord o inclui). */
+  await msg.reply({
+    content: "-# 🌐 Ler no seu idioma / Read in your language",
     components: menuTraduzir(id),
-    allowedMentions: { parse: [] },
-  };
-
-  /* Sem topico (falta de permissao, canal que nao aceita), o seletor volta a
-     sair solto no canal. Pior de posicao, mas melhor que ficar sem tradutor.
-     Aqui o metodo muda junto: topico manda com send, mensagem com reply. */
-  if (!topico) {
-    await msg.reply({ ...corpo, allowedMentions: { parse: [], repliedUser: false } })
-      .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
-    return;
-  }
-
-  await topico.send(corpo)
-    .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
-
-  /* Arquivar na hora, sem esperar a hora de inatividade.
-
-     Topico ativo aparece na barra lateral embaixo do canal, e um por mensagem
-     encheria a lista em minutos. Arquivado ele sai da barra mas continua preso
-     na mensagem: o "Ver topico" segue ali, e quem abre continua conseguindo
-     escolher o idioma -- clicar num componente nao exige que o topico esteja
-     ativo. Some da lista, nao some da mensagem. */
-  await topico.setArchived(true)
-    .catch((e) => console.error("traducao: topico ficou sem arquivar:", e?.message || e));
+    allowedMentions: { parse: [], repliedUser: false },
+  }).catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
 }
 
 client.on("messageCreate", async (msg) => {
