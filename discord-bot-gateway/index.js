@@ -329,15 +329,16 @@ function mencionaLadyOuMaelle(texto) {
    por mensagem que talvez ninguem leia. E o menu lista vinte idiomas: quem
    nunca usou /meuidioma escolhe o dele na hora.
 
-   O topico nasce trancado, arquivado, e sem o autor da mensagem dentro. Os
-   tres juntos, porque cada um cobre um buraco do outro: arquivar tira da
-   lista, mas topico arquivado reabre sozinho quando alguem escreve; trancar
-   impede de escrever, entao ele fica so pra leitura e nao reabre; e remover
-   o autor e' o que limpa a barra lateral, que lista topico do qual voce e'
-   MEMBRO -- abrir topico na mensagem de alguem inscreve essa pessoa
-   automaticamente.
+   O topico nasce arquivado e sem o autor da mensagem dentro. Os dois juntos,
+   porque um sozinho nao resolve: arquivar tira da lista, e remover o autor e'
+   o que impede ele de voltar -- a barra mostra topico do qual voce e' MEMBRO,
+   e abrir topico na mensagem de alguem inscreve essa pessoa automaticamente.
 
-   Se ainda assim algum reabrir, o ouvinte de threadUpdate la embaixo fecha
+   Nao tranca. Trancar era a ideia obvia (topico so de leitura nao reabre) e
+   quebrava o proprio seletor: topico arquivado precisa reabrir pra receber o
+   clique, e trancado nem o Discord reabre -- dava "Esta interacao falhou".
+
+   Como reabrir voltou a ser possivel, o ouvinte de threadUpdate la embaixo fecha
    de novo. Os tres dependem de o bot ter "Gerenciar Topicos" no canal.
 
    Se nao der pra criar topico (permissao faltando, canal que nao aceita, a
@@ -365,9 +366,17 @@ async function fecharTopico(topico, autorId) {
     await topico.members.remove(id)
       .catch((e) => console.error("traducao: nao consegui tirar", id, "do topico:", e?.message || e));
   }
-  /* Trancar e arquivar numa edicao so. */
-  await topico.edit({ archived: true, locked: true })
-    .catch((e) => console.error("traducao: nao consegui trancar e arquivar o topico:", e?.message || e));
+  /* Arquiva, mas NAO tranca.
+
+     Trancar parecia a solucao perfeita -- topico so de leitura nao reabre --
+     e quebrou justamente o que ele deveria proteger: o clique no seletor
+     morria com "Esta interacao falhou". Topico arquivado precisa reabrir pra
+     receber a interacao, e trancado ninguem reabre, nem o Discord.
+
+     Entao volta a poder reabrir, e quem fecha de novo e' o threadUpdate la
+     embaixo -- meio minuto depois, pra nao atropelar a traducao a caminho. */
+  await topico.setArchived(true)
+    .catch((e) => console.error("traducao: nao consegui arquivar o topico:", e?.message || e));
 }
 
 async function traduzirEResponder(msg, texto) {
@@ -407,15 +416,29 @@ async function traduzirEResponder(msg, texto) {
     .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
 }
 
-/* Rede de seguranca da barra lateral: se um topico de traducao voltar a
-   abrir -- por um clique que o Discord resolveu tratar como atividade, por
-   alguem com permissao de destrancar, pelo que for -- ele e' fechado de novo
-   na hora, e quem entrou sai junto. */
+/* Rede de seguranca da barra lateral: topico de traducao que voltar a abrir
+   -- por um clique, por alguem que escreveu dentro, pelo que for -- e' fechado
+   de novo, e quem entrou sai junto.
+
+   Agora que nao ha mais tranca, e' isto que segura a barra limpa. */
+const ESPERA_REFECHAR = 30 * 1000;
+
 client.on("threadUpdate", async (antes, depois) => {
   try {
     if (depois.name !== NOME_TOPICO) return;
     if (!antes.archived || depois.archived) return; // so interessa a reabertura
-    await fecharTopico(depois, null);
+
+    /* Nao fecha na hora: quase sempre quem reabriu foi um clique no seletor,
+       e a resposta da traducao ainda esta a caminho. Arquivar no meio disso
+       derrubaria a entrega -- que e' exatamente o erro que a tranca causava.
+       Meio minuto e' bem mais do que a traducao precisa. */
+    await new Promise((ok) => setTimeout(ok, ESPERA_REFECHAR));
+
+    /* Nesse meio tempo alguem pode ter fechado, ou o topico pode ter sumido. */
+    const agora = await depois.fetch().catch(() => null);
+    if (!agora || agora.archived) return;
+
+    await fecharTopico(agora, null);
   } catch (e) {
     console.error("erro ao refechar topico de traducao:", e?.message || e);
   }
