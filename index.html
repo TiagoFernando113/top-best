@@ -1016,7 +1016,16 @@
             <p class="note" style="margin:0 0 10px">Cada canal guarda o webhook dele. O portal nunca mostra a URL de volta — ela é praticamente uma senha, quem tem a URL posta no canal.</p>
             <div id="botCanaisLista"></div>
             <div class="cfgsec" style="margin-top:12px">
-              <div class="cfghd">➕ Novo canal</div>
+              <div class="cfghd">🤖 Deixar o CYRON criar</div>
+              <p class="note" style="margin:0 0 8px">Ele cria o canal no Discord, faz o webhook e já liga aqui. Se o canal já existir com esse nome, ele só liga. O Discord não aceita acento nem maiúscula em nome de canal, então <b>Arena Diária</b> vira <b>arena-diaria</b>.</p>
+              <p class="rlab">Nome do canal</p>
+              <input class="reginput" id="botCanalAutoNome" type="text" maxlength="30" placeholder="arena, urso, guerra…" autocomplete="off" style="margin-top:0">
+              <p class="note" id="botCanalAutoMsg" style="display:none;margin-top:8px"></p>
+              <button class="bigbtn green" id="botCanalAuto" style="margin-top:10px">🤖 Criar no Discord</button>
+            </div>
+
+            <div class="cfgsec" style="margin-top:12px">
+              <div class="cfghd">➕ Novo canal (na mão)</div>
               <p class="rlab">Nome — como vai aparecer na lista</p>
               <input class="reginput" id="botCanalNome" type="text" maxlength="30" placeholder="urso, geral, guerra…" autocomplete="off" style="margin-top:0">
               <p class="rlab" style="margin-top:12px">Webhook do canal</p>
@@ -6763,6 +6772,42 @@
     });
     var ev = $("#botEnvEveryone"); if(ev) ev.addEventListener("change", botPrevia);
     var eb = $("#botEnvBtn"); if(eb) eb.addEventListener("click", botEnviar);
+
+    /* O CYRON faz sozinho: cria o canal, cria o webhook e liga no portal.
+       Vai pela top-canal (função separada) porque criar canal é ação do bot e
+       precisa do token dele -- o que o painel não tem e nem deve ter. */
+    var ca = $("#botCanalAuto");
+    if(ca) ca.addEventListener("click", function(){
+      var nome = $("#botCanalAutoNome").value.trim();
+      erroCaixa("#botCanalAutoMsg", "");
+      if(nome.length < 2) return erroCaixa("#botCanalAutoMsg", "Escreva o nome do canal.");
+      ca.disabled = true; ca.textContent = "Criando…";
+      fetch(SB_URL+"/functions/v1/top-canal", { method:"POST",
+        headers: sbHead({"Content-Type":"application/json"}),
+        body: JSON.stringify({ codigo: localStorage.getItem("top.ocode")||"",
+                               alianca_id: (ME&&ME.alianca_id)||null, nome: nome })})
+        .then(function(r){ return r.json(); })
+        .then(function(r){
+          ca.disabled = false; ca.textContent = "🤖 Criar no Discord";
+          if(!r || r.erro){
+            if(r && r.erro === "codigo"){ localStorage.removeItem("top.ocode"); pedirCodigoOficial(); return; }
+            return botErro("#botCanalAutoMsg", r, {
+              sem_token: "Falta o token do bot no Supabase (DISCORD_BOT_TOKEN). Sem ele o CYRON não consegue criar canal.",
+              sem_vinculo: "Este Discord ainda não está ligado à aliança. Use /settings server lá primeiro.",
+              permissao: "O CYRON não tem permissão de Gerenciar Canais (ou Webhooks) no servidor. Dê isso ao cargo dele.",
+              discord: "O Discord recusou. Tente de novo em instantes.",
+              salvar: "O canal ficou pronto no Discord, mas não deu para ligar aqui.",
+            });
+          }
+          $("#botCanalAutoNome").value = "";
+          toast(r.ja_existia ? ("🔌 #"+r.nome+" ligado!") : ("📢 #"+r.nome+" criado!"));
+          return botCarregaCanais();
+        })
+        .catch(function(){
+          ca.disabled = false; ca.textContent = "🤖 Criar no Discord";
+          erroCaixa("#botCanalAutoMsg", "Sem conexão.");
+        });
+    });
 
     var cs = $("#botCanalSalvar");
     if(cs) cs.addEventListener("click", function(){
