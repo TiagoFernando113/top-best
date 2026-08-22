@@ -1016,7 +1016,16 @@
             <p class="note" style="margin:0 0 10px">Cada canal guarda o webhook dele. O portal nunca mostra a URL de volta — ela é praticamente uma senha, quem tem a URL posta no canal.</p>
             <div id="botCanaisLista"></div>
             <div class="cfgsec" style="margin-top:12px">
-              <div class="cfghd">➕ Novo canal</div>
+              <div class="cfghd">🤖 Deixar o CYRON criar</div>
+              <p class="note" style="margin:0 0 8px">Ele cria o canal no Discord, faz o webhook e já liga aqui. Se o canal já existir com esse nome, ele só liga. O Discord não aceita acento nem maiúscula em nome de canal, então <b>Arena Diária</b> vira <b>arena-diaria</b>.</p>
+              <p class="rlab">Nome do canal</p>
+              <input class="reginput" id="botCanalAutoNome" type="text" maxlength="30" placeholder="arena, urso, guerra…" autocomplete="off" style="margin-top:0">
+              <p class="note" id="botCanalAutoMsg" style="display:none;margin-top:8px"></p>
+              <button class="bigbtn green" id="botCanalAuto" style="margin-top:10px">🤖 Criar no Discord</button>
+            </div>
+
+            <div class="cfgsec" style="margin-top:12px">
+              <div class="cfghd">➕ Novo canal (na mão)</div>
               <p class="rlab">Nome — como vai aparecer na lista</p>
               <input class="reginput" id="botCanalNome" type="text" maxlength="30" placeholder="urso, geral, guerra…" autocomplete="off" style="margin-top:0">
               <p class="rlab" style="margin-top:12px">Webhook do canal</p>
@@ -3671,6 +3680,7 @@
       vazio: "Escreva pelo menos um título ou uma mensagem.",
       gif:  "O endereço da imagem precisa começar com https://",
       faixa: "Esse número está fora do que o bot aceita.",
+      valor: "Esse valor não é aceito aqui.",
       numero: "Isso precisa ser um número.",
       longo: "Texto grande demais.",
       titulo_longo: "O título passa de 250 caracteres.",
@@ -3768,21 +3778,42 @@
     evento_texto:     ["⏰ Aviso de evento — texto", "{min} vira quantos minutos faltam"],
     arena_titulo:     ["⚔️ Lembrete da Arena — título", ""],
     arena_texto:      ["⚔️ Lembrete da Arena — texto", "{quando} vira a hora no fuso de cada um"],
+    arena_ligada:     ["⚔️ Lembrete da Arena — mandar?", "", "simnao"],
+    arena_canal:      ["⚔️ Lembrete da Arena — canal", "Deixe no canal de avisos ou escolha um só pra Arena", "canal"],
     trad_grande:      ["🌐 Tradutor — texto grande", "Daqui pra cima o bot mostra o seletor em vez de traduzir no canal (50 a 2000)"],
     trad_max_idiomas: ["🌐 Tradutor — idiomas por mensagem", "Quantos idiomas extras além de português e inglês (0 a 10)"]
   };
   function botCarregaTextos(){
+    /* O seletor de canal da Arena e' desenhado a partir de BOT.canais. Se a
+       pessoa abriu direto em Textos, essa lista ainda esta vazia. */
+    var pronto = (BOT.canais && BOT.canais.length) ? Promise.resolve() : botCarregaCanais();
+    return pronto.then(function(){
     return sbRpc("discord_textos_ver", botAuth()).then(function(r){
       if(!r || r.erro) return;
       var t = r.textos || {};
       $("#botTextosLista").innerHTML = Object.keys(BOT_ROTULOS).map(function(k){
         var d = t[k] || {}; var rot = BOT_ROTULOS[k];
         var num = (k.indexOf("trad_") === 0);
+        /* Canal e liga/desliga não são texto livre: digitar o nome errado
+           deixaria o lembrete sem destino, em silêncio. */
+        var campo;
+        if(rot[2] === "simnao"){
+          campo = campoSelect(k, (d.valor === "0" ? "0" : "1"), [["1","Sim, mandar todo dia"],["0","Não mandar"]])
+                    .replace('data-k="'+k+'"', 'data-bottxt="'+k+'"');
+        } else if(rot[2] === "canal"){
+          var opts = [["avisos","Canal padrão de avisos"]];
+          (BOT.canais||[]).forEach(function(x){ if(x.ligado && x.nome !== "avisos") opts.push([x.nome, "#"+x.nome]); });
+          var atual = d.valor || "avisos";
+          if(!opts.some(function(o){ return o[0] === atual; })) opts.push([atual, "#"+atual+" (não encontrado)"]);
+          campo = campoSelect(k, atual, opts).replace('data-k="'+k+'"', 'data-bottxt="'+k+'"');
+        } else if(num){
+          campo = '<input class="reginput" data-bottxt="'+k+'" type="text" inputmode="numeric" value="'+esc(d.valor||"")+'" style="margin-top:0">';
+        } else {
+          campo = '<textarea class="reginput" data-bottxt="'+k+'" rows="2" style="margin-top:0;resize:vertical">'+esc(d.valor||"")+'</textarea>';
+        }
         return '<div class="botcampo">'
           + '<p class="rlab">'+esc(rot[0])+(d.alterado ? " <span style=\"opacity:.7\">(alterado)</span>" : "")+'</p>'
-          + (num
-              ? '<input class="reginput" data-bottxt="'+k+'" type="text" inputmode="numeric" value="'+esc(d.valor||"")+'" style="margin-top:0">'
-              : '<textarea class="reginput" data-bottxt="'+k+'" rows="2" style="margin-top:0;resize:vertical">'+esc(d.valor||"")+'</textarea>')
+          + campo
           + (rot[1] ? '<span class="bcpad">'+esc(rot[1])+'</span>' : "")
           + '<span class="bcpad">Padrão: '+esc(d.padrao||"")+'</span>'
           + '<div style="display:flex;gap:7px;margin-top:7px">'
@@ -3791,6 +3822,7 @@
           + '</div></div>';
       }).join("") + '<p class="note" id="botTextoMsg" style="display:none"></p>';
     }).catch(function(){});
+    });
   }
   function botSalvaTexto(chave, valor){
     return sbRpc("discord_texto_salvar", botAuth({p_chave:chave, p_valor:valor})).then(function(r){
@@ -5283,6 +5315,9 @@
         {k:"permite_inscricao",l:"✋ Deixar os membros confirmarem presença",t:"simnao"},
         {k:"avisar_min",l:"🔔 Notificar antes de começar (precisa da hora preenchida)",t:"aviso"},
         {k:"avisar_alvo",l:"📲 Quem recebe o aviso",t:"alvo"},
+        /* Antes todo aviso caía no mesmo canal, e a agenda da semana disputava
+           espaço com o Urso e a Arena. Quem só queria o Urso filtrava tudo. */
+        {k:"canal",l:"📢 Em que canal do Discord o aviso cai",t:"canal"},
 
         {sec:"🪙 Moedas do evento"},
         {k:"premio_1",l:"🥇 Prêmio 1º lugar (moedas)",t:"number"},
@@ -5321,6 +5356,17 @@
       if(c.t==="hora")  return lbl + '<input class="rin" data-k="'+c.k+'" type="time" value="'+esc(String(v||"").slice(0,5))+'">';
       if(c.t==="dsem")  return lbl + campoSelect(c.k, (v==null?"":String(v)), [["","Todo dia"],["0","Domingo"],["1","Segunda"],["2","Terça"],["3","Quarta"],["4","Quinta"],["5","Sexta"],["6","Sábado"]]);
       if(c.t==="date")  return lbl + '<input class="rin" data-k="'+c.k+'" type="date" value="'+esc(String(v||""))+'">';
+      /* A lista vem do que já tem webhook cadastrado na aba Bot. Se o canal
+         gravado sumiu de lá, ele continua aparecendo marcado — trocar o
+         destino do aviso sem o oficial perceber seria pior que mostrar o
+         problema. */
+      if(c.t==="canal"){
+        var opts = [["","Canal padrão de avisos"]];
+        (BOT.canais||[]).forEach(function(x){ if(x.ligado) opts.push([x.nome, "#"+x.nome]); });
+        if(v && !opts.some(function(o){ return o[0] === v; })) opts.push([v, "#"+v+" (não encontrado)"]);
+        return lbl + campoSelect(c.k, v||"", opts)
+             + '<span class="bcpad">Os canais saem da aba 🤖 Bot → Canais.</span>';
+      }
       /* O campo é lido e gravado em UTC, não no fuso de quem digita: o jogo
          mostra o horário do Urso em UTC, então o oficial copia o que está na
          tela sem converter nada. Um datetime-local puro assumiria o fuso do
@@ -5348,7 +5394,7 @@
       /* O "Z" é o que faz o valor digitado valer como UTC. Sem ele o navegador
          mandaria o horário como se fosse do fuso local. */
       else if(c.t==="datahora") body[c.k] = (String(v).trim()==="" ? null : v + ":00Z");
-      else if(c.t==="hora") body[c.k] = (String(v).trim()==="" ? null : v);
+      else if(c.t==="hora" || c.t==="canal") body[c.k] = (String(v).trim()==="" ? null : v);
       else if(c.t==="dsem") body[c.k] = (String(v).trim()==="" ? null : parseInt(v,10));
       else body[c.k] = v;
     });
@@ -6184,7 +6230,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function(b){
       b.classList.toggle('on', b.dataset.go === name);
     });
-    if(name === 'admin'){ paintR0(); paintResgates(); paintAdminGestao(); carregaEventosSemData(); }
+    /* botCarregaCanais aqui porque o editor de evento tem um seletor de canal
+       do Discord, e ele e' aberto da Gestao -- sem isso o seletor abriria so
+       com "canal padrao" ate alguem visitar a aba Bot. */
+    if(name === 'admin'){ paintR0(); paintResgates(); paintAdminGestao(); carregaEventosSemData(); botCarregaCanais(); }
     if(name === 'chat'){ chatCarregar(); chatUnread = 0; badgeChat(); requestAnimationFrame(posicionarChat); scrollChatBottom(); setTimeout(function(){ posicionarChat(); scrollChatBottom(); }, 120); setTimeout(scrollChatBottom, 400); }
     if(name === 'membros') paintMembros();
     if(name === 'ranking') paintRanking();
@@ -6723,6 +6772,42 @@
     });
     var ev = $("#botEnvEveryone"); if(ev) ev.addEventListener("change", botPrevia);
     var eb = $("#botEnvBtn"); if(eb) eb.addEventListener("click", botEnviar);
+
+    /* O CYRON faz sozinho: cria o canal, cria o webhook e liga no portal.
+       Vai pela top-canal (função separada) porque criar canal é ação do bot e
+       precisa do token dele -- o que o painel não tem e nem deve ter. */
+    var ca = $("#botCanalAuto");
+    if(ca) ca.addEventListener("click", function(){
+      var nome = $("#botCanalAutoNome").value.trim();
+      erroCaixa("#botCanalAutoMsg", "");
+      if(nome.length < 2) return erroCaixa("#botCanalAutoMsg", "Escreva o nome do canal.");
+      ca.disabled = true; ca.textContent = "Criando…";
+      fetch(SB_URL+"/functions/v1/top-canal", { method:"POST",
+        headers: sbHead({"Content-Type":"application/json"}),
+        body: JSON.stringify({ codigo: localStorage.getItem("top.ocode")||"",
+                               alianca_id: (ME&&ME.alianca_id)||null, nome: nome })})
+        .then(function(r){ return r.json(); })
+        .then(function(r){
+          ca.disabled = false; ca.textContent = "🤖 Criar no Discord";
+          if(!r || r.erro){
+            if(r && r.erro === "codigo"){ localStorage.removeItem("top.ocode"); pedirCodigoOficial(); return; }
+            return botErro("#botCanalAutoMsg", r, {
+              sem_token: "Falta o token do bot no Supabase (DISCORD_BOT_TOKEN). Sem ele o CYRON não consegue criar canal.",
+              sem_vinculo: "Este Discord ainda não está ligado à aliança. Use /settings server lá primeiro.",
+              permissao: "O CYRON não tem permissão de Gerenciar Canais (ou Webhooks) no servidor. Dê isso ao cargo dele.",
+              discord: "O Discord recusou. Tente de novo em instantes.",
+              salvar: "O canal ficou pronto no Discord, mas não deu para ligar aqui.",
+            });
+          }
+          $("#botCanalAutoNome").value = "";
+          toast(r.ja_existia ? ("🔌 #"+r.nome+" ligado!") : ("📢 #"+r.nome+" criado!"));
+          return botCarregaCanais();
+        })
+        .catch(function(){
+          ca.disabled = false; ca.textContent = "🤖 Criar no Discord";
+          erroCaixa("#botCanalAutoMsg", "Sem conexão.");
+        });
+    });
 
     var cs = $("#botCanalSalvar");
     if(cs) cs.addEventListener("click", function(){
