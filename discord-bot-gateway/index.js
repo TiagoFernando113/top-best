@@ -227,73 +227,11 @@ client.on("guildMemberAdd", async (member) => {
   }
 });
 
-/* ---------------- traducao (mesmo endpoint publico que o site ja usa) ---------------- */
+/* ---------------- traducao ----------------
 
-
-const IDIOMA = {
-  pt: { nome: "Português", bandeira: "🇧🇷" }, en: { nome: "Inglês", bandeira: "🇬🇧" },
-  es: { nome: "Espanhol", bandeira: "🇪🇸" }, ko: { nome: "Coreano", bandeira: "🇰🇷" },
-  ja: { nome: "Japonês", bandeira: "🇯🇵" }, zh: { nome: "Chinês", bandeira: "🇨🇳" },
-  "zh-cn": { nome: "Chinês", bandeira: "🇨🇳" }, "zh-CN": { nome: "Chinês", bandeira: "🇨🇳" },
-  "zh-tw": { nome: "Chinês", bandeira: "🇨🇳" }, de: { nome: "Alemão", bandeira: "🇩🇪" },
-  fr: { nome: "Francês", bandeira: "🇫🇷" }, it: { nome: "Italiano", bandeira: "🇮🇹" },
-  ru: { nome: "Russo", bandeira: "🇷🇺" }, ar: { nome: "Árabe", bandeira: "🇸🇦" },
-  tr: { nome: "Turco", bandeira: "🇹🇷" }, id: { nome: "Indonésio", bandeira: "🇮🇩" },
-  th: { nome: "Tailandês", bandeira: "🇹🇭" }, vi: { nome: "Vietnamita", bandeira: "🇻🇳" },
-  pl: { nome: "Polonês", bandeira: "🇵🇱" }, nl: { nome: "Holandês", bandeira: "🇳🇱" },
-  tl: { nome: "Filipino", bandeira: "🇵🇭" }, hi: { nome: "Hindi", bandeira: "🇮🇳" },
-  uk: { nome: "Ucraniano", bandeira: "🇺🇦" },
-};
-
-/* Idiomas pra sempre cobrir, mesmo sem ninguem ter configurado /meuidioma. */
-const IDIOMAS_BASE = ["pt", "en"];
-const MAX_IDIOMAS_EXTRA = 6; // trava: no maximo 8 traducoes por mensagem
-
-/* A lista cresce sozinha conforme os jogadores escolhem idioma -- ninguem
-   precisa avisar quais a alianca fala, o bot descobre pelo uso real. */
-let cacheIdiomas = { v: IDIOMAS_BASE, t: 0 };
-async function idiomasAtivos() {
-  if (Date.now() - cacheIdiomas.t < 60 * 1000) return cacheIdiomas.v;
-  let extras = [];
-  try {
-    const r = await sb(`discord_idioma_jogador?select=idioma&order=atualizado_em.desc&limit=200`);
-    const vistos = new Set();
-    for (const row of r || []) {
-      const cod = row.idioma;
-      if (!cod || IDIOMAS_BASE.includes(cod) || vistos.has(cod)) continue;
-      vistos.add(cod);
-      extras.push(cod);
-      if (extras.length >= MAX_IDIOMAS_EXTRA) break;
-    }
-  } catch { /* mantem o cache anterior/base */ }
-  const v = [...IDIOMAS_BASE, ...extras];
-  cacheIdiomas = { v, t: Date.now() };
-  return v;
-}
-
-let falhasSeguidas = 0;
-let tradutorFora = 0; // timestamp ate quando o tradutor fica desligado
-
-async function traduzir(texto, alvo) {
-  if (Date.now() < tradutorFora) return null;
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${alvo}&dt=t&q=${encodeURIComponent(texto)}`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    if (!r.ok) throw new Error(String(r.status));
-    const j = await r.json();
-    const idioma = j?.[2] || "";
-    const traduzido = (j?.[0] || []).map((p) => p?.[0] || "").join("");
-    falhasSeguidas = 0;
-    return { idioma, traduzido };
-  } catch {
-    falhasSeguidas++;
-    if (falhasSeguidas >= 8) {
-      tradutorFora = Date.now() + 10 * 60 * 1000; // desliga 10min e tenta de novo depois
-      falhasSeguidas = 0;
-    }
-    return null;
-  }
-}
+   O gateway nao traduz nada: ele so decide se a mensagem merece tradutor,
+   guarda o texto e pendura o seletor. Quem traduz e' o top-discord (funcao
+   do Supabase), quando alguem escolhe um idioma no menu. */
 
 /* Evita gasto/ruido com mensagens que nao valem a pena traduzir: comandos,
    so link, so emoji/numeros, ou muito curtas pra dar pro detector de idioma
@@ -375,135 +313,113 @@ function mencionaLadyOuMaelle(texto) {
 
 /* ---------------- evento principal ---------------- */
 
-/* A traducao completa vive dentro de um topico pendurado na mensagem.
+/* A traducao mora num topico pendurado na mensagem, atras de um seletor.
 
-   Historico curto, porque cada tentativa morreu por um motivo diferente e vale
-   nao repetir: despejar oito idiomas no canal virava parede de texto; o seletor
-   com resposta efemera resolvia o espaco mas a efemera nasce sempre no fim do
-   canal, entao quem clicava num recado antigo era jogado la pra baixo; topico
-   com seletor dentro juntava os dois defeitos e ainda enchia a barra lateral.
+   Historico curto, porque cada tentativa morreu por um motivo diferente:
+   despejar oito idiomas no canal virava parede de texto; o seletor solto no
+   canal resolvia o espaco mas a resposta efemera nasce sempre no fim do
+   canal, entao quem clicava num recado antigo era jogado la pra baixo;
+   traduzir tudo de uma vez dentro do topico resolvia a descida mas gastava
+   ate oito traducoes por mensagem e so cobria idioma que alguem ja tivesse
+   escolhido no /meuidioma -- quem nunca configurou ficava sem nada.
 
-   Aqui nao ha clique nenhum: o bot ja traduz e deixa tudo escrito dentro do
-   topico. Quem quer ler abre, encontra o proprio idioma e fecha. O canal fica
-   com uma linha so ("N mensagens") e a conversa nao anda um pixel.
+   O seletor dentro do topico junta o que cada uma tinha de bom. O topico tem
+   uma mensagem so, entao a efemera nao tem pra onde descer. A traducao
+   acontece no clique, uma por pessoa que realmente quis ler, em vez de oito
+   por mensagem que talvez ninguem leia. E o menu lista vinte idiomas: quem
+   nunca usou /meuidioma escolhe o dele na hora.
 
    O topico nasce trancado, arquivado, e sem o autor da mensagem dentro. Os
    tres juntos, porque cada um cobre um buraco do outro: arquivar tira da
    lista, mas topico arquivado reabre sozinho quando alguem escreve; trancar
-   impede de escrever, entao ele fica so pra leitura e nao reabre; e remover o
-   autor e' o que limpa a barra lateral, que lista topico do qual voce e'
+   impede de escrever, entao ele fica so pra leitura e nao reabre; e remover
+   o autor e' o que limpa a barra lateral, que lista topico do qual voce e'
    MEMBRO -- abrir topico na mensagem de alguem inscreve essa pessoa
    automaticamente.
 
-   Os tres dependem de o bot ter "Gerenciar Topicos" no canal.
+   Se ainda assim algum reabrir, o ouvinte de threadUpdate la embaixo fecha
+   de novo. Os tres dependem de o bot ter "Gerenciar Topicos" no canal.
 
    Se nao der pra criar topico (permissao faltando, canal que nao aceita, a
    mensagem ja tem um), cai no seletor solto no canal -- o comportamento
-   anterior, que funciona em qualquer lugar. */
+   antigo, que funciona em qualquer lugar. */
 
-/* pt-br e pt sao o mesmo idioma pra este fim; zh-cn e zh tambem. */
-function mesmoIdioma(a, b) {
-  if (!a || !b) return false;
-  const raiz = (s) => String(s).toLowerCase().split("-")[0];
-  return raiz(a) === raiz(b);
-}
+const NOME_TOPICO = "🌐 Tradução / Translation";
 
-/* Um embed por idioma: cabe 4096 caracteres cada, contra 2000 de uma mensagem
-   comum, e o titulo em negrito separa os idiomas sem eu ter que desenhar isso
-   na mao. O agrupamento respeita os dois limites do Discord (10 embeds e 6000
-   caracteres por mensagem) e quebra em mais mensagens quando estoura. */
-function agruparEmbeds(embeds) {
-  const lotes = [];
-  let atual = [], tamanho = 0;
-  for (const e of embeds) {
-    const custo = (e.title || "").length + (e.description || "").length;
-    if (atual.length >= 10 || (atual.length && tamanho + custo > 5800)) {
-      lotes.push(atual); atual = []; tamanho = 0;
-    }
-    atual.push(e); tamanho += custo;
+/* Fecha o topico e esvazia a lista de membros. Serve tanto pra hora em que
+   ele nasce quanto pra quando alguem consegue reabrir. */
+async function fecharTopico(topico, autorId) {
+  /* Ordem importa: remover membro precisa vir depois da mensagem que o bot
+     postou, senao a notificacao dessa mensagem reinscreve todo mundo. */
+  const paraTirar = new Set();
+  if (autorId) paraTirar.add(autorId);
+  try {
+    const membros = await topico.members.fetch();
+    for (const m of membros.values()) if (m.id !== client.user.id) paraTirar.add(m.id);
+  } catch (e) {
+    /* Listar membro de topico pode ser barrado por intent; nesse caso ainda
+       da pra tirar o autor, que e' o caso que mais aparece na barra. */
+    console.error("traducao: nao consegui listar os membros do topico:", e?.message || e);
   }
-  if (atual.length) lotes.push(atual);
-  return lotes;
+  for (const id of paraTirar) {
+    await topico.members.remove(id)
+      .catch((e) => console.error("traducao: nao consegui tirar", id, "do topico:", e?.message || e));
+  }
+  /* Trancar e arquivar numa edicao so. */
+  await topico.edit({ archived: true, locked: true })
+    .catch((e) => console.error("traducao: nao consegui trancar e arquivar o topico:", e?.message || e));
 }
 
 async function traduzirEResponder(msg, texto) {
   if (!vantajosoTraduzir(texto, TEXTO_MAXIMO)) return;
 
-  const idiomas = await idiomasAtivos();
-
-  /* Em paralelo: sao ate oito chamadas e em serie o topico demoraria a aparecer.
-     traduzir() ja engole os proprios erros e devolve null. */
-  const brutos = await Promise.all(
-    idiomas.map(async (cod) => ({ cod, r: await traduzir(texto, cod) })),
-  );
-
-  /* Todo resultado traz o idioma detectado na origem; basta o primeiro que
-     respondeu pra eu saber em que idioma a mensagem foi escrita. */
-  const origem = brutos.find((x) => x.r?.idioma)?.r.idioma || "";
-
-  const embeds = [];
-  for (const { cod, r } of brutos) {
-    if (!r?.traduzido) continue;
-    if (mesmoIdioma(cod, origem)) continue; // nao devolve o texto pra quem escreveu
-    const t = r.traduzido.trim();
-    /* O Google as vezes devolve o texto intacto quando nao entende o idioma
-       alvo. Repetir a mensagem original com outra bandeira em cima so confunde. */
-    if (!t || normalizar(t) === normalizar(texto)) continue;
-    const info = IDIOMA[cod] || { nome: cod, bandeira: "🌐" };
-    embeds.push({
-      title: `${info.bandeira} ${info.nome}`,
-      description: t.slice(0, 4000),
-      color: 5793266,
-    });
-  }
-  if (!embeds.length) return; // ninguem ganharia nada com este topico
-
-  /* Fora de canal de texto comum (dentro de outro topico, DM, forum) nao da
-     pra pendurar topico -- e nem faria sentido, ja estamos dentro de um. */
-  const podeTopico = typeof msg.startThread === "function" && !msg.hasThread && !msg.channel?.isThread?.();
-
-  let topico = null;
-  if (podeTopico) {
-    topico = await msg.startThread({
-      name: "🌐 Tradução / Translation",
-      autoArchiveDuration: 60,
-    }).catch((e) => {
-      console.error("traducao: nao consegui criar o topico:", e?.message || e);
-      return null;
-    });
-  }
-
-  if (topico) {
-    for (const lote of agruparEmbeds(embeds)) {
-      await topico.send({ embeds: lote, allowedMentions: { parse: [] } })
-        .catch((e) => console.error("traducao: nao consegui postar no topico:", e?.message || e));
-    }
-    /* A ordem importa: remover o autor precisa vir depois de postar, senao o
-       Discord o reinscreve ao notificar a mensagem nova do topico. */
-    if (msg.author?.id) {
-      await topico.members.remove(msg.author.id)
-        .catch((e) => console.error("traducao: nao consegui tirar o autor do topico:", e?.message || e));
-    }
-    /* Trancado e arquivado na mesma chamada. Trancar e' o que garante que o
-       topico continue fechado: topico arquivado volta a aparecer sozinho se
-       alguem escrever dentro dele, e trancado ninguem escreve -- vira so
-       leitura. Quem tiver "Gerenciar Topicos" ainda consegue reabrir. */
-    await topico.edit({ archived: true, locked: true })
-      .catch((e) => console.error("traducao: nao consegui trancar e arquivar o topico:", e?.message || e));
-    return;
-  }
-
-  /* Sem topico: volta pro seletor solto no canal. Guarda o texto no banco
-     porque o custom_id do Discord so cabe 100 caracteres, e leva o link da
-     mensagem junto pra traducao oferecer o caminho de volta. */
+  /* O seletor vale pra qualquer idioma, inclusive portugues: metade da
+     alianca nao le portugues, e pular significaria que os recados da casa
+     eram justamente os que ninguem de fora conseguia ler. */
   const id = await guardarPraTraduzir(texto, msg.url).catch(() => null);
   if (!id) return;
-  await msg.reply({
+
+  const corpo = {
     content: "-# 🌐 Ler no seu idioma / Read in your language",
     components: menuTraduzir(id),
-    allowedMentions: { parse: [], repliedUser: false },
-  }).catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
+  };
+
+  const podeTopico = typeof msg.startThread === "function" && !msg.hasThread && !msg.channel?.isThread?.();
+  if (podeTopico) {
+    const topico = await msg.startThread({ name: NOME_TOPICO, autoArchiveDuration: 60 })
+      .catch((e) => { console.error("traducao: nao consegui criar o topico:", e?.message || e); return null; });
+
+    if (topico) {
+      const postou = await topico.send({ ...corpo, allowedMentions: { parse: [] } })
+        .then(() => true)
+        .catch((e) => { console.error("traducao: nao consegui postar no topico:", e?.message || e); return false; });
+
+      /* Em aviso automatico o "autor" e' o webhook, que nao e' gente e nao
+         entra no topico -- tentar remover so gera "Unknown User" no log. */
+      if (postou) return fecharTopico(topico, msg.webhookId ? null : msg.author?.id);
+      /* Topico vazio e' pior que topico nenhum: ocupa a barra e nao serve
+         pra nada. Apaga antes de cair no plano B. */
+      await topico.delete().catch(() => {});
+    }
+  }
+
+  await msg.reply({ ...corpo, allowedMentions: { parse: [], repliedUser: false } })
+    .catch((e) => console.error("traducao: nao consegui mandar o seletor:", e?.message || e));
 }
+
+/* Rede de seguranca da barra lateral: se um topico de traducao voltar a
+   abrir -- por um clique que o Discord resolveu tratar como atividade, por
+   alguem com permissao de destrancar, pelo que for -- ele e' fechado de novo
+   na hora, e quem entrou sai junto. */
+client.on("threadUpdate", async (antes, depois) => {
+  try {
+    if (depois.name !== NOME_TOPICO) return;
+    if (!antes.archived || depois.archived) return; // so interessa a reabertura
+    await fecharTopico(depois, null);
+  } catch (e) {
+    console.error("erro ao refechar topico de traducao:", e?.message || e);
+  }
+});
 
 client.on("messageCreate", async (msg) => {
   try {
